@@ -1,0 +1,15 @@
+[package]
+name = "rustigc-py"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Python bindings for rustigc IGC parser"
+
+[lib]
+name = "rustigcpy"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustigc = { path = "../rustigc" }
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py310"] }

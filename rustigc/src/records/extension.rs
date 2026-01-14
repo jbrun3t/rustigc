@@ -1,0 +1,118 @@
+//! I/J-record extension definition
+//!
+//! I/J records define additional data fields in B/K-records beyond the standard format.
+//! Format: Inn[start_byte][end_byte][3-letter code]...
+//! - I: Record type
+//! - nn: Number of extensions (2 digits)
+//! - For each extension: start byte (2 digits), end byte (2 digits), 3-letter code
+//! - Note: the position provided are 1 based, and include the end character. It is
+//!         stored with index 0-based, excluding the end-character
+//!
+//! Example: I033638FXA3940SIU4143ENL
+//! - 03 extensions
+//! - Bytes 36-38: FXA (fix accuracy)
+//! - Bytes 39-40: SIU (satellites in use)
+//! - Bytes 41-43: ENL (engine noise level)
+
+use std::fmt;
+
+use winnow::ascii::line_ending;
+use winnow::combinator::{delimited, repeat};
+use winnow::error::Result as PResult;
+use winnow::prelude::*;
+
+use super::utils::{n_alphanum, n_digits};
+use super::Record;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub struct RecordExtension {
+    /// Start byte position
+    pub start: usize,
+    /// End byte position
+    pub finish: usize,
+    /// Three-letter code for this extension (e.g., FXA, SIU, ENL)
+    pub tlc: String,
+    /// Correction offset in recorded data
+    pub offset: usize,
+}
+
+impl fmt::Display for RecordExtension {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "{}: {}->{}", self.tlc, self.start, self.finish)
+        } else {
+            write!(
+                f,
+                "{:02}{:02}{}",
+                self.start + self.offset + 1,
+                self.finish + self.offset,
+                self.tlc
+            )
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub struct Extensions {
+    pub vext: Vec<RecordExtension>,
+}
+
+impl fmt::Display for Extensions {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.alternate() {
+            let mut it = self.vext.iter();
+            if let Some(ext) = it.next() {
+                write!(f, "{:#}", ext)?;
+                for ext in it {
+                    write!(f, ", {:#}", ext)?;
+                }
+            }
+        } else {
+            write!(f, "{:02}", self.vext.len())?;
+            for ext in &self.vext {
+                write!(f, "{}", ext)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+fn extension(offset: usize) -> impl Fn(&mut &str) -> PResult<RecordExtension> {
+    move |input: &mut &str| {
+        (n_digits(2), n_digits(2), n_alphanum(3))
+            .map(|(s, f, id): (usize, usize, &str)| RecordExtension {
+                start: s - offset - 1,
+                finish: f - offset,
+                tlc: id.to_string(),
+                offset,
+            })
+            .parse_next(input)
+    }
+}
+
+pub fn i_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
+    delimited(
+        'I',
+        (n_digits(2), repeat(1.., extension(35)))
+            .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len()),
+        line_ending,
+    )
+    .map(|(_, vext)| Record::I(Extensions { vext }))
+    .parse_next(input)
+}
+
+pub fn j_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
+    delimited(
+        'J',
+        (n_digits(2), repeat(1.., extension(7)))
+            .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len()),
+        line_ending,
+    )
+    .map(|(_, vext)| Record::J(Extensions { vext }))
+    .parse_next(input)
+}

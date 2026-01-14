@@ -1,0 +1,16 @@
+[package]
+name = "rustigc-tools"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "CLI tool for IGC file parsing and analysis"
+
+[[bin]]
+name = "rustigc"
+path = "src/main.rs"
+
+[dependencies]
+rustigc = { path = "../rustigc", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
