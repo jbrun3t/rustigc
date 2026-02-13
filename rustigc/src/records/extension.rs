@@ -82,39 +82,37 @@ impl fmt::Display for Extensions {
     }
 }
 
-fn extension(offset: usize) -> impl Fn(&mut &str) -> PResult<RecordExtension> {
+fn extension(offset: usize) -> impl Fn(&mut &str) -> PResult<Extensions> {
     move |input: &mut &str| {
-        (n_digits(2), n_digits(2), n_alphanum(3))
-            .map(|(s, f, id): (usize, usize, &str)| RecordExtension {
-                start: s - offset - 1,
-                finish: f - offset,
-                tlc: id.to_string(),
-                offset,
-            })
-            .parse_next(input)
+        (
+            n_digits(2),
+            repeat(
+                1..,
+                (n_digits(2), n_digits(2), n_alphanum(3))
+                    .map(move |(s, f, id): (usize, usize, &str)| RecordExtension {
+                        start: s - offset - 1,
+                        finish: f - offset,
+                        tlc: id.to_string(),
+                        offset,
+                    })
+            )
+        )
+        .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len())
+        .map(|(_, vext)| Extensions { vext })
+        .parse_next(input)
     }
 }
 
 pub fn i_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
-    delimited(
-        'I',
-        (n_digits(2), repeat(1.., extension(35)))
-            .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len()),
-        line_ending,
-    )
-    .map(|(_, vext)| Record::I(Extensions { vext }))
-    .parse_next(input)
+    delimited('I', extension(35), line_ending)
+        .map(Record::I)
+        .parse_next(input)
 }
 
 pub fn j_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
-    delimited(
-        'J',
-        (n_digits(2), repeat(1.., extension(7)))
-            .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len()),
-        line_ending,
-    )
-    .map(|(_, vext)| Record::J(Extensions { vext }))
-    .parse_next(input)
+    delimited('J', extension(7), line_ending)
+        .map(Record::J)
+        .parse_next(input)
 }
 
 #[cfg(test)]
