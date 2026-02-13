@@ -116,3 +116,74 @@ pub fn j_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
     .map(|(_, vext)| Record::J(Extensions { vext }))
     .parse_next(input)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_single_i_extension() {
+        let line = "I013638FXA\n";
+        if let Record::I(ext) = i_record.parse(line).unwrap() {
+            assert_eq!(ext.vext.len(), 1);
+            assert_eq!(ext.vext[0].tlc, "FXA");
+            assert_eq!(ext.vext[0].start, 0);
+            assert_eq!(ext.vext[0].finish, 3);
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_parse_multiple_i_extensions() {
+        let line = "I033638FXA3940SIU4143ENL\n";
+        if let Record::I(ext) = i_record.parse(line).unwrap() {
+            assert_eq!(ext.vext.len(), 3);
+            assert_eq!(ext.vext[0].tlc, "FXA");
+            assert_eq!(ext.vext[1].tlc, "SIU");
+            assert_eq!(ext.vext[2].tlc, "ENL");
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_parse_j_extension() {
+        let line = "J010811HDT\n";
+        if let Record::J(ext) = j_record.parse(line).unwrap() {
+            assert_eq!(ext.vext.len(), 1);
+            assert_eq!(ext.vext[0].tlc, "HDT");
+            assert_eq!(ext.vext[0].start, 0);
+            assert_eq!(ext.vext[0].finish, 4);
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_i_identity() {
+        let line = "I033638FXA3940SIU4143ENL\n";
+        if let Record::I(ext) = i_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", ext);
+            assert_eq!(formatted, &line[1..]);
+        } else {
+            assert!(false)
+        };
+    }
+
+    #[test]
+    fn test_j_identity() {
+        let line = "J010811HDT\n";
+        if let Record::J(ext) = j_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", ext);
+            assert_eq!(formatted, &line[1..]);
+        } else {
+            assert!(false)
+        };
+    }
+
+    #[test]
+    fn test_parse_invalid_count_mismatch() {
+        assert!(i_record.parse("I023638FXA\n").is_err());
+    }
+}
