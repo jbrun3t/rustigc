@@ -5,8 +5,8 @@ pub enum Error {
     #[error("Parse error: {0}")]
     Parse(String),
 
-    #[error("Fuck me: {0}")]
-    Fuckme(String),
+    #[error("D'oh: {0}")]
+    Doh(String),
 }
 
 impl From<ParseError<&str, ContextError>> for Error {
