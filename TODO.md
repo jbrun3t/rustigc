@@ -1,7 +1,5 @@
 # TODO:
-* Add CI
-* Clean/improve lib error.rs
-* Fix and improve cli tool
+* Improve cli tool: more option, log/raw/quiet / outformat
 * Fixup altitude on fix insertion
 * Improve python bindings for less copy
 * Consider using the GeoPoint and FlatPoint abstraction is it help
