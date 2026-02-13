@@ -159,4 +159,41 @@ mod tests {
     fn test_parse_invalid_line_too_short() {
         assert!(b_record.parse("B110135\n").is_err());
     }
+
+    #[test]
+    fn test_parse_southern_eastern_negative_alt() {
+        let line = "B1200003000000S12000000EA-0100-0200\n";
+        if let Record::B(rec) = b_record.parse(line).unwrap() {
+            assert_eq!(rec.fix.timestamp, 43200);
+            assert_eq!(rec.fix.lat, -30.0);
+            assert_eq!(rec.fix.lon, 120.0);
+            assert_eq!(rec.fix.baro_alt, -100);
+            assert_eq!(rec.fix.gnss_alt, -200);
+            assert!(rec.valid);
+        } else {
+            assert!(false)
+        };
+    }
+
+    #[test]
+    fn test_parse_with_extensions() {
+        let line = "B1200005012345N00012345WA00500005001234567890\n";
+        if let Record::B(rec) = b_record.parse(line).unwrap() {
+            assert_eq!(rec.ext, "1234567890");
+            assert_eq!(rec.fix.timestamp, 43200);
+        } else {
+            assert!(false)
+        };
+    }
+
+    #[test]
+    fn test_identity() {
+        let line = "B1200003000000N12000000EA0050000500\n";
+        if let Record::B(rec) = b_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", rec);
+            assert_eq!(formatted, &line[1..]);
+        } else {
+            assert!(false)
+        };
+    }
 }
