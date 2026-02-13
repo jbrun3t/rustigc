@@ -1,5 +1,7 @@
 # Rustigc
 
+[![CI](https://github.com/jbrun3t/rustigc/actions/workflows/ci.yml/badge.svg)](https://github.com/jbrun3t/rustigc/actions/workflows/ci.yml)
+
 Fast IGC file parser for aviation sports (gliding, paragliding, hang gliding) written in Rust.
 
 ## Components
