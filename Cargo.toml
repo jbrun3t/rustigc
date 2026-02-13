@@ -10,3 +10,10 @@ edition = "2021"
 rust-version = "1.70"
 license = "MIT"
 authors = ["Your Name <your.email@example.com>"]
+
+[profile.profiling]
+inherits = "release"
+lto = "thin"
+codegen-units = 1
+debug = true             # Full debug info for symbols
+strip = false           # Don't strip symbols
