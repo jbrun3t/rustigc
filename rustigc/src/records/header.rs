@@ -164,4 +164,25 @@ mod tests {
             assert!(false);
         }
     }
+
+    #[test]
+    fn test_parse_invalid_origin() {
+        assert!(h_record.parse("HXDTE150120\n").is_err());
+    }
+
+    #[test]
+    fn test_parse_invalid_key_non_alphanum() {
+        assert!(h_record.parse("HFD  150120\n").is_err());
+    }
+
+    #[test]
+    fn test_identity() {
+        let line = "HFDTE150120\n";
+        if let Record::H(inner) = h_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", inner);
+            assert_eq!(formatted, &line[1..]);
+        } else {
+            assert!(false)
+        };
+    }
 }
