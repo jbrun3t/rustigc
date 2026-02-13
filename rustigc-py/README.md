@@ -1,37 +1,27 @@
-# Rustigc - Python bindings
+# Rustigc - Python Bindings
 
-## Build & Test
+Python bindings for the rustigc IGC file parser.
 
+## Installation
+
+From PyPI (when published):
 ```bash
-# Create a venv (optional)
-python -m venv venv
-source venv/bin/activate
-
-Install with pip
-```bash
-pip install --upgrade pip
-pip install rustigc-py/
+pip install rustigcpy
 ```
 
-Or with maturin
-```
+From source:
+```bash
 pip install maturin
 maturin develop
 ```
 
-The python binding also come with unit tests
-```
-pip instal pytest
-python -m pytest -v
-```
-
-## Usage example
+## Usage
 
 ```python
 import rustigcpy
 
-# Read content (not file path!)
-with open("track.igc") as f:
+# Read IGC file (pass content, not file path)
+with open("flight.igc") as f:
     content = f.read()
 
 # Parse
@@ -40,23 +30,48 @@ log = rustigcpy.Log.from_string(content)
 # Access metadata
 print(f"Pilot: {log.pilot_name()}")
 print(f"Glider: {log.glider_type()}")
-print(f"Date: {track.date()}")   # Return the raw DDMMYY
+print(f"Date: {log.date()}")  # Returns raw DDMMYY string
 print(f"Fixes: {len(log)}")
 
-# Get fixes (simple types - all standard units)
-for fix in track.fixes():
-    t = fix.timestamp  # number of second since the beginning of UTC day.
-    lat = fix.latitude  # Decimal degrees
-    lon = fix.longitude  # Decimal degrees
-    alt = fix.gnss_altitude  # Meters
-    print(f"{t}s - {lat:.5f}, {lon:.5f} @ {alt}m")
+# Access individual fixes by index
+first_fix = log[0]
+last_fix = log[-1]  # Negative indexing supported
 
-# Detect takeoff/landing
-if track.takeoff:
-    print(f"Takeoff at {track.takeoff.timestamp()}s")
-if track.landing:
-    print(f"Landing at {track.landing.timestamp()}s")
-````
+# Iterate over all fixes
+for fix in log.fixes():
+    print(f"{fix.timestamp}s - {fix.latitude:.5f}, {fix.longitude:.5f} @ {fix.gnss_altitude}m")
+    # fix.timestamp: seconds since midnight (0-86399)
+    # fix.latitude: decimal degrees
+    # fix.longitude: decimal degrees
+    # fix.gnss_altitude: meters
+    # fix.baro_altitude: meters (barometric)
+
+# Detect takeoff/landing (returns fix indices)
+if log.takeoff is not None:
+    takeoff_fix = log[log.takeoff]
+    print(f"Takeoff at {takeoff_fix.timestamp}s")
+
+if log.landing is not None:
+    landing_fix = log[log.landing]
+    print(f"Landing at {landing_fix.timestamp}s")
+```
+
+## Development
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install development dependencies
+pip install maturin pytest
+
+# Build and install in development mode
+maturin develop
+
+# Run tests
+python -m pytest -v
+```
 
 ## License
 
