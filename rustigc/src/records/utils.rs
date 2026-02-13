@@ -70,7 +70,7 @@ pub fn latitude_to_igc(input: f64) -> String {
     let lat: u32 = (input.abs() * 60000.0) as u32;
     let (d, m, mm) = latlon_to_igc(lat);
     format!(
-        "{:02}{:02}{:02}{}",
+        "{:02}{:02}{:03}{}",
         d,
         m,
         mm,
@@ -89,7 +89,7 @@ pub fn longitude_to_igc(input: f64) -> String {
     let lon: u32 = (input.abs() * 60000.0) as u32;
     let (d, m, mm) = latlon_to_igc(lon);
     format!(
-        "{:03}{:02}{:02}{}",
+        "{:03}{:02}{:03}{}",
         d,
         m,
         mm,
