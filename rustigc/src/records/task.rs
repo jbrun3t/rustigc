@@ -1,3 +1,32 @@
+//! C-record (task declaration) parser
+//!
+//! C-records define the declared task for a flight. Unlike other records, C-records
+//! span multiple lines to represent the complete task declaration.
+//!
+//! Format:
+//! - Header line: CDDMMYYHHMMSSDDMMYY<4-digit-obsolete><nn><text>
+//!   - C: Record type
+//!   - DDMMYYHHMMSS: Declaration timestamp (12 digits)
+//!   - DDMMYY: Flight date (6 digits)
+//!   - 4 digits: Obsolete field (ignored)
+//!   - nn: Number of turnpoints (2 digits, excludes start/finish but spec is ambiguous)
+//!   - text: Task description
+//!
+//! - Turnpoint lines (one per turnpoint): CDDMMmmmN/SDDDMMmmmE/W<text>
+//!   - C: Record type
+//!   - DDMMmmmN/S: Latitude
+//!   - DDDMMmmmE/W: Longitude
+//!   - text: Turnpoint name/description
+//!
+//! Example:
+//! ```text
+//! C15062411010115062400000203Task description
+//! C5230000N00030000WTakeoff
+//! C5240000N00040000WTP1
+//! C5250000N00050000WTP2
+//! C5230000N00030000WLanding
+//! ```
+
 use std::fmt;
 
 use winnow::combinator::repeat;
@@ -142,4 +171,70 @@ pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
             },
         )
         .parse_next(input)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_task_real_example() {
+        // From complex_example_lxn.igc
+        let input = b"C050822090459000000000502\n\
+                      C0000000N00000000E\n\
+                      C5111643N00102000WLasham Finish North\n\
+                      C5204577N00307663WHay-on-wye\n\
+                      C5258317N00003531WBoston\n\
+                      C5111643N00102000WLasham Finish North\n\
+                      C0000000N00000000E\n";
+
+        if let Record::C(task) = c_record.parse(input).unwrap() {
+            assert_eq!(task.declaration, "050822090459");
+            assert_eq!(task.flight, "000000");
+            assert_eq!(task.text, "");
+            assert_eq!(task.turnpoints.len(), 6);
+
+            assert_eq!(task.turnpoints[0].text, "");
+            assert_eq!(task.turnpoints[0].lat, 0.0);
+            assert_eq!(task.turnpoints[0].lon, 0.0);
+
+            assert_eq!(task.turnpoints[1].text, "Lasham Finish North");
+            assert!((task.turnpoints[1].lat - 51.194050).abs() < 0.000001);
+            assert!((task.turnpoints[1].lon - (-1.033333)).abs() < 0.000001);
+
+            assert_eq!(task.turnpoints[4].text, "Lasham Finish North");
+            assert!((task.turnpoints[4].lat - 51.194050).abs() < 0.000001);
+            assert!((task.turnpoints[4].lon - (-1.033333)).abs() < 0.000001);
+        } else {
+            panic!("Expected Record::C");
+        }
+    }
+
+    #[test]
+    fn test_parse_turnpoint() {
+        let input = b"C5206343N00006198WTurnpoint Name\n";
+        let tp = turnpoint.parse(input).unwrap();
+
+        assert!((tp.lat - 52.105716667).abs() < 0.000001);
+        assert!((tp.lon - (-0.1033)).abs() < 0.000001);
+        assert_eq!(tp.text, "Turnpoint Name");
+    }
+
+    #[test]
+    fn test_parse_bad_turnpoint_invalid_lat() {
+        let input = b"C9506343N00006198WBad latitude\n";
+        assert!(turnpoint.parse(input).is_err());
+    }
+
+    #[test]
+    fn test_parse_bad_header_too_short() {
+        let input = b"C05082209045900000\n";
+        assert!(c_record.parse(input).is_err());
+    }
+
+    #[test]
+    fn test_parse_bad_header_no_turnpoints() {
+        let input = b"C050822090459000000000502Task without turnpoints\n";
+        assert!(c_record.parse(input).is_err());
+    }
 }
