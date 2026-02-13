@@ -31,7 +31,7 @@ rustigc/
 ```rust
 use rustigc::Log;
 
-let content = std::fs::read_to_string("flight.igc")?;
+let content = std::fs::read("flight.igc")?;
 let log = Log::new(&content)?;
 
 println!("Pilot: {}", log.headers["PLT"].text);
@@ -45,8 +45,8 @@ See [rustigc/README.md](rustigc/README.md)
 ```python
 import rustigcpy
 
-with open("flight.igc") as f:
-    log = rustigcpy.Log.from_string(f.read())
+with open("flight.igc", "rb") as f:
+    log = rustigcpy.Log.from_bytes(f.read())
 
 print(f"Pilot: {log.pilot_name()}")
 print(f"Fixes: {len(log)}")
@@ -62,6 +62,9 @@ rustigc < flight.igc
 
 # Or with pipe
 cat flight.igc | rustigc > flight.json
+
+# Quiet mode for profiling (no output)
+rustigc --quiet < flight.igc
 ```
 
 See [rustigc-tools/README.md](rustigc-tools/README.md)

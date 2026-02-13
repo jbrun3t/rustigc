@@ -21,6 +21,9 @@ cat flight.igc | rustigc
 
 # Save to file
 rustigc < flight.igc > flight.json
+
+# Quiet mode (no output, useful for profiling)
+rustigc --quiet < flight.igc
 ```
 
 ## Output Format

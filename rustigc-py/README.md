@@ -20,12 +20,12 @@ maturin develop
 ```python
 import rustigcpy
 
-# Read IGC file (pass content, not file path)
-with open("flight.igc") as f:
+# Read IGC file as bytes (pass content, not file path)
+with open("flight.igc", "rb") as f:
     content = f.read()
 
 # Parse
-log = rustigcpy.Log.from_string(content)
+log = rustigcpy.Log.from_bytes(content)
 
 # Access metadata
 print(f"Pilot: {log.pilot_name()}")

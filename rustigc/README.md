@@ -22,7 +22,7 @@ rustigc = { version = "0.1", features = ["serde"] }
 ```rust
 use rustigc::Log;
 
-let content = std::fs::read_to_string("flight.igc")?;
+let content = std::fs::read("flight.igc")?;
 let log = Log::new(&content)?;
 
 // Access metadata
@@ -46,12 +46,12 @@ for fix in &log.track {
 
 ### Parsing with RawLog
 
-`RawLog` keeps references to the original string for minimal allocations:
+`RawLog` keeps references to the original bytes for minimal allocations:
 
 ```rust
 use rustigc::RawLog;
 
-let content = std::fs::read_to_string("flight.igc")?;
+let content = std::fs::read("flight.igc")?;
 let raw = RawLog::new(&content)?;
 
 // Print back valid IGC (roundtrip)
