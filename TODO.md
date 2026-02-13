@@ -1,11 +1,6 @@
 # TODO:
-
-* Clean up and improve documentation
-* Squash early commit history
 * Add CI
 * Clean/improve lib error.rs
-* Improve inline documenation in record
-* Improve unit test in the library
 * Fix and improve cli tool
 * Fixup altitude on fix insertion
 * Improve python bindings for less copy
