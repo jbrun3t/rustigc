@@ -76,4 +76,30 @@ mod tests {
             assert!(false)
         }
     }
+
+    #[test]
+    fn test_recorder_longer_uid() {
+        if let Record::A(rec) = a_record.parse("AGCS0123456789ABCD\n").unwrap() {
+            assert_eq!(rec.manufacturer, "GCS");
+            assert_eq!(rec.uid, "0123456789ABCD");
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_recorder_invalid_manufacturer() {
+        assert!(a_record.parse("AF A1BX\n").is_err());
+    }
+
+    #[test]
+    fn test_identity() {
+        let line = "AFLA1BX\n";
+        if let Record::A(rec) = a_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", rec);
+            assert_eq!(formatted, &line[1..]);
+        } else {
+            assert!(false)
+        };
+    }
 }
