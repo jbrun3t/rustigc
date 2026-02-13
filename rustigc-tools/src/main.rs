@@ -11,13 +11,23 @@ fn main() -> io::Result<()> {
         std::process::exit(0);
     }
 
-    let raw =
-        Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+    let log = Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
+    if let Err(e) = write_output(&log) {
+        // Broken pipe is expected when piping to head, less, etc.
+        // Exit silently in that case
+        if e.kind() != io::ErrorKind::BrokenPipe {
+            return Err(e);
+        }
+    }
+
+    Ok(())
+}
+
+fn write_output(log: &Log) -> io::Result<()> {
     let mut stdout = io::stdout();
-    serde_json::to_writer_pretty(&mut stdout, &raw)?;
+    serde_json::to_writer_pretty(&mut stdout, log)?;
     writeln!(stdout)?;
     stdout.flush()?;
-
     Ok(())
 }
