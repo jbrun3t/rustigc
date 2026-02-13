@@ -72,10 +72,7 @@ impl PyLog {
         let data = rustigc::FRawData::new(&inner);
         let flight = data.phases();
 
-        Ok(PyLog {
-            inner,
-            flight,
-        })
+        Ok(PyLog { inner, flight })
     }
 
     /// Get the number of fixes

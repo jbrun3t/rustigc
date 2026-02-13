@@ -105,6 +105,9 @@ impl<'a> Record<'a> {
     }
 
     pub fn has_timestamp(&self) -> bool {
-        matches!(self, Record::B(_) | Record::E(_) | Record::F(_) | Record::K(_))
+        matches!(
+            self,
+            Record::B(_) | Record::E(_) | Record::F(_) | Record::K(_)
+        )
     }
 }

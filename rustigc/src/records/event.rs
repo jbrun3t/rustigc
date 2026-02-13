@@ -78,7 +78,11 @@ impl<'a> fmt::Display for TimedEvent<'a> {
 }
 
 fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
-    move |input: &mut &[u8]| till_line_ending.map(|text| TextEvent { text }).parse_next(input)
+    move |input: &mut &[u8]| {
+        till_line_ending
+            .map(|text| TextEvent { text })
+            .parse_next(input)
+    }
 }
 
 fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {

@@ -88,18 +88,19 @@ fn extension(offset: usize) -> impl Fn(&mut &[u8]) -> PResult<Extensions> {
             n_digits(2),
             repeat(
                 1..,
-                (n_digits(2), n_digits(2), n_alphanum(3))
-                    .map(move |(s, f, id): (usize, usize, &[u8])| RecordExtension {
+                (n_digits(2), n_digits(2), n_alphanum(3)).map(
+                    move |(s, f, id): (usize, usize, &[u8])| RecordExtension {
                         start: s - offset - 1,
                         finish: f - offset,
                         tlc: std::str::from_utf8(id).unwrap().to_string(),
                         offset,
-                    })
-            )
+                    },
+                ),
+            ),
         )
-        .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len())
-        .map(|(_, vext)| Extensions { vext })
-        .parse_next(input)
+            .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len())
+            .map(|(_, vext)| Extensions { vext })
+            .parse_next(input)
     }
 }
 

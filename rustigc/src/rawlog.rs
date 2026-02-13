@@ -72,7 +72,9 @@ impl<'a> From<Log> for RawLog<'a> {
         }
 
         // Finally a fake G record just in case
-        records.push(Record::G(TextEvent { text: b"RUSTIGCLOGISNOTVALID" }));
+        records.push(Record::G(TextEvent {
+            text: b"RUSTIGCLOGISNOTVALID",
+        }));
 
         Self { records }
     }

@@ -67,11 +67,7 @@ impl<'a> fmt::Display for RawFix<'a> {
                 "{} - {} - {}",
                 if self.valid { "OK" } else { "KO" },
                 self.fix,
-                if self.ext.len() == 2 {
-                    "none"
-                } else {
-                    ext
-                }
+                if self.ext.len() == 2 { "none" } else { ext }
             )?;
         } else {
             write!(
