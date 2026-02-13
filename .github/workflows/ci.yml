@@ -55,15 +55,20 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install maturin
-        run: pip install maturin pytest
+      - name: Create virtualenv and install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install maturin pytest
 
       - name: Build Python bindings
         run: |
+          source venv/bin/activate
           cd rustigc-py
           maturin develop
 
       - name: Run Python tests
         run: |
+          source venv/bin/activate
           cd rustigc-py
           python -m pytest -v
