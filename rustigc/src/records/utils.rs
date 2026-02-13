@@ -55,7 +55,7 @@ fn latlon(islat: bool) -> impl Fn(&mut &str) -> PResult<u32> {
 
 fn latlon_to_igc(input: u32) -> (u32, u32, u32) {
     let (d, rem) = (input / 60000, input % 60000);
-    let (m, mm) = (rem / 1000, rem % 60000);
+    let (m, mm) = (rem / 1000, rem % 1000);
     (d, m, mm)
 }
 
