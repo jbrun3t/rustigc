@@ -24,19 +24,20 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
 pub enum Record<'a> {
     A(Recorder),
     B(RawFix<'a>),
     C(Task),
-    D(&'a str),
+    D(TextEvent<'a>),
     E(TimedEvent<'a>),
     F(TimedEvent<'a>),
-    G(&'a str),
+    G(TextEvent<'a>),
     H(Header),
     I(Extensions),
     J(Extensions),
     K(TimedEvent<'a>),
-    L(&'a str),
+    L(TextEvent<'a>),
 }
 
 impl<'a> fmt::Display for Record<'a> {

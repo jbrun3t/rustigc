@@ -10,7 +10,7 @@ def test_import():
 
 def test_parse_minimal_igc():
     """Test parsing a minimal IGC file"""
-    content = """AFLA1BX
+    content = b"""AFLA1BX
 HFDTE150120
 HFPLTPILOT:John Smith
 HFGTYGLIDERTYPE:ASW 27
@@ -18,7 +18,7 @@ B1101355206343N00006198WA0058700558
 B1101365206345N00006200WA0058900560
 """
 
-    log = rustigcpy.Log.from_string(content)
+    log = rustigcpy.Log.from_bytes(content)
 
     # Test metadata
     assert log.pilot_name() == "John Smith"
@@ -53,13 +53,13 @@ B1101365206345N00006200WA0058900560
 
 def test_fixes_list():
     """Test getting all fixes as a list"""
-    content = """AFLA1BX
+    content = b"""AFLA1BX
 HFDTE150120
 B1101355206343N00006198WA0058700558
 B1101365206345N00006200WA0058900560
 """
 
-    log = rustigcpy.Log.from_string(content)
+    log = rustigcpy.Log.from_bytes(content)
     fixes = log.fixes()
 
     assert len(fixes) == 2
@@ -70,16 +70,16 @@ B1101365206345N00006200WA0058900560
 def test_invalid_file():
     """Test parsing an invalid IGC file"""
     with pytest.raises(ValueError, match="Failed to parse IGC file"):
-        rustigcpy.Log.from_string("INVALID CONTENT")
+        rustigcpy.Log.from_bytes(b"INVALID CONTENT")
 
 
 def test_index_out_of_range():
     """Test accessing fix with invalid index"""
-    content = """AFLA1BX
+    content = b"""AFLA1BX
 B1101355206343N00006198WA0058700558
 """
 
-    log = rustigcpy.Log.from_string(content)
+    log = rustigcpy.Log.from_bytes(content)
 
     with pytest.raises(ValueError, match="Index out of range"):
         _ = log[10]
@@ -90,13 +90,13 @@ B1101355206343N00006198WA0058700558
 
 def test_repr():
     """Test __repr__ methods"""
-    content = """AFLA1BX
+    content = b"""AFLA1BX
 HFDTE150120
 HFPLTPILOT:Test
 B1101355206343N00006198WA0058700558
 """
 
-    log = rustigcpy.Log.from_string(content)
+    log = rustigcpy.Log.from_bytes(content)
 
     # Test Log repr
     repr_str = repr(log)
@@ -109,7 +109,7 @@ B1101355206343N00006198WA0058700558
 
     
 def test_real_igc(real_content):
-    log = rustigcpy.Log.from_string(real_content)
+    log = rustigcpy.Log.from_bytes(real_content)
 
     assert log.takeoff is not None
     assert log.landing is not None

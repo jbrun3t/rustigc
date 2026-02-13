@@ -12,7 +12,7 @@ fn fixture_test_dir() -> PathBuf {
 }
 
 fn fixture_parse_file(path: &PathBuf) -> Log {
-    let content = fs::read_to_string(path)
+    let content = fs::read(path)
         .unwrap_or_else(|e| panic!("Failed to read {:?}: {}", *path, e));
 
     let log = Log::new(&content)

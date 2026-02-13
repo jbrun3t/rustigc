@@ -21,7 +21,7 @@ pub struct RawLog<'a> {
 }
 
 impl<'a> RawLog<'a> {
-    pub fn new(input: &'a str) -> Result<Self> {
+    pub fn new(input: &'a [u8]) -> Result<Self> {
         let mut offset: u32 = 0;
         let mut lastts: u32 = 0;
         let records = repeat(
@@ -65,14 +65,14 @@ impl<'a> From<Log> for RawLog<'a> {
                 RawFix {
                     fix,
                     valid: true,
-                    ext: "",
+                    ext: b"",
                 }
                 .into(),
             );
         }
 
         // Finally a fake G record just in case
-        records.push(Record::G("RUSTIGCLOGISNOTVALID"));
+        records.push(Record::G(TextEvent { text: b"RUSTIGCLOGISNOTVALID" }));
 
         Self { records }
     }
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_parse_minimal_igc_file() {
-        let content = "AFLA1BX\n\
+        let content = b"AFLA1BX\n\
                        HFDTE150120\n\
                        HFPLTPILOT:Tripoux Robert\n\
                        HFGTYGLIDERTYPE:Piegon 12\n\

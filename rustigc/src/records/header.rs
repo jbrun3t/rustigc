@@ -40,11 +40,11 @@ pub enum HeaderOrigin {
 }
 
 impl HeaderOrigin {
-    const fn as_char(&self) -> char {
+    const fn as_byte(&self) -> u8 {
         match self {
-            HeaderOrigin::FlightRecorder => 'F',
-            HeaderOrigin::Observer => 'O',
-            HeaderOrigin::Pilot => 'P',
+            HeaderOrigin::FlightRecorder => b'F',
+            HeaderOrigin::Observer => b'O',
+            HeaderOrigin::Pilot => b'P',
         }
     }
 
@@ -62,7 +62,7 @@ impl fmt::Display for HeaderOrigin {
         if f.alternate() {
             write!(f, "{}", self.as_str())
         } else {
-            write!(f, "{}", self.as_char())
+            write!(f, "{}", self.as_byte() as char)
         }
     }
 }
@@ -106,29 +106,29 @@ impl<'a> From<Header> for Record<'a> {
     }
 }
 
-fn horigin(input: &mut &str) -> PResult<HeaderOrigin> {
+fn horigin(input: &mut &[u8]) -> PResult<HeaderOrigin> {
     alt((
-        (HeaderOrigin::FlightRecorder.as_char()).value(HeaderOrigin::FlightRecorder),
-        (HeaderOrigin::Observer.as_char()).value(HeaderOrigin::Observer),
-        (HeaderOrigin::Pilot.as_char()).value(HeaderOrigin::Pilot),
+        (HeaderOrigin::FlightRecorder.as_byte()).value(HeaderOrigin::FlightRecorder),
+        (HeaderOrigin::Observer.as_byte()).value(HeaderOrigin::Observer),
+        (HeaderOrigin::Pilot.as_byte()).value(HeaderOrigin::Pilot),
     ))
     .parse_next(input)
 }
 
-fn hkey<'a>(input: &mut &'a str) -> PResult<&'a str> {
-    (n_alphanum(3), opt((alphanumeric1, (':'))))
-        .map(|(m, _): (&str, _)| m)
+fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
+    (n_alphanum(3), opt((alphanumeric1, (b':'))))
+        .map(|(m, _): (&[u8], _)| m)
         .parse_next(input)
 }
 
 /// Provide a tuple with ( HeaderID, HeaderData ) ready for insertion in hashmap
-pub fn h_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('H', (horigin, hkey, till_line_ending), line_ending)
+pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'H', (horigin, hkey, till_line_ending), line_ending)
         .map(|(origin, k, v)| {
             Header {
-                key: k.to_string(),
+                key: std::str::from_utf8(k).unwrap().to_string(),
                 value: HeaderData {
-                    text: v.trim().to_string(),
+                    text: std::str::from_utf8(v).unwrap().trim().to_string(),
                     origin,
                 },
             }
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_parse_valid_h_record() {
-        let line = "HFDTE150120\n";
+        let line = b"HFDTE150120\n";
         if let Record::H(inner) = h_record.parse(line).unwrap() {
             assert_eq!(inner.key, "DTE");
             assert_eq!(inner.value.text, "150120");
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_parse_valid_longh_record() {
-        let line = "HFPLTPILOTINCHARGE:Tripoux Robert\n";
+        let line = b"HFPLTPILOTINCHARGE:Tripoux Robert\n";
         if let Record::H(inner) = h_record.parse(line).unwrap() {
             assert_eq!(inner.key, "PLT");
             assert_eq!(inner.value.text, "Tripoux Robert");
@@ -167,20 +167,20 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_origin() {
-        assert!(h_record.parse("HXDTE150120\n").is_err());
+        assert!(h_record.parse(b"HXDTE150120\n").is_err());
     }
 
     #[test]
     fn test_parse_invalid_key_non_alphanum() {
-        assert!(h_record.parse("HFD  150120\n").is_err());
+        assert!(h_record.parse(b"HFD  150120\n").is_err());
     }
 
     #[test]
     fn test_identity() {
-        let line = "HFDTE150120\n";
+        let line = b"HFDTE150120\n";
         if let Record::H(inner) = h_record.parse(line).unwrap() {
             let formatted = format!("{}\n", inner);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };

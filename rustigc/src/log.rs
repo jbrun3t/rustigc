@@ -74,7 +74,7 @@ impl<'a> From<RawLog<'a>> for Log {
 }
 
 impl Log {
-    pub fn new(input: &str) -> Result<Self> {
+    pub fn new(input: &[u8]) -> Result<Self> {
         let raw = RawLog::new(input)?;
         Ok(raw.into())
     }
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_parse_minimal_igc_file() {
-        let content = "AFLA1BX\n\
+        let content = b"AFLA1BX\n\
                        HFDTE150120\n\
                        HFPLTPILOT:Tripoux Robert\n\
                        HFGTYGLIDERTYPE:Piegon 12\n\

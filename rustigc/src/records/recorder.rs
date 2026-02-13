@@ -50,12 +50,12 @@ impl<'a> From<Recorder> for Record<'a> {
     }
 }
 
-pub fn a_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
-    delimited('A', (n_alphanum(3), till_line_ending), line_ending)
-        .map(|(m, u): (&str, &str)| {
+pub fn a_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
+    delimited(b'A', (n_alphanum(3), till_line_ending), line_ending)
+        .map(|(m, u): (&[u8], &[u8])| {
             Recorder {
-                manufacturer: m.to_string(),
-                uid: u.to_string(),
+                manufacturer: std::str::from_utf8(m).unwrap().to_string(),
+                uid: std::str::from_utf8(u).unwrap().to_string(),
                 data: None,
             }
             .into()
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_recorder_minimal() {
-        if let Record::A(rec) = a_record.parse("AFLA1BX\n").unwrap() {
+        if let Record::A(rec) = a_record.parse(b"AFLA1BX\n").unwrap() {
             assert_eq!(rec.manufacturer, "FLA");
             assert_eq!(rec.uid, "1BX");
         } else {
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_recorder_longer_uid() {
-        if let Record::A(rec) = a_record.parse("AGCS0123456789ABCD\n").unwrap() {
+        if let Record::A(rec) = a_record.parse(b"AGCS0123456789ABCD\n").unwrap() {
             assert_eq!(rec.manufacturer, "GCS");
             assert_eq!(rec.uid, "0123456789ABCD");
         } else {
@@ -89,15 +89,15 @@ mod tests {
 
     #[test]
     fn test_recorder_invalid_manufacturer() {
-        assert!(a_record.parse("AF A1BX\n").is_err());
+        assert!(a_record.parse(b"AF A1BX\n").is_err());
     }
 
     #[test]
     fn test_identity() {
-        let line = "AFLA1BX\n";
+        let line = b"AFLA1BX\n";
         if let Record::A(rec) = a_record.parse(line).unwrap() {
             let formatted = format!("{}\n", rec);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };

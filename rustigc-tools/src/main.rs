@@ -1,10 +1,22 @@
+use clap::Parser;
 use rustigc::*;
 use std::io::Write;
 use std::io::{self, Read};
 
+#[derive(Parser, Debug)]
+#[command(name = "rustigc")]
+#[command(about = "Parse IGC files", long_about = None)]
+struct Args {
+    /// Suppress all output (useful for profiling)
+    #[arg(short, long)]
+    quiet: bool,
+}
+
 fn main() -> io::Result<()> {
-    let mut content = String::new();
-    let bytes_read = io::stdin().lock().read_to_string(&mut content)?;
+    let args = Args::parse();
+
+    let mut content = Vec::new();
+    let bytes_read = io::stdin().lock().read_to_end(&mut content)?;
 
     if bytes_read == 0 {
         eprintln!("No input on stdin");
@@ -13,11 +25,13 @@ fn main() -> io::Result<()> {
 
     let log = Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
-    if let Err(e) = write_output(&log) {
-        // Broken pipe is expected when piping to head, less, etc.
-        // Exit silently in that case
-        if e.kind() != io::ErrorKind::BrokenPipe {
-            return Err(e);
+    if !args.quiet {
+        if let Err(e) = write_output(&log) {
+            // Broken pipe is expected when piping to head, less, etc.
+            // Exit silently in that case
+            if e.kind() != io::ErrorKind::BrokenPipe {
+                return Err(e);
+            }
         }
     }
 

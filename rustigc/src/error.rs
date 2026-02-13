@@ -15,6 +15,12 @@ impl From<ParseError<&str, ContextError>> for Error {
     }
 }
 
+impl From<ParseError<&[u8], ContextError>> for Error {
+    fn from(err: ParseError<&[u8], ContextError>) -> Self {
+        Error::Parse(err.to_string())
+    }
+}
+
 impl From<ContextError> for Error {
     fn from(err: ContextError) -> Self {
         Error::Parse(err.to_string())

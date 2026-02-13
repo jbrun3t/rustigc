@@ -92,12 +92,12 @@ impl<'a> From<Task> for Record<'a> {
     }
 }
 
-pub fn turnpoint(input: &mut &str) -> PResult<TurnPoint> {
-    delimited('C', (latitude, longitude, till_line_ending), line_ending)
-        .map(|(ns, ew, t): (_, _, &str)| TurnPoint {
+pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
+    delimited(b'C', (latitude, longitude, till_line_ending), line_ending)
+        .map(|(ns, ew, t): (_, _, &[u8])| TurnPoint {
             lat: (ns as f64) / 60000.0,
             lon: (ew as f64) / 60000.0,
-            text: t.trim().to_string(),
+            text: std::str::from_utf8(t).unwrap().trim().to_string(),
         })
         .parse_next(input)
 }
@@ -115,10 +115,10 @@ pub fn turnpoint(input: &mut &str) -> PResult<TurnPoint> {
 // the number of TP found could be NN + 2, or NN + 4 depending on
 // the FR and Task entered. The info is not needed actually, just
 // ignore it
-pub fn c_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
+pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     (
         delimited(
-            'C',
+            b'C',
             (
                 take_while(12..=12, AsChar::is_dec_digit),
                 take_while(6..=6, AsChar::is_dec_digit),
@@ -131,11 +131,11 @@ pub fn c_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
         repeat(1.., turnpoint),
     )
         .map(
-            |((d, f, _, _, t), turnpoints): ((&str, &str, _, _, &str), _)| {
+            |((d, f, _, _, t), turnpoints): ((&[u8], &[u8], _, _, &[u8]), _)| {
                 Task {
-                    declaration: d.to_string(),
-                    flight: f.to_string(),
-                    text: t.trim().to_string(),
+                    declaration: std::str::from_utf8(d).unwrap().to_string(),
+                    flight: std::str::from_utf8(f).unwrap().to_string(),
+                    text: std::str::from_utf8(t).unwrap().trim().to_string(),
                     turnpoints,
                 }
                 .into()

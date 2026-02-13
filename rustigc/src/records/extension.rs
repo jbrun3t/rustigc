@@ -82,17 +82,17 @@ impl fmt::Display for Extensions {
     }
 }
 
-fn extension(offset: usize) -> impl Fn(&mut &str) -> PResult<Extensions> {
-    move |input: &mut &str| {
+fn extension(offset: usize) -> impl Fn(&mut &[u8]) -> PResult<Extensions> {
+    move |input: &mut &[u8]| {
         (
             n_digits(2),
             repeat(
                 1..,
                 (n_digits(2), n_digits(2), n_alphanum(3))
-                    .map(move |(s, f, id): (usize, usize, &str)| RecordExtension {
+                    .map(move |(s, f, id): (usize, usize, &[u8])| RecordExtension {
                         start: s - offset - 1,
                         finish: f - offset,
-                        tlc: id.to_string(),
+                        tlc: std::str::from_utf8(id).unwrap().to_string(),
                         offset,
                     })
             )
@@ -103,14 +103,14 @@ fn extension(offset: usize) -> impl Fn(&mut &str) -> PResult<Extensions> {
     }
 }
 
-pub fn i_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
-    delimited('I', extension(35), line_ending)
+pub fn i_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
+    delimited(b'I', extension(35), line_ending)
         .map(Record::I)
         .parse_next(input)
 }
 
-pub fn j_record<'a>(input: &mut &str) -> PResult<Record<'a>> {
-    delimited('J', extension(7), line_ending)
+pub fn j_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
+    delimited(b'J', extension(7), line_ending)
         .map(Record::J)
         .parse_next(input)
 }
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_parse_single_i_extension() {
-        let line = "I013638FXA\n";
+        let line = b"I013638FXA\n";
         if let Record::I(ext) = i_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 1);
             assert_eq!(ext.vext[0].tlc, "FXA");
@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_parse_multiple_i_extensions() {
-        let line = "I033638FXA3940SIU4143ENL\n";
+        let line = b"I033638FXA3940SIU4143ENL\n";
         if let Record::I(ext) = i_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 3);
             assert_eq!(ext.vext[0].tlc, "FXA");
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_parse_j_extension() {
-        let line = "J010811HDT\n";
+        let line = b"J010811HDT\n";
         if let Record::J(ext) = j_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 1);
             assert_eq!(ext.vext[0].tlc, "HDT");
@@ -160,10 +160,10 @@ mod tests {
 
     #[test]
     fn test_i_identity() {
-        let line = "I033638FXA3940SIU4143ENL\n";
+        let line = b"I033638FXA3940SIU4143ENL\n";
         if let Record::I(ext) = i_record.parse(line).unwrap() {
             let formatted = format!("{}\n", ext);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -171,10 +171,10 @@ mod tests {
 
     #[test]
     fn test_j_identity() {
-        let line = "J010811HDT\n";
+        let line = b"J010811HDT\n";
         if let Record::J(ext) = j_record.parse(line).unwrap() {
             let formatted = format!("{}\n", ext);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -182,6 +182,6 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_count_mismatch() {
-        assert!(i_record.parse("I023638FXA\n").is_err());
+        assert!(i_record.parse(b"I023638FXA\n").is_err());
     }
 }

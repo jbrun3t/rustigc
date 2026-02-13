@@ -49,65 +49,78 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub struct TextEvent<'a> {
+    pub text: &'a [u8],
+}
+
+impl<'a> fmt::Display for TextEvent<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", std::str::from_utf8(self.text).unwrap())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct TimedEvent<'a> {
     pub timestamp: u32,
-    pub text: &'a str,
+    pub text: &'a [u8],
 }
 
 impl<'a> fmt::Display for TimedEvent<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let text = std::str::from_utf8(self.text).unwrap();
         if f.alternate() {
-            write!(f, "{}: {}", self.timestamp, self.text)
+            write!(f, "{}: {}", self.timestamp, text)
         } else {
-            write!(f, "{}{}", ts_to_igc(self.timestamp), self.text)
+            write!(f, "{}{}", ts_to_igc(self.timestamp), text)
         }
     }
 }
 
-fn text_event<'a>() -> impl Fn(&mut &'a str) -> PResult<&'a str> {
-    move |input: &mut &str| till_line_ending.parse_next(input)
+fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
+    move |input: &mut &[u8]| till_line_ending.map(|text| TextEvent { text }).parse_next(input)
 }
 
-fn timed_event<'a>() -> impl Fn(&mut &'a str) -> PResult<TimedEvent<'a>> {
-    move |input: &mut &str| {
+fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
+    move |input: &mut &[u8]| {
         (ts_to_sec, till_line_ending)
-            .map(|(timestamp, text): (_, &str)| TimedEvent { timestamp, text })
+            .map(|(timestamp, text): (_, &[u8])| TimedEvent { timestamp, text })
             .parse_next(input)
     }
 }
 
-pub fn d_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('D', text_event(), line_ending)
+pub fn d_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'D', text_event(), line_ending)
         .map(Record::D)
         .parse_next(input)
 }
 
-pub fn l_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('L', text_event(), line_ending)
+pub fn l_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'L', text_event(), line_ending)
         .map(Record::L)
         .parse_next(input)
 }
 
-pub fn g_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('G', text_event(), line_ending)
+pub fn g_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'G', text_event(), line_ending)
         .map(Record::G)
         .parse_next(input)
 }
 
-pub fn e_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('E', timed_event(), line_ending)
+pub fn e_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'E', timed_event(), line_ending)
         .map(Record::E)
         .parse_next(input)
 }
 
-pub fn f_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('F', timed_event(), line_ending)
+pub fn f_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'F', timed_event(), line_ending)
         .map(Record::F)
         .parse_next(input)
 }
 
-pub fn k_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('K', timed_event(), line_ending)
+pub fn k_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'K', timed_event(), line_ending)
         .map(Record::K)
         .parse_next(input)
 }
@@ -118,9 +131,9 @@ mod tests {
 
     #[test]
     fn test_parse_l_record() {
-        let line = "LXGD GpsDumpLinux version 0.27\n";
-        if let Record::L(text) = l_record.parse(line).unwrap() {
-            assert_eq!(text, "XGD GpsDumpLinux version 0.27");
+        let line = b"LXGD GpsDumpLinux version 0.27\n";
+        if let Record::L(event) = l_record.parse(line).unwrap() {
+            assert_eq!(event.text, b"XGD GpsDumpLinux version 0.27");
         } else {
             assert!(false)
         }
@@ -128,9 +141,9 @@ mod tests {
 
     #[test]
     fn test_parse_g_record() {
-        let line = "G351E2000FC0D9C1B\n";
-        if let Record::G(text) = g_record.parse(line).unwrap() {
-            assert_eq!(text, "351E2000FC0D9C1B");
+        let line = b"G351E2000FC0D9C1B\n";
+        if let Record::G(event) = g_record.parse(line).unwrap() {
+            assert_eq!(event.text, b"351E2000FC0D9C1B");
         } else {
             assert!(false)
         }
@@ -138,10 +151,10 @@ mod tests {
 
     #[test]
     fn test_parse_e_record() {
-        let line = "E101409PEV\n";
+        let line = b"E101409PEV\n";
         if let Record::E(event) = e_record.parse(line).unwrap() {
             assert_eq!(event.timestamp, 36849);
-            assert_eq!(event.text, "PEV");
+            assert_eq!(event.text, b"PEV");
         } else {
             assert!(false)
         }
@@ -149,10 +162,10 @@ mod tests {
 
     #[test]
     fn test_parse_e_record_with_text() {
-        let line = "E114734BFION AH\n";
+        let line = b"E114734BFION AH\n";
         if let Record::E(event) = e_record.parse(line).unwrap() {
             assert_eq!(event.timestamp, 42454);
-            assert_eq!(event.text, "BFION AH");
+            assert_eq!(event.text, b"BFION AH");
         } else {
             assert!(false)
         }
@@ -160,10 +173,10 @@ mod tests {
 
     #[test]
     fn test_parse_f_record() {
-        let line = "F09093227163023070801103221\n";
+        let line = b"F09093227163023070801103221\n";
         if let Record::F(event) = f_record.parse(line).unwrap() {
             assert_eq!(event.timestamp, 32972);
-            assert_eq!(event.text, "27163023070801103221");
+            assert_eq!(event.text, b"27163023070801103221");
         } else {
             assert!(false)
         }
@@ -171,10 +184,10 @@ mod tests {
 
     #[test]
     fn test_parse_k_record() {
-        let line = "K09115208100062\n";
+        let line = b"K09115208100062\n";
         if let Record::K(event) = k_record.parse(line).unwrap() {
             assert_eq!(event.timestamp, 33112);
-            assert_eq!(event.text, "08100062");
+            assert_eq!(event.text, b"08100062");
         } else {
             assert!(false)
         }
@@ -182,10 +195,10 @@ mod tests {
 
     #[test]
     fn test_l_identity() {
-        let line = "LXGD GpsDumpLinux version 0.27\n";
-        if let Record::L(text) = l_record.parse(line).unwrap() {
-            let formatted = format!("{}\n", text);
-            assert_eq!(formatted, &line[1..]);
+        let line = b"LXGD GpsDumpLinux version 0.27\n";
+        if let Record::L(event) = l_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", event);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -193,10 +206,10 @@ mod tests {
 
     #[test]
     fn test_g_identity() {
-        let line = "G351E2000FC0D9C1B\n";
-        if let Record::G(text) = g_record.parse(line).unwrap() {
-            let formatted = format!("{}\n", text);
-            assert_eq!(formatted, &line[1..]);
+        let line = b"G351E2000FC0D9C1B\n";
+        if let Record::G(event) = g_record.parse(line).unwrap() {
+            let formatted = format!("{}\n", event);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -204,10 +217,10 @@ mod tests {
 
     #[test]
     fn test_e_identity() {
-        let line = "E101409PEV\n";
+        let line = b"E101409PEV\n";
         if let Record::E(event) = e_record.parse(line).unwrap() {
             let formatted = format!("{}\n", event);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -215,10 +228,10 @@ mod tests {
 
     #[test]
     fn test_f_identity() {
-        let line = "F09093227163023070801103221\n";
+        let line = b"F09093227163023070801103221\n";
         if let Record::F(event) = f_record.parse(line).unwrap() {
             let formatted = format!("{}\n", event);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -226,10 +239,10 @@ mod tests {
 
     #[test]
     fn test_k_identity() {
-        let line = "K09115208100062\n";
+        let line = b"K09115208100062\n";
         if let Record::K(event) = k_record.parse(line).unwrap() {
             let formatted = format!("{}\n", event);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };
@@ -237,8 +250,8 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_timestamp() {
-        assert!(e_record.parse("E999999PEV\n").is_err());
-        assert!(f_record.parse("F256030DATA\n").is_err());
-        assert!(k_record.parse("K123490DATA\n").is_err());
+        assert!(e_record.parse(b"E999999PEV\n").is_err());
+        assert!(f_record.parse(b"F256030DATA\n").is_err());
+        assert!(k_record.parse(b"K123490DATA\n").is_err());
     }
 }

@@ -1,10 +1,8 @@
 from pathlib import Path
 import pytest
 
-def read_path(path: Path) -> str:
-    with path.open('r', encoding="ISO-8859-1") as f:
-        content = f.read()
-    return content
+def read_path(path: Path) -> bytes:
+    return path.read_bytes()
     
 def pytest_generate_tests(metafunc):
     if "real_file" in metafunc.fixturenames:

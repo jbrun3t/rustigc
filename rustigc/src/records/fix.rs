@@ -55,11 +55,12 @@ impl fmt::Display for Fix {
 pub struct RawFix<'a> {
     pub fix: Fix,
     pub valid: bool,
-    pub ext: &'a str,
+    pub ext: &'a [u8],
 }
 
 impl<'a> fmt::Display for RawFix<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let ext = std::str::from_utf8(self.ext).unwrap();
         if f.alternate() {
             write!(
                 f,
@@ -69,7 +70,7 @@ impl<'a> fmt::Display for RawFix<'a> {
                 if self.ext.len() == 2 {
                     "none"
                 } else {
-                    self.ext
+                    ext
                 }
             )?;
         } else {
@@ -82,7 +83,7 @@ impl<'a> fmt::Display for RawFix<'a> {
                 if self.valid { 'A' } else { 'V' },
                 self.fix.baro_alt,
                 self.fix.gnss_alt,
-                self.ext
+                ext
             )?;
         }
         Ok(())
@@ -95,15 +96,15 @@ impl<'a> From<RawFix<'a>> for Record<'a> {
     }
 }
 
-fn altitude(input: &mut &str) -> PResult<i32> {
+fn altitude(input: &mut &[u8]) -> PResult<i32> {
     n_digits(5).parse_next(input)
 }
 
-fn valid3d(input: &mut &str) -> PResult<bool> {
-    alt((('A').value(true), ('V').value(false))).parse_next(input)
+fn valid3d(input: &mut &[u8]) -> PResult<bool> {
+    alt(((b'A').value(true), (b'V').value(false))).parse_next(input)
 }
 
-fn fix(input: &mut &str) -> PResult<(Fix, bool)> {
+fn fix(input: &mut &[u8]) -> PResult<(Fix, bool)> {
     (ts_to_sec, latitude, longitude, valid3d, altitude, altitude)
         .map(|(t, ns, ew, v, baro_alt, gnss_alt)| {
             (
@@ -120,8 +121,8 @@ fn fix(input: &mut &str) -> PResult<(Fix, bool)> {
         .parse_next(input)
 }
 
-pub fn b_record<'a>(input: &mut &'a str) -> PResult<Record<'a>> {
-    delimited('B', (fix, till_line_ending), line_ending)
+pub fn b_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
+    delimited(b'B', (fix, till_line_ending), line_ending)
         .map(|((fix, valid), ext)| RawFix { fix, valid, ext }.into())
         .parse_next(input)
 }
@@ -132,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_parse_valid_b_record() {
-        let line = "B1101355206300N00006180WA0058700558\n";
+        let line = b"B1101355206300N00006180WA0058700558\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             assert_eq!(rec.fix.timestamp, 39695);
             assert_eq!(rec.fix.lat, 52.105);
@@ -147,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_fix() {
-        let line = "B1200005012345N12034567WV0100001000\n";
+        let line = b"B1200005012345N12034567WV0100001000\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             assert!(!rec.valid);
         } else {
@@ -157,12 +158,12 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_line_too_short() {
-        assert!(b_record.parse("B110135\n").is_err());
+        assert!(b_record.parse(b"B110135\n").is_err());
     }
 
     #[test]
     fn test_parse_southern_eastern_negative_alt() {
-        let line = "B1200003000000S12000000EA-0100-0200\n";
+        let line = b"B1200003000000S12000000EA-0100-0200\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             assert_eq!(rec.fix.timestamp, 43200);
             assert_eq!(rec.fix.lat, -30.0);
@@ -177,9 +178,9 @@ mod tests {
 
     #[test]
     fn test_parse_with_extensions() {
-        let line = "B1200005012345N00012345WA00500005001234567890\n";
+        let line = b"B1200005012345N00012345WA00500005001234567890\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
-            assert_eq!(rec.ext, "1234567890");
+            assert_eq!(rec.ext, b"1234567890");
             assert_eq!(rec.fix.timestamp, 43200);
         } else {
             assert!(false)
@@ -188,10 +189,10 @@ mod tests {
 
     #[test]
     fn test_identity() {
-        let line = "B1200003000000N12000000EA0050000500\n";
+        let line = b"B1200003000000N12000000EA0050000500\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             let formatted = format!("{}\n", rec);
-            assert_eq!(formatted, &line[1..]);
+            assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
             assert!(false)
         };

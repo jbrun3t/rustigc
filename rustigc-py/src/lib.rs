@@ -62,10 +62,10 @@ struct PyLog {
 
 #[pymethods]
 impl PyLog {
-    /// Parse an IGC file from a string
+    /// Parse an IGC file from bytes
     #[staticmethod]
-    fn from_string(content: String) -> PyResult<Self> {
-        let inner = rustigc::Log::new(&content).map_err(|e| {
+    fn from_bytes(content: &[u8]) -> PyResult<Self> {
+        let inner = rustigc::Log::new(content).map_err(|e| {
             PyValueError::new_err(format!("Failed to parse IGC file: {e}"))
         })?;
 
