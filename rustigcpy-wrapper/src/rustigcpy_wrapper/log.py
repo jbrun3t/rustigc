@@ -1,8 +1,11 @@
 """Log wrapper - provides high-level API"""
 import rustigcpy
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import date, datetime
 from .track import Track
+
+if TYPE_CHECKING:
+    from .fix import Fix
 
 
 class Log:
@@ -58,15 +61,25 @@ class Log:
         date_part = date_str.split(',')[0]
         return datetime.strptime(date_part, '%d%m%y').date()
 
-    @property
-    def takeoff(self) -> Optional[int]:
-        """Takeoff fix index"""
-        return self._log.takeoff
+    def analyze(self) -> None:
+        """Run flight phase analysis"""
+        self._log.analyze()
 
     @property
-    def landing(self) -> Optional[int]:
-        """Landing fix index"""
-        return self._log.landing
+    def takeoff(self) -> Optional['Fix']:
+        """Takeoff fix"""
+        idx = self._log.takeoff
+        if idx is None:
+            return None
+        return self.track[idx]
+
+    @property
+    def landing(self) -> Optional['Fix']:
+        """Landing fix"""
+        idx = self._log.landing
+        if idx is None:
+            return None
+        return self.track[idx]
 
     def __repr__(self) -> str:
         return f"Log(fixes={len(self.track)}, pilot={self.pilot_name!r})"

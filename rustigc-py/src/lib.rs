@@ -4,12 +4,14 @@ use ::rustigc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
+use std::cell::RefCell;
 
 /// Python wrapper for IGC log (minimal API - use rustigcpy-wrapper for high-level interface)
 #[pyclass(name = "Log")]
 struct PyLog {
     inner: rustigc::Log,
-    flight: Option<(usize, usize)>,
+    data: RefCell<Option<rustigc::FRawData>>,
+    phases: RefCell<Option<(usize, usize)>>,
 }
 
 #[pymethods]
@@ -65,16 +67,28 @@ impl PyLog {
         self.get_header(b"DTE")
     }
 
+    /// Run flight phase analysis (lazy - only runs if not already done)
+    fn analyze(&self) {
+        if self.data.borrow().is_none() {
+            let data = rustigc::FRawData::new(&self.inner);
+            let phases = data.phases();
+            *self.data.borrow_mut() = Some(data);
+            *self.phases.borrow_mut() = phases;
+        }
+    }
+
     /// Get takeoff fix index (None if not detected)
     #[getter]
     fn takeoff(&self) -> Option<usize> {
-        self.flight.map(|f| f.0)
+        self.analyze();
+        self.phases.borrow().map(|f| f.0)
     }
 
     /// Get landing fix index (None if not detected)
     #[getter]
     fn landing(&self) -> Option<usize> {
-        self.flight.map(|f| f.1)
+        self.analyze();
+        self.phases.borrow().map(|f| f.1)
     }
 
     fn __repr__(&self) -> String {

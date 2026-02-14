@@ -39,8 +39,19 @@ def test_date_parsing(igc_content):
 def test_flight_phases(igc_content):
     """Test takeoff/landing detection"""
     log = Log.from_bytes(igc_content)
-    assert log.takeoff == 124
-    assert log.landing == 25426
+
+    # Should return Fix objects, not indices
+    takeoff = log.takeoff
+    landing = log.landing
+
+    assert takeoff is not None
+    assert landing is not None
+    assert hasattr(takeoff, 'latitude')
+    assert hasattr(landing, 'latitude')
+
+    # Verify they correspond to expected indices
+    assert takeoff == log.track[124]
+    assert landing == log.track[25426]
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)

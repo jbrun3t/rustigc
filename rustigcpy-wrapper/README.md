@@ -20,7 +20,11 @@ log = Log.from_file("flight.igc")
 print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
 print(f"Date: {log.date}")
-print(f"Takeoff: {log.takeoff}, Landing: {log.landing}")
+
+# Flight phase analysis
+log.analyze()  # Optional: manually trigger analysis
+print(f"Takeoff: {log.takeoff}")  # Returns Fix object
+print(f"Landing: {log.landing}")  # Returns Fix object
 
 # Access track data
 track = log.track
@@ -52,12 +56,15 @@ first_100 = track._data[0:100]  # numpy slice
 - `Log.from_bytes(content: bytes) -> Log`
 - `Log.from_file(path: str) -> Log`
 
+**Methods:**
+- `analyze() -> None` - Run flight phase analysis
+
 **Properties:**
 - `pilot_name: str | None`
 - `glider_type: str | None`
 - `date: datetime.date | None`
-- `takeoff: int | None`
-- `landing: int | None`
+- `takeoff: Fix | None`
+- `landing: Fix | None`
 - `track: Track`
 
 ### `Track`
@@ -85,6 +92,9 @@ Single position fix from IGC track.
 - `baro_altitude: int` - Barometric altitude in meters
 - `gnss_altitude: int` - GNSS altitude in meters
 - `timestamp: int` - Seconds since midnight
+
+**Methods:**
+- `__eq__(other) -> bool` - Compare Fix objects
 
 ## Architecture
 
