@@ -58,6 +58,22 @@ Example output:
 }
 ```
 
+## Profiling
+
+`rustigc` is handy to profile the parser.
+
+```bash
+# Build with the profiling profile
+cargo build --profile
+
+# Record with perf
+perf record -g --call-graph dwarf -e cycles:u -c 2000 ../target/profiling/rustigc --quiet < your-igc-here.igc
+perf script -F +pid > test.perf
+
+```
+
+Then open `test.perf` with the [Firefox Profiler](https://profiler.firefox.com/from-file)
+
 ## License
 
 MIT
