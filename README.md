@@ -8,9 +8,10 @@ Fast IGC file parser for aviation sports (gliding, paragliding, hang gliding) wr
 
 ```
 rustigc/
-├── rustigc/          - Core Rust library
-├── rustigc-py/       - Python bindings
-└── rustigc-tools/    - CLI tool
+├── rustigc/             - Core Rust library
+├── rustigc-py/          - Python bindings (low-level)
+├── rustigc-py-wrapper/  - Python wrapper (high-level API)
+└── rustigc-tools/       - CLI tool
 ```
 
 ## Features
@@ -20,9 +21,9 @@ rustigc/
 - ✅ Access flight metadata (pilot, glider, date, recorder info)
 - ✅ Roundtrip parse/write valid IGC
 - ✅ Serde support for JSON serialization
-- ⏳ Takeoff/landing detection (basic - average speed ~15km/h)
+- ✅ Takeoff/landing detection (basic - average speed ~15km/h)
+- ✅ Python bindings with numpy integration
 - ⏳ CLI tool (currently just JSON dump)
-- ⏳ Python bindings (minimal, needs optimization)
 
 ## Quick Start
 
@@ -40,19 +41,24 @@ println!("Fixes: {}", log.track.len());
 
 See [rustigc/README.md](rustigc/README.md)
 
-### Python Bindings
+### Python
 
 ```python
-import rustigcpy
+from rustigcpy_wrapper import Log
 
-with open("flight.igc", "rb") as f:
-    log = rustigcpy.Log.from_bytes(f.read())
+log = Log.from_file("flight.igc")
 
-print(f"Pilot: {log.pilot_name()}")
-print(f"Fixes: {len(log)}")
+print(f"Pilot: {log.pilot_name}")
+print(f"Glider: {log.glider_type}")
+print(f"Fixes: {len(log.track)}")
+
+# Flight phases
+print(f"Takeoff: {log.takeoff}")
+print(f"Landing: {log.landing}")
 ```
 
-See [rustigc-py/README.md](rustigc-py/README.md)
+See [rustigc-py-wrapper/README.md](rustigc-py-wrapper/README.md) for high-level API
+See [rustigc-py/README.md](rustigc-py/README.md) for low-level bindings
 
 ### CLI Tool
 

@@ -22,24 +22,30 @@ import numpy as np
 with open("flight.igc", "rb") as f:
     log = rustigcpy.Log.from_bytes(f.read())
 
-# Access metadata
-print(f"Pilot: {log.pilot_name()}")
-print(f"Glider: {log.glider_type()}")
-print(f"Date: {log.date()}")
+# Access metadata (returns tuple of text and origin)
+pilot = log.get_header("PLT")
+if pilot:
+    text, origin = pilot
+    print(f"Pilot: {text} (from {origin})")
 
-# Flight phases
-print(f"Takeoff: {log.takeoff}")
-print(f"Landing: {log.landing}")
+glider = log.get_header("GTY")
+if glider:
+    print(f"Glider: {glider[0]}")
+
+# Flight phases (run analysis first if needed)
+log.analyze()
+print(f"Takeoff index: {log.takeoff}")
+print(f"Landing index: {log.landing}")
 
 # Access track data as numpy array
 track = np.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)
 print(f"Fixes: {len(track)}")
 
 # Access fields
+print(f"Timestamps: {track['timestamp']}")
 print(f"Latitudes: {track['latitude']}")
 print(f"Longitudes: {track['longitude']}")
 print(f"Altitudes: {track['baro_altitude']}")
-print(f"Timestamps: {track['timestamp']}")
 ```
 
 ## API
@@ -48,9 +54,9 @@ print(f"Timestamps: {track['timestamp']}")
 
 **Methods:**
 - `Log.from_bytes(content: bytes) -> Log` - Parse IGC file from bytes
-- `pilot_name() -> str | None` - Get pilot name from headers
-- `glider_type() -> str | None` - Get glider type from headers
-- `date() -> str | None` - Get date from headers (DDMMYY format)
+- `get_header(key: str) -> tuple[str, str] | None` - Get header by 3-char key (e.g., "PLT", "GTY", "DTE")
+  - Returns `(text, origin)` where origin is "Flight Recorder", "Observer", or "Pilot"
+- `analyze() -> None` - Run flight phase analysis
 
 **Properties:**
 - `track_bytes: bytes` - Raw track data (32 bytes per fix)
@@ -60,12 +66,12 @@ print(f"Timestamps: {track['timestamp']}")
 ### `rustigcpy.FIX_DTYPE`
 
 NumPy dtype for track data (32 bytes per fix):
+- `timestamp: u32` - Seconds since midnight
+- `_pad: u32` - Alignment padding (do not use)
 - `latitude: f64` - Decimal degrees
 - `longitude: f64` - Decimal degrees
 - `baro_altitude: i32` - Barometric altitude in meters
 - `gnss_altitude: i32` - GNSS altitude in meters
-- `timestamp: u32` - Seconds since midnight
-- `_pad: u32` - Alignment padding
 
 ## Development
 

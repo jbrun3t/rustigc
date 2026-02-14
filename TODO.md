@@ -1,7 +1,6 @@
 # TODO:
-* Improve cli tool: more option, log/raw/quiet / outformat
+* Improve cli tool: more option, log/raw / outformat
 * Fixup altitude on fix insertion
-* Improve python bindings for less copy
 * Consider using the GeoPoint and FlatPoint abstraction is it help
   readability and/or performance
 * Improve Analysis API
