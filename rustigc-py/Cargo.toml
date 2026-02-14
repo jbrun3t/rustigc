@@ -18,3 +18,4 @@ crate-type = ["cdylib"]
 [dependencies]
 rustigc = { path = "../rustigc" }
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py310"] }
+numpy = "0.22"

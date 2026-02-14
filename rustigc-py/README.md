@@ -1,13 +1,10 @@
-# Rustigc - Python Bindings
+# rustigc-py - Python Bindings
 
-Python bindings for the rustigc IGC file parser.
+Low-level Python bindings for the rustigc IGC file parser.
+
+**Note:** For a high-level Python API with numpy integration, see `rustigc-py-wrapper`.
 
 ## Installation
-
-From PyPI (when published):
-```bash
-pip install rustigcpy
-```
 
 From source:
 ```bash
@@ -19,42 +16,56 @@ maturin develop
 
 ```python
 import rustigcpy
+import numpy as np
 
-# Read IGC file as bytes (pass content, not file path)
+# Parse IGC file
 with open("flight.igc", "rb") as f:
-    content = f.read()
-
-# Parse
-log = rustigcpy.Log.from_bytes(content)
+    log = rustigcpy.Log.from_bytes(f.read())
 
 # Access metadata
 print(f"Pilot: {log.pilot_name()}")
 print(f"Glider: {log.glider_type()}")
-print(f"Date: {log.date()}")  # Returns raw DDMMYY string
-print(f"Fixes: {len(log)}")
+print(f"Date: {log.date()}")
 
-# Access individual fixes by index
-first_fix = log[0]
-last_fix = log[-1]  # Negative indexing supported
+# Flight phases
+print(f"Takeoff: {log.takeoff}")
+print(f"Landing: {log.landing}")
 
-# Iterate over all fixes
-for fix in log.fixes():
-    print(f"{fix.timestamp}s - {fix.latitude:.5f}, {fix.longitude:.5f} @ {fix.gnss_altitude}m")
-    # fix.timestamp: seconds since midnight (0-86399)
-    # fix.latitude: decimal degrees
-    # fix.longitude: decimal degrees
-    # fix.gnss_altitude: meters
-    # fix.baro_altitude: meters (barometric)
+# Access track data as numpy array
+track = np.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)
+print(f"Fixes: {len(track)}")
 
-# Detect takeoff/landing (returns fix indices)
-if log.takeoff is not None:
-    takeoff_fix = log[log.takeoff]
-    print(f"Takeoff at {takeoff_fix.timestamp}s")
-
-if log.landing is not None:
-    landing_fix = log[log.landing]
-    print(f"Landing at {landing_fix.timestamp}s")
+# Access fields
+print(f"Latitudes: {track['latitude']}")
+print(f"Longitudes: {track['longitude']}")
+print(f"Altitudes: {track['baro_altitude']}")
+print(f"Timestamps: {track['timestamp']}")
 ```
+
+## API
+
+### `rustigcpy.Log`
+
+**Methods:**
+- `Log.from_bytes(content: bytes) -> Log` - Parse IGC file from bytes
+- `pilot_name() -> str | None` - Get pilot name from headers
+- `glider_type() -> str | None` - Get glider type from headers
+- `date() -> str | None` - Get date from headers (DDMMYY format)
+
+**Properties:**
+- `track_bytes: bytes` - Raw track data (32 bytes per fix)
+- `takeoff: int | None` - Takeoff fix index
+- `landing: int | None` - Landing fix index
+
+### `rustigcpy.FIX_DTYPE`
+
+NumPy dtype for track data (32 bytes per fix):
+- `latitude: f64` - Decimal degrees
+- `longitude: f64` - Decimal degrees
+- `baro_altitude: i32` - Barometric altitude in meters
+- `gnss_altitude: i32` - GNSS altitude in meters
+- `timestamp: u32` - Seconds since midnight
+- `_pad: u32` - Alignment padding
 
 ## Development
 

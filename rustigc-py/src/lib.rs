@@ -3,57 +3,9 @@
 use ::rustigc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::{PyBytes, PyList, PyTuple};
 
-/// Python wrapper for Fix (position fix)
-#[pyclass(name = "Fix")]
-#[derive(Clone)]
-struct PyFix {
-    inner: rustigc::Fix,
-}
-
-#[pymethods]
-impl PyFix {
-    /// Get the timestamp in seconds since midnight (0-86399)
-    #[getter]
-    fn timestamp(&self) -> u32 {
-        self.inner.timestamp
-    }
-
-    /// Get latitude in decimal degrees
-    #[getter]
-    fn latitude(&self) -> f64 {
-        self.inner.lat
-    }
-
-    /// Get longitude in decimal degrees
-    #[getter]
-    fn longitude(&self) -> f64 {
-        self.inner.lon
-    }
-
-    /// Get pressure altitude in meters
-    #[getter]
-    fn baro_altitude(&self) -> i32 {
-        self.inner.baro_alt
-    }
-
-    /// Get GNSS altitude in meters
-    #[getter]
-    fn gnss_altitude(&self) -> i32 {
-        self.inner.gnss_alt
-    }
-
-    fn __repr__(&self) -> String {
-        format!(
-            "Fix(lat={:.6}, lon={:.6}, alt={}m)",
-            self.latitude(),
-            self.longitude(),
-            self.gnss_altitude()
-        )
-    }
-}
-
-/// Python wrapper for Track
+/// Python wrapper for IGC log (minimal API - use rustigcpy-wrapper for high-level interface)
 #[pyclass(name = "Log")]
 struct PyLog {
     inner: rustigc::Log,
@@ -75,32 +27,16 @@ impl PyLog {
         Ok(PyLog { inner, flight })
     }
 
-    /// Get the number of fixes
-    fn __len__(&self) -> usize {
-        self.inner.track.len()
-    }
-
-    /// Get a specific fix by index
-    fn __getitem__(&self, idx: isize) -> PyResult<PyFix> {
-        let len = self.inner.track.len() as isize;
-        let idx = if idx < 0 { len + idx } else { idx };
-
-        if idx < 0 || idx >= len {
-            return Err(PyValueError::new_err("Index out of range"));
-        }
-
-        Ok(PyFix {
-            inner: self.inner.track[idx as usize].clone(),
-        })
-    }
-
-    /// Get all fixes as a list
-    fn fixes(&self) -> Vec<PyFix> {
-        self.inner
-            .track
-            .iter()
-            .map(|fix| PyFix { inner: fix.clone() })
-            .collect()
+    /// Get track as raw bytes for zero-copy numpy access (32 bytes per fix with padding)
+    #[getter]
+    fn track_bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                self.inner.track.as_ptr() as *const u8,
+                self.inner.track.len() * std::mem::size_of::<rustigc::Fix>(),
+            )
+        };
+        PyBytes::new_bound(py, bytes)
     }
 
     fn get_header(&self, key: &[u8]) -> Option<String> {
@@ -108,29 +44,28 @@ impl PyLog {
         self.inner.headers.get(&key).map(|data| data.text.clone())
     }
 
-    /// Get the pilot name
+    /// Get the pilot name from headers
     fn pilot_name(&self) -> Option<String> {
         self.get_header(b"PLT")
     }
 
-    /// Get the glider type
+    /// Get the glider type from headers
     fn glider_type(&self) -> Option<String> {
         self.get_header(b"GTY")
     }
 
-    /// Get the flight date (convenience method)
-    /// Returns (year, month, day) tuple or None
+    /// Get the flight date from headers (DDMMYY format)
     fn date(&self) -> Option<String> {
         self.get_header(b"DTE")
     }
 
-    /// Detect and return the takeoff fix (or None if not detected)
+    /// Get takeoff fix index (None if not detected)
     #[getter]
     fn takeoff(&self) -> Option<usize> {
         self.flight.map(|f| f.0)
     }
 
-    /// Detect and return the landing fix (or None if not detected)
+    /// Get landing fix index (None if not detected)
     #[getter]
     fn landing(&self) -> Option<usize> {
         self.flight.map(|f| f.1)
@@ -139,17 +74,41 @@ impl PyLog {
     fn __repr__(&self) -> String {
         format!(
             "Log(fixes={}, pilot={:?})",
-            self.__len__(),
+            self.inner.track.len(),
             self.pilot_name()
         )
     }
 }
 
-/// Python module for rustigc
+/// Python module for rustigc (minimal bindings - use rustigcpy-wrapper for high-level API)
 #[pymodule]
 fn rustigcpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
-    m.add_class::<PyFix>()?;
+
+    // Export FIX_DTYPE as numpy dtype
+    // This matches the repr(C) memory layout of rustigc::Fix
+    Python::with_gil(|py| {
+        let numpy = py.import_bound("numpy")?;
+
+        // Create dtype as list of (name, format, offset) tuples
+        let dtype_spec = PyList::new_bound(
+            py,
+            &[
+                PyTuple::new_bound(py, &["latitude", "f8"]),
+                PyTuple::new_bound(py, &["longitude", "f8"]),
+                PyTuple::new_bound(py, &["baro_altitude", "i4"]),
+                PyTuple::new_bound(py, &["gnss_altitude", "i4"]),
+                PyTuple::new_bound(py, &["timestamp", "u4"]),
+                PyTuple::new_bound(py, &["_pad", "u4"]),
+            ],
+        );
+
+        let dtype = numpy.getattr("dtype")?.call1((dtype_spec,))?;
+        m.add("FIX_DTYPE", dtype)?;
+
+        Ok::<(), PyErr>(())
+    })?;
+
     Ok(())
 }
