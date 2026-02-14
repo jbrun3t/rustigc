@@ -21,9 +21,12 @@ rustigc/
 - ✅ Access flight metadata (pilot, glider, date, recorder info)
 - ✅ Roundtrip parse/write valid IGC
 - ✅ Serde support for JSON serialization
-- ✅ Takeoff/landing detection (basic - average speed ~15km/h)
 - ✅ Python bindings with numpy integration
+- ⏳ Takeoff/landing detection (currently basic - average speed ~15km/h)
 - ⏳ CLI tool (currently just JSON dump)
+- ⏳ Proper smoothing for flight dynamics
+- ⏳ Flights phases identification
+- ⏳ Flight scoring
 
 ## Quick Start
 
