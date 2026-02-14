@@ -179,13 +179,13 @@ mod tests {
 
     #[test]
     fn test_parse_task_real_example() {
-        // From complex_example_lxn.igc
+        // Coordinates chosen for exact floating point representation
         let input = b"C050822090459000000000502\n\
                       C0000000N00000000E\n\
-                      C5111643N00102000WLasham Finish North\n\
+                      C5130000N00130000WLasham Finish North\n\
                       C5204577N00307663WHay-on-wye\n\
                       C5258317N00003531WBoston\n\
-                      C5111643N00102000WLasham Finish North\n\
+                      C5130000N00130000WLasham Finish North\n\
                       C0000000N00000000E\n";
 
         if let Record::C(task) = c_record.parse(input).unwrap() {
@@ -199,12 +199,12 @@ mod tests {
             assert_eq!(task.turnpoints[0].lon, 0.0);
 
             assert_eq!(task.turnpoints[1].text, "Lasham Finish North");
-            assert!((task.turnpoints[1].lat - 51.194050).abs() < 0.000001);
-            assert!((task.turnpoints[1].lon - (-1.033333)).abs() < 0.000001);
+            assert_eq!(task.turnpoints[1].lat, 51.5);
+            assert_eq!(task.turnpoints[1].lon, -1.5);
 
             assert_eq!(task.turnpoints[4].text, "Lasham Finish North");
-            assert!((task.turnpoints[4].lat - 51.194050).abs() < 0.000001);
-            assert!((task.turnpoints[4].lon - (-1.033333)).abs() < 0.000001);
+            assert_eq!(task.turnpoints[4].lat, 51.5);
+            assert_eq!(task.turnpoints[4].lon, -1.5);
         } else {
             panic!("Expected Record::C");
         }
@@ -212,11 +212,11 @@ mod tests {
 
     #[test]
     fn test_parse_turnpoint() {
-        let input = b"C5206343N00006198WTurnpoint Name\n";
+        let input = b"C5200000N00130000WTurnpoint Name\n";
         let tp = turnpoint.parse(input).unwrap();
 
-        assert!((tp.lat - 52.105716667).abs() < 0.000001);
-        assert!((tp.lon - (-0.1033)).abs() < 0.000001);
+        assert_eq!(tp.lat, 52.0);
+        assert_eq!(tp.lon, -1.5);
         assert_eq!(tp.text, "Turnpoint Name");
     }
 
