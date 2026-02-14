@@ -20,3 +20,8 @@ btoi = "0.4"
 
 [dev-dependencies]
 pretty_assertions = "1"
+criterion = "0.5"
+
+[[bench]]
+name = "parsing"
+harness = false
