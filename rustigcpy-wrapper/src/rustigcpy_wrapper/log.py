@@ -44,19 +44,22 @@ class Log:
     @property
     def pilot_name(self) -> Optional[str]:
         """Pilot name from headers"""
-        return self._log.pilot_name()
+        header = self._log.get_header("PLT")
+        return header[0] if header else None
 
     @property
     def glider_type(self) -> Optional[str]:
         """Glider type from headers"""
-        return self._log.glider_type()
+        header = self._log.get_header("GTY")
+        return header[0] if header else None
 
     @property
     def date(self) -> Optional[date]:
         """Parse flight date to datetime.date"""
-        date_str = self._log.date()
-        if date_str is None:
+        header = self._log.get_header("DTE")
+        if header is None:
             return None
+        date_str = header[0]
         # IGC format: DDMMYY,FF (flight number after comma)
         date_part = date_str.split(',')[0]
         return datetime.strptime(date_part, '%d%m%y').date()

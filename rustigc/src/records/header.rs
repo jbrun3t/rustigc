@@ -48,7 +48,7 @@ impl HeaderOrigin {
         }
     }
 
-    const fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
             HeaderOrigin::FlightRecorder => "Flight Recorder",
             HeaderOrigin::Observer => "Observer",
@@ -90,11 +90,7 @@ impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let key = std::str::from_utf8(&self.key).unwrap();
         if f.alternate() {
-            write!(
-                f,
-                "{:#} {}: {}",
-                self.value.origin, key, self.value.text
-            )
+            write!(f, "{:#} {}: {}", self.value.origin, key, self.value.text)
         } else {
             write!(f, "{}{}{}", self.value.origin, key, self.value.text)
         }

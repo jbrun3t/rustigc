@@ -34,11 +34,18 @@ def test_track_bytes_numpy(igc_file):
 
 @pytest.mark.parametrize("igc_file", ["complex_example_lxn.igc"], indirect=True)
 def test_metadata(igc_file):
-    """Test metadata access"""
+    """Test metadata access via get_header"""
     log = rustigcpy.Log.from_bytes(igc_file)
-    assert log.pilot_name() == "Mike Young"
-    assert log.glider_type() == "Ventus 3T"
-    assert log.date() == "050822"
+
+    # get_header returns tuple of (text, origin)
+    pilot = log.get_header("PLT")
+    assert pilot == ("Mike Young", "Flight Recorder")
+
+    glider = log.get_header("GTY")
+    assert glider == ("Ventus 3T", "Flight Recorder")
+
+    date = log.get_header("DTE")
+    assert date == ("050822", "Flight Recorder")
 
 
 @pytest.mark.parametrize("igc_file", ["complex_example_lxn.igc"], indirect=True)

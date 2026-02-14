@@ -47,24 +47,17 @@ impl PyLog {
         PyBytes::new_bound(py, bytes)
     }
 
-    fn get_header(&self, key: &[u8]) -> Option<String> {
-        let key: [u8; 3] = key.try_into().ok()?;
-        self.inner.headers.get(&key).map(|data| data.text.clone())
-    }
-
-    /// Get the pilot name from headers
-    fn pilot_name(&self) -> Option<String> {
-        self.get_header(b"PLT")
-    }
-
-    /// Get the glider type from headers
-    fn glider_type(&self) -> Option<String> {
-        self.get_header(b"GTY")
-    }
-
-    /// Get the flight date from headers (DDMMYY format)
-    fn date(&self) -> Option<String> {
-        self.get_header(b"DTE")
+    /// Get header value and origin by key (e.g., "PLT", "GTY", "DTE")
+    /// Returns tuple of (text, origin) where origin is "FlightRecorder", "Observer", or "Pilot"
+    fn get_header(&self, key: &str) -> Option<(String, String)> {
+        if key.len() != 3 {
+            return None;
+        }
+        let key_bytes: [u8; 3] = key.as_bytes().try_into().ok()?;
+        self.inner
+            .headers
+            .get(&key_bytes)
+            .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 
     /// Run flight phase analysis (lazy - only runs if not already done)
@@ -92,11 +85,8 @@ impl PyLog {
     }
 
     fn __repr__(&self) -> String {
-        format!(
-            "Log(fixes={}, pilot={:?})",
-            self.inner.track.len(),
-            self.pilot_name()
-        )
+        let pilot = self.get_header("PLT").map(|(text, _)| text);
+        format!("Log(fixes={}, pilot={:?})", self.inner.track.len(), pilot)
     }
 }
 
