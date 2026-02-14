@@ -7,7 +7,7 @@ name = "rustigcpy"
 version = "0.1.0"
 description = "Fast IGC flight recorder file parser"
 requires-python = ">=3.10"
-license = { text = "MIT OR Apache-2.0" }
+license = { text = "MIT" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20"]
 classifiers = [
