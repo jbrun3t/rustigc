@@ -72,3 +72,16 @@ jobs:
           source venv/bin/activate
           cd rustigc-py
           python -m pytest -v
+
+      - name: Build Python wrapper
+        run: |
+          source venv/bin/activate
+          cd rustigc-py-wrapper
+          pip install .
+
+      - name: Run Python tests
+        run: |
+          source venv/bin/activate
+          cd rustigc-py-wrapper
+          python -m pytest -v
+
