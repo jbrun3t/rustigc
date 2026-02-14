@@ -25,11 +25,16 @@ use super::Record;
 use serde::{Deserialize, Serialize};
 
 /// Single position fix from B-record
+///
+/// Note: repr(C) with fields ordered to eliminate padding (28 bytes total)
+/// - f64 fields first (8-byte aligned)
+/// - i32 fields next (4-byte aligned)
+/// - u32 timestamp last (4-byte aligned)
+/// This layout ensures Python/NumPy zero-copy interop without padding waste
+#[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Fix {
-    /// UTC Unix timestamp - Beware of changing days in flight
-    pub timestamp: u32,
     /// Point Latitude
     pub lat: f64,
     /// Point Longitude
@@ -38,6 +43,8 @@ pub struct Fix {
     pub baro_alt: i32,
     /// GNSS (GPS) altitude in meters
     pub gnss_alt: i32,
+    /// UTC Unix timestamp - seconds since midnight
+    pub timestamp: u32,
 }
 
 impl fmt::Display for Fix {
