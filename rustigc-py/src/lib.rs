@@ -103,24 +103,25 @@ impl PyLog {
             .collect()
     }
 
-    fn get_header(&self, key: &str) -> Option<String> {
-        self.inner.headers.get(key).map(|data| data.text.clone())
+    fn get_header(&self, key: &[u8]) -> Option<String> {
+        let key: [u8; 3] = key.try_into().ok()?;
+        self.inner.headers.get(&key).map(|data| data.text.clone())
     }
 
     /// Get the pilot name
     fn pilot_name(&self) -> Option<String> {
-        self.get_header("PLT")
+        self.get_header(b"PLT")
     }
 
     /// Get the glider type
     fn glider_type(&self) -> Option<String> {
-        self.get_header("GTY")
+        self.get_header(b"GTY")
     }
 
     /// Get the flight date (convenience method)
     /// Returns (year, month, day) tuple or None
     fn date(&self) -> Option<String> {
-        self.get_header("DTE")
+        self.get_header(b"DTE")
     }
 
     /// Detect and return the takeoff fix (or None if not detected)

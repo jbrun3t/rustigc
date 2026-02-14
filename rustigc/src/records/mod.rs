@@ -34,8 +34,8 @@ pub enum Record<'a> {
     F(TimedEvent<'a>),
     G(TextEvent<'a>),
     H(Header),
-    I(Extensions),
-    J(Extensions),
+    I(Extensions<'a>),
+    J(Extensions<'a>),
     K(TimedEvent<'a>),
     L(TextEvent<'a>),
 }

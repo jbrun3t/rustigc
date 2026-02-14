@@ -82,20 +82,21 @@ pub struct HeaderData {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Header {
-    pub key: String,
+    pub key: [u8; 3],
     pub value: HeaderData,
 }
 
-impl<'a> fmt::Display for Header {
+impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let key = std::str::from_utf8(&self.key).unwrap();
         if f.alternate() {
             write!(
                 f,
                 "{:#} {}: {}",
-                self.value.origin, self.key, self.value.text
+                self.value.origin, key, self.value.text
             )
         } else {
-            write!(f, "{}{}{}", self.value.origin, self.key, self.value.text)
+            write!(f, "{}{}{}", self.value.origin, key, self.value.text)
         }
     }
 }
@@ -124,11 +125,12 @@ fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
 /// Provide a tuple with ( HeaderID, HeaderData ) ready for insertion in hashmap
 pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'H', (horigin, hkey, till_line_ending), line_ending)
-        .map(|(origin, k, v)| {
+        .map(|(origin, key, v)| {
+            let key: [u8; 3] = key.try_into().unwrap();
             Header {
-                key: std::str::from_utf8(k).unwrap().to_string(),
+                key,
                 value: HeaderData {
-                    text: std::str::from_utf8(v).unwrap().trim().to_string(),
+                    text: std::str::from_utf8(v).unwrap().to_string(),
                     origin,
                 },
             }
@@ -145,7 +147,7 @@ mod tests {
     fn test_parse_valid_h_record() {
         let line = b"HFDTE150120\n";
         if let Record::H(inner) = h_record.parse(line).unwrap() {
-            assert_eq!(inner.key, "DTE");
+            assert_eq!(inner.key.as_ref(), b"DTE");
             assert_eq!(inner.value.text, "150120");
             assert_eq!(inner.value.origin, HeaderOrigin::FlightRecorder);
         } else {
@@ -157,7 +159,7 @@ mod tests {
     fn test_parse_valid_longh_record() {
         let line = b"HFPLTPILOTINCHARGE:Tripoux Robert\n";
         if let Record::H(inner) = h_record.parse(line).unwrap() {
-            assert_eq!(inner.key, "PLT");
+            assert_eq!(inner.key.as_ref(), b"PLT");
             assert_eq!(inner.value.text, "Tripoux Robert");
             assert_eq!(inner.value.origin, HeaderOrigin::FlightRecorder);
         } else {

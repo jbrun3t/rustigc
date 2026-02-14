@@ -29,28 +29,30 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct RecordExtension {
+#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+pub struct RecordExtension<'a> {
     /// Start byte position
     pub start: usize,
     /// End byte position
     pub finish: usize,
     /// Three-letter code for this extension (e.g., FXA, SIU, ENL)
-    pub tlc: String,
+    pub tlc: &'a [u8],
     /// Correction offset in recorded data
     pub offset: usize,
 }
 
-impl fmt::Display for RecordExtension {
+impl<'a> fmt::Display for RecordExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let tlc = std::str::from_utf8(self.tlc).unwrap();
         if f.alternate() {
-            write!(f, "{}: {}->{}", self.tlc, self.start, self.finish)
+            write!(f, "{}: {}->{}", tlc, self.start, self.finish)
         } else {
             write!(
                 f,
                 "{:02}{:02}{}",
                 self.start + self.offset + 1,
                 self.finish + self.offset,
-                self.tlc
+                tlc
             )
         }
     }
@@ -58,11 +60,12 @@ impl fmt::Display for RecordExtension {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Extensions {
-    pub vext: Vec<RecordExtension>,
+#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+pub struct Extensions<'a> {
+    pub vext: Vec<RecordExtension<'a>>,
 }
 
-impl fmt::Display for Extensions {
+impl<'a> fmt::Display for Extensions<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
             let mut it = self.vext.iter();
@@ -82,17 +85,17 @@ impl fmt::Display for Extensions {
     }
 }
 
-fn extension(offset: usize) -> impl Fn(&mut &[u8]) -> PResult<Extensions> {
+fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensions<'a>> {
     move |input: &mut &[u8]| {
         (
             n_digits(2),
             repeat(
                 1..,
                 (n_digits(2), n_digits(2), n_alphanum(3)).map(
-                    move |(s, f, id): (usize, usize, &[u8])| RecordExtension {
+                    move |(s, f, tlc): (usize, usize, &[u8])| RecordExtension {
                         start: s - offset - 1,
                         finish: f - offset,
-                        tlc: std::str::from_utf8(id).unwrap().to_string(),
+                        tlc,
                         offset,
                     },
                 ),
@@ -104,13 +107,13 @@ fn extension(offset: usize) -> impl Fn(&mut &[u8]) -> PResult<Extensions> {
     }
 }
 
-pub fn i_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
+pub fn i_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'I', extension(35), line_ending)
         .map(Record::I)
         .parse_next(input)
 }
 
-pub fn j_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
+pub fn j_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'J', extension(7), line_ending)
         .map(Record::J)
         .parse_next(input)
@@ -125,7 +128,7 @@ mod tests {
         let line = b"I013638FXA\n";
         if let Record::I(ext) = i_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 1);
-            assert_eq!(ext.vext[0].tlc, "FXA");
+            assert_eq!(ext.vext[0].tlc, b"FXA");
             assert_eq!(ext.vext[0].start, 0);
             assert_eq!(ext.vext[0].finish, 3);
         } else {
@@ -138,9 +141,9 @@ mod tests {
         let line = b"I033638FXA3940SIU4143ENL\n";
         if let Record::I(ext) = i_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 3);
-            assert_eq!(ext.vext[0].tlc, "FXA");
-            assert_eq!(ext.vext[1].tlc, "SIU");
-            assert_eq!(ext.vext[2].tlc, "ENL");
+            assert_eq!(ext.vext[0].tlc, b"FXA");
+            assert_eq!(ext.vext[1].tlc, b"SIU");
+            assert_eq!(ext.vext[2].tlc, b"ENL");
         } else {
             assert!(false)
         }
@@ -151,7 +154,7 @@ mod tests {
         let line = b"J010811HDT\n";
         if let Record::J(ext) = j_record.parse(line).unwrap() {
             assert_eq!(ext.vext.len(), 1);
-            assert_eq!(ext.vext[0].tlc, "HDT");
+            assert_eq!(ext.vext[0].tlc, b"HDT");
             assert_eq!(ext.vext[0].start, 0);
             assert_eq!(ext.vext[0].finish, 4);
         } else {
