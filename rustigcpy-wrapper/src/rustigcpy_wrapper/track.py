@@ -1,0 +1,62 @@
+"""Track wrapper - copies data on creation, all access is local Python"""
+import numpy as np
+from rustigcpy import FIX_DTYPE
+from .fix import Fix
+
+
+class Track:
+    """Track with numpy array (copied once on init, all access local)
+
+    The track data is copied from Rust into a Python numpy array on creation.
+    All subsequent operations are local Python (no FFI calls).
+    """
+
+    def __init__(self, track_bytes: bytes):
+        """Copy track data from Rust bytes into Python numpy array"""
+        # Single copy happens HERE - everything after is local Python
+        self._npdata = np.frombuffer(track_bytes, dtype=FIX_DTYPE)
+
+    @property
+    def _data(self) -> np.ndarray:
+        """Full structured array"""
+        return self._npdata
+
+    @property
+    def _latitude(self) -> np.ndarray:
+        """Latitudes in decimal degrees"""
+        return self._npdata['latitude']
+
+    @property
+    def _longitude(self) -> np.ndarray:
+        """Longitudes in decimal degrees"""
+        return self._npdata['longitude']
+
+    @property
+    def _baro_altitude(self) -> np.ndarray:
+        """Barometric altitudes in meters"""
+        return self._npdata['baro_altitude']
+
+    @property
+    def _gnss_altitude(self) -> np.ndarray:
+        """GNSS altitudes in meters"""
+        return self._npdata['gnss_altitude']
+
+    @property
+    def _timestamp(self) -> np.ndarray:
+        """Timestamps in seconds since midnight"""
+        return self._npdata['timestamp']
+
+    def __len__(self) -> int:
+        return len(self._npdata)
+
+    def __getitem__(self, idx: int) -> Fix:
+        """Get a single fix as Fix object"""
+        return Fix(self._npdata[idx])
+
+    def __iter__(self):
+        """Iterate over fixes"""
+        for i in range(len(self._npdata)):
+            yield Fix(self._npdata[i])
+
+    def __repr__(self) -> str:
+        return f"Track(fixes={len(self)})"

@@ -1,0 +1,38 @@
+"""Fix wrapper - single position fix"""
+import numpy as np
+
+
+class Fix:
+    """Single position fix from IGC track"""
+
+    def __init__(self, data):
+        """Wrap a single numpy structured array element"""
+        self._data = data
+
+    @property
+    def latitude(self) -> float:
+        """Latitude in decimal degrees"""
+        return float(self._data['latitude'])
+
+    @property
+    def longitude(self) -> float:
+        """Longitude in decimal degrees"""
+        return float(self._data['longitude'])
+
+    @property
+    def baro_altitude(self) -> int:
+        """Barometric altitude in meters"""
+        return int(self._data['baro_altitude'])
+
+    @property
+    def gnss_altitude(self) -> int:
+        """GNSS altitude in meters"""
+        return int(self._data['gnss_altitude'])
+
+    @property
+    def timestamp(self) -> int:
+        """Timestamp in seconds since midnight"""
+        return int(self._data['timestamp'])
+
+    def __repr__(self) -> str:
+        return f"Fix(lat={self.latitude:.6f}, lon={self.longitude:.6f}, alt={self.baro_altitude}m)"

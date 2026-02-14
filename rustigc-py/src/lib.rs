@@ -21,15 +21,21 @@ impl PyLog {
             PyValueError::new_err(format!("Failed to parse IGC file: {e}"))
         })?;
 
-        let data = rustigc::FRawData::new(&inner);
-        let flight = data.phases();
-
-        Ok(PyLog { inner, flight })
+        Ok(PyLog {
+            inner,
+            data: RefCell::new(None),
+            phases: RefCell::new(None),
+        })
     }
 
     /// Get track as raw bytes for zero-copy numpy access (32 bytes per fix with padding)
     #[getter]
     fn track_bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        // SAFETY: Creating a byte slice view of Vec<Fix> is safe because:
+        // - Fix is repr(C) with guaranteed layout
+        // - Pointer is valid for the duration of this borrow
+        // - PyBytes::new_bound immediately copies data (no aliasing)
+        // - Length calculation is correct: track.len() * size_of::<Fix>()
         let bytes = unsafe {
             std::slice::from_raw_parts(
                 self.inner.track.as_ptr() as *const u8,
