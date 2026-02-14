@@ -77,7 +77,7 @@ jobs:
         run: |
           source venv/bin/activate
           cd rustigc-py-wrapper
-          pip install .
+          pip install .[dev]
 
       - name: Run Python tests
         run: |
