@@ -7,7 +7,7 @@ name = "rustigc-py"
 version = "0.1.0"
 description = "Fast IGC flight recorder file parser"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "LGPL-2.1-or-later" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = [ "numpy>=1.20" ]
 classifiers = [
