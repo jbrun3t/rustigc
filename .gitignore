@@ -29,6 +29,7 @@ MANIFEST
 # Python testing
 .pytest_cache/
 .coverage
+coverage.xml
 .hypothesis/
 htmlcov/
 
