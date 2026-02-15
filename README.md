@@ -9,8 +9,7 @@ Fast IGC file parser for aviation sports (gliding, paragliding, hang gliding) wr
 ```
 rustigc/
 ├── rustigc/             - Core Rust library
-├── rustigc-py/          - Python bindings (low-level)
-├── rustigc-py-wrapper/  - Python wrapper (high-level API)
+├── rustigc-py/          - Python bindings
 └── rustigc-tools/       - CLI tool
 ```
 
@@ -60,8 +59,7 @@ print(f"Takeoff: {log.takeoff}")
 print(f"Landing: {log.landing}")
 ```
 
-See [rustigc-py-wrapper/README.md](rustigc-py-wrapper/README.md) for high-level API
-See [rustigc-py/README.md](rustigc-py/README.md) for low-level bindings
+See [rustigc-py/README.md](rustigc-py/README.md)
 
 ### CLI Tool
 

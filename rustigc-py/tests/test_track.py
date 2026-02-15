@@ -1,7 +1,7 @@
 """Test Track wrapper"""
+import numpy
 import pytest
-import numpy as np
-from rustigcpy_wrapper import Log
+from rustigcpy import Log
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
@@ -11,12 +11,12 @@ def test_track_properties(igc_content):
     track = log.track
 
     assert len(track) == 25459
-    assert isinstance(track._latitude, np.ndarray)
-    assert track._latitude.dtype == np.float64
-    assert track._longitude.dtype == np.float64
-    assert track._baro_altitude.dtype == np.int32
-    assert track._gnss_altitude.dtype == np.int32
-    assert track._timestamp.dtype == np.uint32
+    assert isinstance(track._latitude, numpy.ndarray)
+    assert track._latitude.dtype == numpy.float64
+    assert track._longitude.dtype == numpy.float64
+    assert track._baro_altitude.dtype == numpy.int32
+    assert track._gnss_altitude.dtype == numpy.int32
+    assert track._timestamp.dtype == numpy.uint32
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
@@ -57,8 +57,8 @@ def test_track_numpy_operations(igc_content):
     max_alt = track._baro_altitude.max()
     min_alt = track._baro_altitude.min()
 
-    assert isinstance(mean_lat, (float, np.floating))
-    assert isinstance(max_alt, (int, np.integer))
+    assert isinstance(mean_lat, (float, numpy.floating))
+    assert isinstance(max_alt, (int, numpy.integer))
     assert max_alt >= min_alt
 
 
@@ -78,10 +78,10 @@ def test_track_coordinates(igc_content):
     log = Log.from_bytes(igc_content)
     track = log.track
 
-    assert np.all(track._latitude >= -90)
-    assert np.all(track._latitude <= 90)
-    assert np.all(track._longitude >= -180)
-    assert np.all(track._longitude <= 180)
+    assert numpy.all(track._latitude >= -90)
+    assert numpy.all(track._latitude <= 90)
+    assert numpy.all(track._longitude >= -180)
+    assert numpy.all(track._longitude <= 180)
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)

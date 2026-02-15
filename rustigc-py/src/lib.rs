@@ -7,7 +7,7 @@ use pyo3::types::{PyBytes, PyList, PyTuple};
 use std::cell::RefCell;
 
 /// Python binding interface for IGC log
-#[pyclass(name = "Log")]
+#[pyclass(name = "RustLog")]
 struct PyLog {
     inner: rustigc::Log,
     data: RefCell<Option<rustigc::FRawData>>,
@@ -92,7 +92,8 @@ impl PyLog {
 
 /// Python minimal bindings for rustigc parsing library
 #[pymodule]
-fn rustigcpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
+#[pyo3(name = "_bindings")]
+fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
 

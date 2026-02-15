@@ -1,5 +1,5 @@
-"""Fix wrapper - single position fix"""
-import numpy as np
+"""Fix - single position fix"""
+import numpy
 
 
 class Fix:
@@ -38,7 +38,7 @@ class Fix:
         """Compare Fix objects by their underlying data"""
         if not isinstance(other, Fix):
             return False
-        return bool(np.array_equal(self._data, other._data))
+        return bool(numpy.array_equal(self._data, other._data))
 
     def __repr__(self) -> str:
         return f"Fix(lat={self.latitude:.6f}, lon={self.longitude:.6f}, alt={self.baro_altitude}m)"

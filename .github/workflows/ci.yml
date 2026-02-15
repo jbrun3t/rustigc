@@ -59,13 +59,12 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install maturin pytest
 
       - name: Build Python bindings
         run: |
           source venv/bin/activate
           cd rustigc-py
-          maturin develop
+          pip install .[dev]
 
       - name: Run Python tests
         run: |
@@ -73,15 +72,4 @@ jobs:
           cd rustigc-py
           python -m pytest -v
 
-      - name: Build Python wrapper
-        run: |
-          source venv/bin/activate
-          cd rustigc-py-wrapper
-          pip install .[dev]
-
-      - name: Run Python tests
-        run: |
-          source venv/bin/activate
-          cd rustigc-py-wrapper
-          python -m pytest -v
 

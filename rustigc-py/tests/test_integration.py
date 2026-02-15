@@ -1,5 +1,7 @@
 """Integration tests with real IGC files"""
-from rustigcpy_wrapper import Log, FIX_DTYPE
+from rustigcpy import Log
+from rustigcpy._bindings import FIX_DTYPE
+
 
 def test_numpy_dtype_size():
     """Verify FIX_DTYPE matches struct size (32 bytes)"""

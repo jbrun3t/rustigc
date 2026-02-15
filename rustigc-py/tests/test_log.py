@@ -1,7 +1,8 @@
-"""Test Log wrapper"""
-import pytest
-from rustigcpy_wrapper import Log
+"""Test Python Log wrapper"""
 from datetime import date
+
+import pytest
+from rustigcpy import Log
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)

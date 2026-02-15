@@ -1,5 +1,5 @@
 """Log wrapper - provides high-level API"""
-import rustigcpy
+import rustigcpy._bindings as rib
 from typing import Optional, TYPE_CHECKING
 from datetime import date, datetime
 from .track import Track
@@ -15,15 +15,15 @@ class Log:
     All subsequent operations are local Python (no FFI calls).
     """
 
-    def __init__(self, raw_log: rustigcpy.Log):
+    def __init__(self, log: rib.RustLog):
         """Initialize from rustigcpy.Log instance"""
-        self._log = raw_log
+        self._log = log
         self._track: Optional[Track] = None
 
     @classmethod
     def from_bytes(cls, content: bytes) -> 'Log':
         """Parse IGC file from bytes"""
-        return cls(rustigcpy.Log.from_bytes(content))
+        return cls(rib.RustLog.from_bytes(content))
 
     @classmethod
     def from_file(cls, path: str) -> 'Log':

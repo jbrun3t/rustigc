@@ -1,6 +1,6 @@
 """Track wrapper - copies data on creation, all access is local Python"""
-import numpy as np
-from rustigcpy import FIX_DTYPE
+import numpy
+from rustigcpy._bindings import FIX_DTYPE
 from .fix import Fix
 
 
@@ -14,35 +14,35 @@ class Track:
     def __init__(self, track_bytes: bytes):
         """Copy track data from Rust bytes into Python numpy array"""
         # Single copy happens HERE - everything after is local Python
-        self._npdata = np.frombuffer(track_bytes, dtype=FIX_DTYPE)
+        self._npdata = numpy.frombuffer(track_bytes, dtype=FIX_DTYPE)
 
     @property
-    def _data(self) -> np.ndarray:
+    def _data(self) -> numpy.ndarray:
         """Full structured array"""
         return self._npdata
 
     @property
-    def _latitude(self) -> np.ndarray:
+    def _latitude(self) -> numpy.ndarray:
         """Latitudes in decimal degrees"""
         return self._npdata['latitude']
 
     @property
-    def _longitude(self) -> np.ndarray:
+    def _longitude(self) -> numpy.ndarray:
         """Longitudes in decimal degrees"""
         return self._npdata['longitude']
 
     @property
-    def _baro_altitude(self) -> np.ndarray:
+    def _baro_altitude(self) -> numpy.ndarray:
         """Barometric altitudes in meters"""
         return self._npdata['baro_altitude']
 
     @property
-    def _gnss_altitude(self) -> np.ndarray:
+    def _gnss_altitude(self) -> numpy.ndarray:
         """GNSS altitudes in meters"""
         return self._npdata['gnss_altitude']
 
     @property
-    def _timestamp(self) -> np.ndarray:
+    def _timestamp(self) -> numpy.ndarray:
         """Timestamps in seconds since midnight"""
         return self._npdata['timestamp']
 

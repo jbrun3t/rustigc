@@ -3,13 +3,13 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "rustigcpy"
+name = "rustigc-py"
 version = "0.1.0"
 description = "Fast IGC flight recorder file parser"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
-dependencies = ["numpy>=1.20"]
+dependencies = [ "numpy>=1.20" ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -23,7 +23,44 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = [
+    "maturin>=1.11",
+    "pytest>=7.0",
+    "mypy>=1.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.8.0"
+]
 
 [tool.maturin]
-module-name = "rustigcpy"
+python-source = "python"
+module-name = "rustigcpy._bindings"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--cov=rustigcpy",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
