@@ -16,7 +16,7 @@ maturin develop
 
 ```python
 import rustigcpy
-import numpy as np
+import numpy
 
 # Parse IGC file
 with open("flight.igc", "rb") as f:
@@ -38,7 +38,7 @@ print(f"Takeoff index: {log.takeoff}")
 print(f"Landing index: {log.landing}")
 
 # Access track data as numpy array
-track = np.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)
+track = numpy.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)
 print(f"Fixes: {len(track)}")
 
 # Access fields
@@ -67,7 +67,7 @@ print(f"Altitudes: {track['baro_altitude']}")
 
 NumPy dtype for track data (32 bytes per fix):
 - `timestamp: u32` - Seconds since midnight
-- `_pad: u32` - Alignment padding (do not use)
+- `_pad: u32` - Alignment padding
 - `latitude: f64` - Decimal degrees
 - `longitude: f64` - Decimal degrees
 - `baro_altitude: i32` - Barometric altitude in meters

@@ -1,7 +1,7 @@
 """Test rustigcpy Rust extension (minimal low-level API)"""
 import pytest
 import rustigcpy
-import numpy as np
+import numpy
 
 FIX_DTYPE = rustigcpy.FIX_DTYPE
 
@@ -23,7 +23,7 @@ def test_parse(igc_file):
 def test_track_bytes_numpy(igc_file):
     """Verify numpy conversion works"""
     log = rustigcpy.Log.from_bytes(igc_file)
-    track = np.frombuffer(log.track_bytes, dtype=FIX_DTYPE)
+    track = numpy.frombuffer(log.track_bytes, dtype=FIX_DTYPE)
 
     assert len(track) == 25459
     assert FIX_DTYPE.itemsize == 32

@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
 use std::cell::RefCell;
 
-/// Python wrapper for IGC log (minimal API - use rustigcpy-wrapper for high-level interface)
+/// Python binding interface for IGC log
 #[pyclass(name = "Log")]
 struct PyLog {
     inner: rustigc::Log,
@@ -16,7 +16,7 @@ struct PyLog {
 
 #[pymethods]
 impl PyLog {
-    /// Parse an IGC file from bytes
+    /// Parse an IGC file content
     #[staticmethod]
     fn from_bytes(content: &[u8]) -> PyResult<Self> {
         let inner = rustigc::Log::new(content).map_err(|e| {
@@ -60,7 +60,7 @@ impl PyLog {
             .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 
-    /// Run flight phase analysis (lazy - only runs if not already done)
+    /// Flight analysis manual trigger
     fn analyze(&self) {
         if self.data.borrow().is_none() {
             let data = rustigc::FRawData::new(&self.inner);
@@ -70,14 +70,14 @@ impl PyLog {
         }
     }
 
-    /// Get takeoff fix index (None if not detected)
+    /// Takeoff fix index
     #[getter]
     fn takeoff(&self) -> Option<usize> {
         self.analyze();
         self.phases.borrow().map(|f| f.0)
     }
 
-    /// Get landing fix index (None if not detected)
+    /// Landing fix index
     #[getter]
     fn landing(&self) -> Option<usize> {
         self.analyze();
@@ -90,18 +90,18 @@ impl PyLog {
     }
 }
 
-/// Python module for rustigc (minimal bindings - use rustigcpy-wrapper for high-level API)
+/// Python minimal bindings for rustigc parsing library
 #[pymodule]
 fn rustigcpy(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
 
     // Export FIX_DTYPE as numpy dtype
-    // This matches the repr(C) memory layout of rustigc::Fix
     Python::with_gil(|py| {
         let numpy = py.import_bound("numpy")?;
 
-        // Create dtype matching Fix layout: timestamp first, then padding, then coordinates/altitudes
+        // Create dtype matching Fix layout:
+        // timestamp first, then padding, then coordinates/altitudes
         let dtype_spec = PyList::new_bound(
             py,
             &[
