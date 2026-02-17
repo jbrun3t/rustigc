@@ -27,7 +27,7 @@ pub struct CheapProjection<T: Float> {
 }
 
 impl<T: Float> CheapProjection<T> {
-    pub fn new(lon: T, lat: T) -> CheapProjection<T> {
+    pub fn new(lat: T, lon: T) -> CheapProjection<T> {
         // see https://github.com/mapbox/cheap-ruler/
 
         let one = T::one();
