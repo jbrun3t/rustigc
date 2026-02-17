@@ -106,12 +106,12 @@ fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
         let dtype_spec = PyList::new_bound(
             py,
             &[
-                PyTuple::new_bound(py, &["timestamp", "u4"]),
-                PyTuple::new_bound(py, &["_pad", "u4"]),
-                PyTuple::new_bound(py, &["latitude", "f8"]),
-                PyTuple::new_bound(py, &["longitude", "f8"]),
-                PyTuple::new_bound(py, &["baro_altitude", "i4"]),
-                PyTuple::new_bound(py, &["gnss_altitude", "i4"]),
+                PyTuple::new_bound(py, ["timestamp", "u4"]),
+                PyTuple::new_bound(py, ["_pad", "u4"]),
+                PyTuple::new_bound(py, ["latitude", "f8"]),
+                PyTuple::new_bound(py, ["longitude", "f8"]),
+                PyTuple::new_bound(py, ["baro_altitude", "i4"]),
+                PyTuple::new_bound(py, ["gnss_altitude", "i4"]),
             ],
         );
 

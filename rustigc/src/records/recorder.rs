@@ -44,7 +44,7 @@ impl fmt::Display for Recorder {
     }
 }
 
-impl<'a> From<Recorder> for Record<'a> {
+impl From<Recorder> for Record<'_> {
     fn from(v: Recorder) -> Self {
         Record::A(v)
     }
@@ -73,7 +73,7 @@ mod tests {
             assert_eq!(rec.manufacturer, "FLA");
             assert_eq!(rec.uid, "1BX");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -83,7 +83,7 @@ mod tests {
             assert_eq!(rec.manufacturer, "GCS");
             assert_eq!(rec.uid, "0123456789ABCD");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -99,7 +99,7 @@ mod tests {
             let formatted = format!("{}\n", rec);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 }

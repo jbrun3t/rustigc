@@ -27,7 +27,7 @@ pub struct Log {
     pub task: Option<Task>,
 }
 
-impl<'a> From<RawLog<'a>> for Log {
+impl From<RawLog<'_>> for Log {
     fn from(raw: RawLog) -> Self {
         let mut headers = HashMap::new();
         let mut track = Vec::new();

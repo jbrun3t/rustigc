@@ -38,7 +38,7 @@ impl<'a> RawLog<'a> {
     }
 }
 
-impl<'a> From<Log> for RawLog<'a> {
+impl From<Log> for RawLog<'_> {
     fn from(log: Log) -> Self {
         let mut records: Vec<Record> = Vec::new();
 
@@ -80,7 +80,7 @@ impl<'a> From<Log> for RawLog<'a> {
     }
 }
 
-impl<'a> fmt::Display for RawLog<'a> {
+impl fmt::Display for RawLog<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for rec in &self.records {
             rec.fmt(f)?;

@@ -115,7 +115,7 @@ impl fmt::Display for Task {
     }
 }
 
-impl<'a> From<Task> for Record<'a> {
+impl From<Task> for Record<'_> {
     fn from(v: Task) -> Self {
         Record::C(v)
     }

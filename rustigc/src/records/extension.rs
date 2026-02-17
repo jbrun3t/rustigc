@@ -41,7 +41,7 @@ pub struct RecordExtension<'a> {
     pub offset: usize,
 }
 
-impl<'a> fmt::Display for RecordExtension<'a> {
+impl fmt::Display for RecordExtension<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let tlc = std::str::from_utf8(self.tlc).unwrap();
         if f.alternate() {
@@ -65,7 +65,7 @@ pub struct Extensions<'a> {
     pub vext: Vec<RecordExtension<'a>>,
 }
 
-impl<'a> fmt::Display for Extensions<'a> {
+impl fmt::Display for Extensions<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
             let mut it = self.vext.iter();
@@ -132,7 +132,7 @@ mod tests {
             assert_eq!(ext.vext[0].start, 0);
             assert_eq!(ext.vext[0].finish, 3);
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -145,7 +145,7 @@ mod tests {
             assert_eq!(ext.vext[1].tlc, b"SIU");
             assert_eq!(ext.vext[2].tlc, b"ENL");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -158,7 +158,7 @@ mod tests {
             assert_eq!(ext.vext[0].start, 0);
             assert_eq!(ext.vext[0].finish, 4);
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -169,7 +169,7 @@ mod tests {
             let formatted = format!("{}\n", ext);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -180,7 +180,7 @@ mod tests {
             let formatted = format!("{}\n", ext);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 

@@ -53,7 +53,7 @@ pub struct TextEvent<'a> {
     pub text: &'a [u8],
 }
 
-impl<'a> fmt::Display for TextEvent<'a> {
+impl fmt::Display for TextEvent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", std::str::from_utf8(self.text).unwrap())
     }
@@ -66,7 +66,7 @@ pub struct TimedEvent<'a> {
     pub text: &'a [u8],
 }
 
-impl<'a> fmt::Display for TimedEvent<'a> {
+impl fmt::Display for TimedEvent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let text = std::str::from_utf8(self.text).unwrap();
         if f.alternate() {
@@ -139,7 +139,7 @@ mod tests {
         if let Record::L(event) = l_record.parse(line).unwrap() {
             assert_eq!(event.text, b"XGD GpsDumpLinux version 0.27");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -149,7 +149,7 @@ mod tests {
         if let Record::G(event) = g_record.parse(line).unwrap() {
             assert_eq!(event.text, b"351E2000FC0D9C1B");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -160,7 +160,7 @@ mod tests {
             assert_eq!(event.timestamp, 36849);
             assert_eq!(event.text, b"PEV");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -171,7 +171,7 @@ mod tests {
             assert_eq!(event.timestamp, 42454);
             assert_eq!(event.text, b"BFION AH");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -182,7 +182,7 @@ mod tests {
             assert_eq!(event.timestamp, 32972);
             assert_eq!(event.text, b"27163023070801103221");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -193,7 +193,7 @@ mod tests {
             assert_eq!(event.timestamp, 33112);
             assert_eq!(event.text, b"08100062");
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
@@ -204,7 +204,7 @@ mod tests {
             let formatted = format!("{}\n", event);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -215,7 +215,7 @@ mod tests {
             let formatted = format!("{}\n", event);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -226,7 +226,7 @@ mod tests {
             let formatted = format!("{}\n", event);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -237,7 +237,7 @@ mod tests {
             let formatted = format!("{}\n", event);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -248,7 +248,7 @@ mod tests {
             let formatted = format!("{}\n", event);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 

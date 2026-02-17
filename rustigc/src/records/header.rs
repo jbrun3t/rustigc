@@ -97,7 +97,7 @@ impl fmt::Display for Header {
     }
 }
 
-impl<'a> From<Header> for Record<'a> {
+impl From<Header> for Record<'_> {
     fn from(v: Header) -> Self {
         Record::H(v)
     }
@@ -147,7 +147,7 @@ mod tests {
             assert_eq!(inner.value.text, "150120");
             assert_eq!(inner.value.origin, HeaderOrigin::FlightRecorder);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -159,7 +159,7 @@ mod tests {
             assert_eq!(inner.value.text, "Tripoux Robert");
             assert_eq!(inner.value.origin, HeaderOrigin::FlightRecorder);
         } else {
-            assert!(false);
+            panic!();
         }
     }
 
@@ -180,7 +180,7 @@ mod tests {
             let formatted = format!("{}\n", inner);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 }

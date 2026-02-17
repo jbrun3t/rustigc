@@ -40,7 +40,7 @@ pub enum Record<'a> {
     L(TextEvent<'a>),
 }
 
-impl<'a> fmt::Display for Record<'a> {
+impl fmt::Display for Record<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
             match self {
@@ -92,7 +92,7 @@ fn ts_offset(ts: &mut u32, offset: &mut u32, last: &mut u32) {
     *ts += *offset;
 }
 
-impl<'a> Record<'a> {
+impl Record<'_> {
     pub fn fix_timestamp(mut self, offset: &mut u32, last: &mut u32) -> Self {
         match self {
             Record::B(ref mut rec) => ts_offset(&mut rec.fix.timestamp, offset, last),

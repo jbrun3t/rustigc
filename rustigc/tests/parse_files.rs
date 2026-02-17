@@ -15,10 +15,8 @@ fn fixture_parse_file(path: &PathBuf) -> Log {
     let content =
         fs::read(path).unwrap_or_else(|e| panic!("Failed to read {:?}: {}", *path, e));
 
-    let log = Log::new(&content)
-        .unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", *path, e));
-
-    return log;
+    Log::new(&content)
+        .unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", *path, e))
 }
 
 /// Test parsing a test file
@@ -82,6 +80,6 @@ fn test_parse_all_files() {
         } else {
             eprintln!("No takeoff found");
         }
-        assert!(log.track.len() > 0)
+        assert!(!log.track.is_empty())
     }
 }

@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 /// - u32 timestamp (followed by 4 bytes implicit padding for alignment)
 /// - f64 fields (8-byte aligned)
 /// - i32 fields (4-byte aligned)
+///
 /// Benchmarking shows ~5% parsing improvement with timestamp first vs last.
 /// Python/NumPy bindings must include explicit padding field in dtype.
 #[repr(C)]
@@ -66,7 +67,7 @@ pub struct RawFix<'a> {
     pub ext: &'a [u8],
 }
 
-impl<'a> fmt::Display for RawFix<'a> {
+impl fmt::Display for RawFix<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ext = std::str::from_utf8(self.ext).unwrap();
         if f.alternate() {
@@ -146,7 +147,7 @@ mod tests {
             assert_eq!(rec.fix.gnss_alt, 558);
             assert!(rec.valid);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -156,7 +157,7 @@ mod tests {
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             assert!(!rec.valid);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -176,7 +177,7 @@ mod tests {
             assert_eq!(rec.fix.gnss_alt, -200);
             assert!(rec.valid);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -187,7 +188,7 @@ mod tests {
             assert_eq!(rec.ext, b"1234567890");
             assert_eq!(rec.fix.timestamp, 43200);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 
@@ -198,7 +199,7 @@ mod tests {
             let formatted = format!("{}\n", rec);
             assert_eq!(formatted.as_bytes(), &line[1..]);
         } else {
-            assert!(false)
+            panic!()
         };
     }
 }
