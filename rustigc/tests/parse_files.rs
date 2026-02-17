@@ -15,8 +15,7 @@ fn fixture_parse_file(path: &PathBuf) -> Log {
     let content =
         fs::read(path).unwrap_or_else(|e| panic!("Failed to read {:?}: {}", *path, e));
 
-    Log::new(&content)
-        .unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", *path, e))
+    Log::new(&content).unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", *path, e))
 }
 
 /// Test parsing a test file
