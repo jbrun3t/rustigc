@@ -83,17 +83,24 @@ impl Log {
         if self.track.is_empty() {
             (0.0, 0.0)
         } else {
-            let lon0 = self.track[0].lon;
-            let lat =
-                self.track.iter().map(|f| f.lat).sum::<f64>() / (self.track.len() as f64);
-            let lon_offset = self
+            let north = self
                 .track
                 .iter()
-                .map(|f| lon_round(f.lon - lon0))
-                .sum::<f64>()
-                / (self.track.len() as f64);
-            let lon = lon_round(lon0 + lon_offset);
-            (lat, lon)
+                .fold(f64::NEG_INFINITY, |m, fix| f64::max(m, fix.lat));
+            let south = self
+                .track
+                .iter()
+                .fold(f64::INFINITY, |m, fix| f64::min(m, fix.lat));
+            let east = self
+                .track
+                .iter()
+                .fold(f64::NEG_INFINITY, |m, fix| f64::max(m, fix.lon));
+            let west = self
+                .track
+                .iter()
+                .fold(f64::INFINITY, |m, fix| f64::min(m, fix.lon));
+
+            ((north + south) / 2., lon_round((east + west) / 2.))
         }
     }
 }
