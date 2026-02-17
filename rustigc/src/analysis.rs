@@ -1,5 +1,6 @@
 //! Tracklog analysis
 
+use crate::projector::CheapPoint;
 use crate::projector::CheapProjection;
 use crate::Log;
 
@@ -8,10 +9,8 @@ pub struct FRawData {
     pub projection: CheapProjection<f64>,
     /// timestamp
     pub t: Vec<f64>,
-    /// Projected longitude
-    pub x: Vec<f64>,
-    /// Projected latatitude
-    pub y: Vec<f64>,
+    /// Projected Coordinates
+    pub p: Vec<CheapPoint<f64>>,
     /// Distance
     pub d: Vec<f64>,
     /// Ground Speed
@@ -31,30 +30,15 @@ impl FRawData {
         let t: Vec<f64> = log.track.iter().map(|fix| fix.timestamp as f64).collect();
 
         // Project coordinates
-        let y: Vec<f64> = log
+        let p: Vec<CheapPoint<f64>> = log
             .track
             .iter()
-            .map(|fix| projection.from_lat(fix.lat))
-            .collect();
-        let x: Vec<f64> = log
-            .track
-            .iter()
-            .map(|fix| projection.from_lon(fix.lon))
+            .map(|fix| projection.project(fix.lat, fix.lon))
             .collect();
 
-        // Diffs squared
+        // Distances and Speeds
+        let d: Vec<f64> = p.windows(2).map(|w| w[1].distance(&w[0])).collect();
         let dt: Vec<f64> = t.windows(2).map(|w| w[1] - w[0]).collect();
-        let dy: Vec<f64> = y.windows(2).map(|w| (w[1] - w[0]).powi(2)).collect();
-        let dx: Vec<f64> = x.windows(2).map(|w| (w[1] - w[0]).powi(2)).collect();
-
-        // Distances
-        let d: Vec<f64> = dx
-            .iter()
-            .zip(dy.iter())
-            .map(|(dx2, dy2)| (dx2 + dy2).sqrt())
-            .collect();
-
-        // Speeds
         let gs: Vec<f64> = d
             .iter()
             .zip(dt.iter())
@@ -64,8 +48,7 @@ impl FRawData {
         Self {
             projection,
             t,
-            x,
-            y,
+            p,
             d,
             gs,
         }

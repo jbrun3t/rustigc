@@ -52,8 +52,8 @@ def test_metadata(igc_content):
 def test_flight_phases(igc_content):
     """Test takeoff/landing detection"""
     log = rib.RustLog.from_bytes(igc_content)
-    assert log.takeoff == 124
-    assert log.landing == 25426
+    assert log.takeoff == 125
+    assert log.landing == 25425
 
 
 def test_invalid_content():

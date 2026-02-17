@@ -51,8 +51,8 @@ def test_flight_phases(igc_content):
     assert hasattr(landing, 'latitude')
 
     # Verify they correspond to expected indices
-    assert takeoff == log.track[124]
-    assert landing == log.track[25426]
+    assert takeoff == log.track[125]
+    assert landing == log.track[25425]
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
