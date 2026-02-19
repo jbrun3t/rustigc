@@ -5,6 +5,7 @@
 
 mod analysis;
 mod error;
+mod geometry;
 mod log;
 mod projector;
 mod rawlog;

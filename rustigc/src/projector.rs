@@ -1,6 +1,7 @@
 //! Forked from https://github.com/Turbo87/flat-projection-rs.git
 
 use num_traits::Float;
+use crate::geometry::EPoint;
 
 pub fn lon_round<T: Float>(lon: T) -> T {
     let o = T::from(360).unwrap();
@@ -41,15 +42,15 @@ impl<T: Float> CheapProjection<T> {
     }
 
     /// Converts a (lon, lat) tuple to a [`CheapPoint`] projection
-    pub fn project(&self, lat: T, lon: T) -> CheapPoint<T> {
+    pub fn project(&self, lat: T, lon: T) -> EPoint<T> {
         let y = (lat - self.lat) * self.ky;
         let x = lon_round(lon - self.lon) * self.kx;
 
-        CheapPoint { x, y }
+        EPoint { x, y }
     }
 
     /// Converts a [`CheapPoint`] back to a (lon, lat) tuple.
-    pub fn unproject(&self, p: &CheapPoint<T>) -> (T, T) {
+    pub fn unproject(&self, p: &EPoint<T>) -> (T, T) {
         (
             p.y / self.ky + self.lat,
             lon_round(p.x / self.kx + self.lon),
@@ -57,53 +58,6 @@ impl<T: Float> CheapProjection<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub struct CheapPoint<T> {
-    /// X-axis (East/West) component of the flat-surface point in meters
-    pub x: T,
-    /// Y-axis (North/South) component of the flat-surface point in meters
-    pub y: T,
-}
-
-pub fn delta_distance<T: Float>(dx: T, dy: T) -> T {
-    (dx.powi(2) + dy.powi(2)).sqrt()
-}
-
-pub fn bearing<T: Float>(dx: T, dy: T) -> T {
-    (-dx).atan2(-dy).to_degrees()
-}
-
-impl<T: Float> CheapPoint<T> {
-    fn delta(&self, other: &CheapPoint<T>) -> (T, T) {
-        (self.x - other.x, self.y - other.y)
-    }
-
-    /// Distance between this point and the other
-    pub fn distance(&self, other: &CheapPoint<T>) -> T {
-        let (dx, dy) = self.delta(other);
-        delta_distance(dx, dy)
-    }
-
-    /// Bearing from this point to the other
-    pub fn bearing(&self, other: &CheapPoint<T>) -> T {
-        let (dx, dy) = self.delta(other);
-        bearing(dx, dy)
-    }
-
-    /// New CheapPoint given a distance a bearing from this point
-    pub fn destination(&self, dist: T, bearing: T) -> CheapPoint<T> {
-        let a = bearing.to_radians();
-        self.offset(a.sin() * dist, a.cos() * dist)
-    }
-
-    /// Returns a new `CheapPoint` given easting and northing offsets
-    pub fn offset(&self, dx: T, dy: T) -> CheapPoint<T> {
-        CheapPoint {
-            x: self.x + dx,
-            y: self.y + dy,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
