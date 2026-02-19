@@ -1,7 +1,9 @@
 """Log wrapper - provides high-level API"""
-import rustigcpy._bindings as rib
-from typing import Optional, TYPE_CHECKING
 from datetime import date, datetime
+from typing import TYPE_CHECKING, Optional
+
+import rustigcpy._bindings as rib
+
 from .track import Track
 
 if TYPE_CHECKING:
@@ -18,7 +20,7 @@ class Log:
     def __init__(self, log: rib.RustLog):
         """Initialize from rustigcpy.Log instance"""
         self._log = log
-        self._track: Optional[Track] = None
+        self._track: Track | None = None
 
     @classmethod
     def from_bytes(cls, content: bytes) -> 'Log':
@@ -42,19 +44,19 @@ class Log:
         return self._track
 
     @property
-    def pilot_name(self) -> Optional[str]:
+    def pilot_name(self) -> str | None:
         """Pilot name from headers"""
         header = self._log.get_header("PLT")
         return header[0] if header else None
 
     @property
-    def glider_type(self) -> Optional[str]:
+    def glider_type(self) -> str | None:
         """Glider type from headers"""
         header = self._log.get_header("GTY")
         return header[0] if header else None
 
     @property
-    def date(self) -> Optional[date]:
+    def date(self) -> date | None:
         """Parse flight date to datetime.date"""
         header = self._log.get_header("DTE")
         if header is None:

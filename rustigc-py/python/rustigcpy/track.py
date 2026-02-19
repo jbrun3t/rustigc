@@ -1,6 +1,8 @@
 """Track wrapper - copies data on creation, all access is local Python"""
 import numpy
+
 from rustigcpy._bindings import FIX_DTYPE
+
 from .fix import Fix
 
 
