@@ -33,7 +33,7 @@ def test_metadata(igc_content):
 def test_date_parsing(igc_content):
     """Parse date to datetime.date"""
     log = Log.from_bytes(igc_content)
-    assert log.date == date(2022, 8, 5)
+    assert log.datetime.date() == date(2022, 8, 5)
 
 
 @pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)

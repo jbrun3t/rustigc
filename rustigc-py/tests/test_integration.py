@@ -13,4 +13,4 @@ def test_real_files(real_igc_content):
 
     assert log is not None
     assert len(log.track) > 0
-    assert log.date is not None
+    assert log.datetime is not None

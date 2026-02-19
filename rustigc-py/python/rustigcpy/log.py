@@ -1,5 +1,5 @@
 """Log wrapper - provides high-level API"""
-from datetime import date, datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Optional
 
 import rustigcpy._bindings as rib
@@ -8,7 +8,6 @@ from .track import Track
 
 if TYPE_CHECKING:
     from .fix import Fix
-
 
 class Log:
     """High-level IGC log wrapper
@@ -56,15 +55,15 @@ class Log:
         return header[0] if header else None
 
     @property
-    def date(self) -> date | None:
-        """Parse flight date to datetime.date"""
+    def datetime(self) -> datetime | None:
+        """Parse flight date to datetime"""
         header = self._log.get_header("DTE")
         if header is None:
             return None
         date_str = header[0]
         # IGC format: DDMMYY,FF (flight number after comma)
         date_part = date_str.split(',')[0]
-        return datetime.strptime(date_part, '%d%m%y').date()
+        return datetime.strptime(date_part, '%d%m%y').replace(tzinfo=UTC)
 
     def analyze(self) -> None:
         """Run flight phase analysis"""
