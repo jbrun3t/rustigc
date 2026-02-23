@@ -1,7 +1,6 @@
 //! Forked from https://github.com/Turbo87/flat-projection-rs.git
 
 use num_traits::Float;
-use crate::geometry::EPoint;
 
 pub fn lon_round<T: Float>(lon: T) -> T {
     let o = T::from(360).unwrap();
@@ -42,39 +41,50 @@ impl<T: Float> CheapProjection<T> {
     }
 
     /// Converts a (lon, lat) tuple to a [`CheapPoint`] projection
-    pub fn project(&self, lat: T, lon: T) -> EPoint<T> {
-        let y = (lat - self.lat) * self.ky;
-        let x = lon_round(lon - self.lon) * self.kx;
-
-        EPoint { x, y }
+    pub fn project(&self, lat: T, lon: T) -> (T, T) {
+        (
+            lon_round(lon - self.lon) * self.kx,
+            (lat - self.lat) * self.ky,
+        )
     }
 
     /// Converts a [`CheapPoint`] back to a (lon, lat) tuple.
-    pub fn unproject(&self, p: &EPoint<T>) -> (T, T) {
-        (
-            p.y / self.ky + self.lat,
-            lon_round(p.x / self.kx + self.lon),
-        )
+    pub fn unproject(&self, x: T, y: T) -> (T, T) {
+        (y / self.ky + self.lat, lon_round(x / self.kx + self.lon))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn flatpoint_destination() {
-        let (lat, lon) = (50.5, 30.5);
+    fn flat_projection_on_ref() {
+        let (lat, lon) = (50., 31.);
         let proj = CheapProjection::new(50., 31.);
-        let p1 = proj.project(lat, lon);
-        let (distance, bearing) = (1000., 45.0);
-        let p2 = p1.destination(distance, bearing);
-        let res_distance = p1.distance(&p2);
-        let (dest_lat, dest_lon) = proj.unproject(&p2);
+        let (x, y) = proj.project(lat, lon);
 
-        assert!((dest_lat - 50.5063572).abs() < 0.00001);
-        assert!((dest_lon - 30.5098622).abs() < 0.00001);
-        assert!((distance - res_distance).abs() < 0.00001);
+        assert_eq!(x, 0.);
+        assert_eq!(y, 0.);
+    }
+
+    #[test]
+    fn flat_projection() {
+        let (lat, lon) = (50.5, 30.8);
+        let proj = CheapProjection::new(50., 31.);
+        let (x, y) = proj.project(lat, lon);
+
+        assert!((x - -14339.15072).abs() < 0.00001);
+        assert!((y - 55614.53199).abs() < 0.00001);
+    }
+
+    #[test]
+    fn flat_unprojection() {
+        let (x, y) = (10000., -30000.);
+        let proj = CheapProjection::new(50., 31.);
+        let (lat, lon) = proj.unproject(x, y);
+
+        assert!((lat - 49.730286).abs() < 0.00001);
+        assert!((lon - 31.139478).abs() < 0.00001);
     }
 }

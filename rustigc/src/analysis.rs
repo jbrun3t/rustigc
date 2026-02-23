@@ -33,7 +33,10 @@ impl FRawData {
         let p: Vec<EPoint<f64>> = log
             .track
             .iter()
-            .map(|fix| projection.project(fix.lat, fix.lon))
+            .map(|fix| {
+                let (x, y) = projection.project(fix.lat, fix.lon);
+                EPoint { x, y }
+            })
             .collect();
 
         // Distances and Speeds
