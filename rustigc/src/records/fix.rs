@@ -59,6 +59,16 @@ impl fmt::Display for Fix {
     }
 }
 
+impl crate::geometry::Coords<f64> for Fix {
+    fn x(&self) -> f64 {
+        self.lon
+    }
+
+    fn y(&self) -> f64 {
+        self.lat
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct RawFix<'a> {

@@ -5,10 +5,9 @@
 
 use std::collections::HashMap;
 
+use crate::geometry::BBox;
 use crate::records::*;
 use crate::{RawLog, Result};
-
-use crate::projector::*;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -80,27 +79,14 @@ impl Log {
     }
 
     pub fn center(&self) -> (f64, f64) {
-        if self.track.is_empty() {
-            (0.0, 0.0)
-        } else {
-            let north = self
-                .track
-                .iter()
-                .fold(f64::NEG_INFINITY, |m, fix| f64::max(m, fix.lat));
-            let south = self
-                .track
-                .iter()
-                .fold(f64::INFINITY, |m, fix| f64::min(m, fix.lat));
-            let east = self
-                .track
-                .iter()
-                .fold(f64::NEG_INFINITY, |m, fix| f64::max(m, fix.lon));
-            let west = self
-                .track
-                .iter()
-                .fold(f64::INFINITY, |m, fix| f64::min(m, fix.lon));
+        use crate::geometry::{Coords, SphericalPoint};
 
-            ((north + south) / 2., lon_round((east + west) / 2.))
+        match BBox::<SphericalPoint<f64>>::from_items(&self.track) {
+            Some(bbox) => {
+                let center = bbox.center();
+                (center.y(), center.x()) // (lat, lon) - lon_round applied in from_coords
+            }
+            None => (0.0, 0.0),
         }
     }
 }

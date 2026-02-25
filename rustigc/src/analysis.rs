@@ -1,6 +1,6 @@
 //! Tracklog analysis
 
-use crate::geometry::EPoint;
+use crate::geometry::PointOps;
 use crate::projector::CheapProjection;
 use crate::Log;
 
@@ -9,8 +9,8 @@ pub struct FRawData {
     pub projection: CheapProjection<f64>,
     /// timestamp
     pub t: Vec<f64>,
-    /// Projected Coordinates
-    pub p: Vec<EPoint<f64>>,
+    /// Projected Coordinates (x, y in meters)
+    pub p: Vec<[f64; 2]>,
     /// Distance
     pub d: Vec<f64>,
     /// Ground Speed
@@ -30,12 +30,12 @@ impl FRawData {
         let t: Vec<f64> = log.track.iter().map(|fix| fix.timestamp as f64).collect();
 
         // Project coordinates
-        let p: Vec<EPoint<f64>> = log
+        let p: Vec<[f64; 2]> = log
             .track
             .iter()
             .map(|fix| {
                 let (x, y) = projection.project(fix.lat, fix.lon);
-                EPoint { x, y }
+                [x, y]
             })
             .collect();
 
