@@ -28,7 +28,7 @@ impl<'a> RawLog<'a> {
             1..,
             alt((
                 b_record, k_record, e_record, f_record, h_record, l_record, g_record,
-                d_record, a_record, i_record, j_record, c_record,
+                d_record, a_record, i_record, j_record, c_record, bad_record,
             ))
             .map(|r| r.fix_timestamp(&mut offset, &mut lastts)),
         )
