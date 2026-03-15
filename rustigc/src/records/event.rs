@@ -35,13 +35,10 @@ use std::fmt;
 
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
-use winnow::{
-    ascii::{line_ending, till_line_ending},
-    combinator::delimited,
-};
+use winnow::{ascii::till_line_ending, combinator::delimited};
 
-use super::utils::ts_to_igc;
 use super::utils::ts_to_sec;
+use super::utils::{line_ending_eof, ts_to_igc};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -94,37 +91,37 @@ fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
 }
 
 pub fn d_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'D', text_event(), line_ending)
+    delimited(b'D', text_event(), line_ending_eof)
         .map(Record::D)
         .parse_next(input)
 }
 
 pub fn l_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'L', text_event(), line_ending)
+    delimited(b'L', text_event(), line_ending_eof)
         .map(Record::L)
         .parse_next(input)
 }
 
 pub fn g_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'G', text_event(), line_ending)
+    delimited(b'G', text_event(), line_ending_eof)
         .map(Record::G)
         .parse_next(input)
 }
 
 pub fn e_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'E', timed_event(), line_ending)
+    delimited(b'E', timed_event(), line_ending_eof)
         .map(Record::E)
         .parse_next(input)
 }
 
 pub fn f_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'F', timed_event(), line_ending)
+    delimited(b'F', timed_event(), line_ending_eof)
         .map(Record::F)
         .parse_next(input)
 }
 
 pub fn k_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'K', timed_event(), line_ending)
+    delimited(b'K', timed_event(), line_ending_eof)
         .map(Record::K)
         .parse_next(input)
 }

@@ -1,10 +1,18 @@
 //! Reusable record parsers
 
+use winnow::ascii::line_ending;
+use winnow::combinator::{eof, peek};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 use winnow::stream::AsChar;
 use winnow::token::take_while;
 use winnow::{combinator::alt, token::take};
+
+#[inline]
+/// Gracefully handle missing newline at file end
+pub fn line_ending_eof<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
+    alt((line_ending, peek(eof))).parse_next(input)
+}
 
 /// Parse n decimal digits as a number
 /// Uses btoi to parse directly from bytes without UTF-8 validation.

@@ -15,13 +15,13 @@
 
 use std::fmt;
 
-use winnow::ascii::{alphanumeric1, line_ending, till_line_ending};
+use winnow::ascii::{alphanumeric1, till_line_ending};
 use winnow::combinator::alt;
 use winnow::combinator::{delimited, opt};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
-use super::utils::n_alphanum;
+use super::utils::{line_ending_eof, n_alphanum};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -89,7 +89,11 @@ pub struct Header {
 impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
-            write!(f, "{:#} {}: {}", self.value.origin, self.key, self.value.text)
+            write!(
+                f,
+                "{:#} {}: {}",
+                self.value.origin, self.key, self.value.text
+            )
         } else {
             write!(f, "{}{}{}", self.value.origin, self.key, self.value.text)
         }
@@ -119,7 +123,7 @@ fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
 
 /// Provide a tuple with ( HeaderID, HeaderData ) ready for insertion in hashmap
 pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'H', (horigin, hkey, till_line_ending), line_ending)
+    delimited(b'H', (horigin, hkey, till_line_ending), line_ending_eof)
         .map(|(origin, key, v)| {
             let key: String = std::str::from_utf8(key).unwrap().to_string();
             Header {
