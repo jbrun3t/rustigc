@@ -89,7 +89,7 @@ fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensi
         (
             n_digits(2),
             repeat(
-                1..,
+                0..,
                 (n_digits(2), n_digits(2), n_alphanum(3)).map(
                     move |(s, f, tlc): (usize, usize, &[u8])| RecordExtension {
                         start: s - offset - 1,
@@ -181,6 +181,17 @@ mod tests {
         } else {
             panic!()
         };
+    }
+
+    // Some FR actually do this
+    #[test]
+    fn test_i_zero() {
+        let line = b"I00\n";
+        if let Record::I(ext) = i_record.parse(line).unwrap() {
+            assert!(ext.vext.is_empty());
+        } else {
+            panic!()
+        }
     }
 
     #[test]
