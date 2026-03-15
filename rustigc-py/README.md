@@ -179,4 +179,4 @@ python -m pytest -v
 
 ## License
 
-MIT
+LGPLv2.1

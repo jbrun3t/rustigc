@@ -5,16 +5,15 @@ build-backend = "maturin"
 [project]
 name = "rustigc-py"
 version = "0.1.0"
-description = "Fast IGC flight recorder file parser"
+description = "Python bindings for the rustigc library"
 requires-python = ">=3.10"
 license = { text = "LGPL-2.1-or-later" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

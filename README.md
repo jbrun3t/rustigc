@@ -93,4 +93,4 @@ maturin develop
 
 ## License
 
-MIT
+LGPLv2+

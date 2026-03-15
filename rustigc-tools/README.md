@@ -76,4 +76,4 @@ Then open `test.perf` with the [Firefox Profiler](https://profiler.firefox.com/f
 
 ## License
 
-MIT
+GPLv2+
