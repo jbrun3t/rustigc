@@ -132,7 +132,7 @@ pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
 }
 
 // NOTE: This record does not behave like the other.
-// I will consume more than one line. It assumes that all C-Records are
+// It will consume more than one line. It assumes that all C-Records are
 // following each other which makes sense and seems to be the case. It
 // allows to construct the Task directly which makes the parsing a lot
 // simpler
