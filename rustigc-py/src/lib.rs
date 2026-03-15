@@ -53,10 +53,9 @@ impl PyLog {
         if key.len() != 3 {
             return None;
         }
-        let key_bytes: [u8; 3] = key.as_bytes().try_into().ok()?;
         self.inner
             .headers
-            .get(&key_bytes)
+            .get(key)
             .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 

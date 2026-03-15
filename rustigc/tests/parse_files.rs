@@ -26,9 +26,9 @@ fn test_parse_plouf() {
 
     assert_eq!(log.track.len(), 1095);
     assert_eq!(log.recorder.manufacturer, "XTR");
-    assert_eq!(log.headers[b"PLT"].text, "Jerome Brunet");
-    assert_eq!(log.headers[b"GTY"].text, "Ozone Delta 4 MS");
-    assert_eq!(log.headers[b"DTE"].text, "201024");
+    assert_eq!(log.headers["PLT"].text, "Jerome Brunet");
+    assert_eq!(log.headers["GTY"].text, "Ozone Delta 4 MS");
+    assert_eq!(log.headers["DTE"].text, "201024");
 
     // Verify fix coordinates are reasonable
     for (i, fix) in log.track.iter().enumerate() {

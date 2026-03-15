@@ -19,7 +19,7 @@ pub struct Log {
     /// Logger identification
     pub recorder: Recorder,
     /// headers, lazilly stored
-    pub headers: HashMap<[u8; 3], HeaderData>,
+    pub headers: HashMap<String, HeaderData>,
     /// Position fixes (B-records)
     pub track: Vec<Fix>,
     /// Declared Task
@@ -111,7 +111,7 @@ mod tests {
         let log = Log::new(content).unwrap();
 
         assert_eq!(log.recorder.manufacturer, "FLA");
-        assert_eq!(log.headers[b"DTE"].text, "150120");
+        assert_eq!(log.headers["DTE"].text, "150120");
         assert_eq!(log.track.len(), 3);
         assert_eq!(log.track[0].timestamp, 39695);
     }
