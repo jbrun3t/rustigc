@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "rustigc-py"
 version = "0.1.0"
 description = "Python bindings for the rustigc library"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "LGPL-2.1-or-later" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20"]
@@ -16,7 +16,6 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
