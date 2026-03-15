@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::geometry::BBox;
 use crate::records::*;
-use crate::{RawLog, Result};
+use crate::{LError, LResult, RawLog};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -26,8 +26,10 @@ pub struct Log {
     pub task: Option<Task>,
 }
 
-impl From<RawLog<'_>> for Log {
-    fn from(raw: RawLog) -> Self {
+impl TryFrom<RawLog<'_>> for Log {
+    type Error = LError;
+
+    fn try_from(raw: RawLog) -> Result<Self, Self::Error> {
         let mut headers = HashMap::new();
         let mut track = Vec::new();
         let mut task: Option<Task> = None;
@@ -60,22 +62,23 @@ impl From<RawLog<'_>> for Log {
             }
         }
 
-        let recorder =
-            recorder.unwrap_or_else(|| panic!("A rawlog must have a recorder"));
+        let recorder = recorder.ok_or_else(|| {
+            super::LError::Doh("Recorder not found - Missing A Record".into())
+        })?;
 
-        Self {
+        Ok(Self {
             recorder,
             headers,
             track,
             task,
-        }
+        })
     }
 }
 
 impl Log {
-    pub fn new(input: &[u8]) -> Result<Self> {
+    pub fn new(input: &[u8]) -> LResult<Self> {
         let raw = RawLog::new(input)?;
-        Ok(raw.into())
+        raw.try_into()
     }
 
     pub fn center(&self) -> (f64, f64) {

@@ -8,7 +8,7 @@ use winnow::combinator::{alt, repeat};
 use winnow::prelude::*;
 
 use crate::records::*;
-use crate::{Log, Result};
+use crate::{LResult, Log};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ pub struct RawLog<'a> {
 }
 
 impl<'a> RawLog<'a> {
-    pub fn new(input: &'a [u8]) -> Result<Self> {
+    pub fn new(input: &'a [u8]) -> LResult<Self> {
         let mut offset: u32 = 0;
         let mut lastts: u32 = 0;
         let records = repeat(

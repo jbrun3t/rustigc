@@ -12,7 +12,7 @@ mod rawlog;
 mod records;
 
 pub use analysis::FRawData;
-pub use error::{Error, Result};
+pub use error::{LError, LResult};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use records::Fix;
