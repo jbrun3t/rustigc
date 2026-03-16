@@ -127,7 +127,7 @@ pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
     .map(|(ns, ew, t): (_, _, &[u8])| TurnPoint {
         lat: (ns as f64) / 60000.0,
         lon: (ew as f64) / 60000.0,
-        text: std::str::from_utf8(t).unwrap().trim().to_string(),
+        text: String::from_utf8_lossy(t).into_owned(),
     })
     .parse_next(input)
 }
@@ -163,9 +163,9 @@ pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
         .map(
             |((d, f, _, _, t), turnpoints): ((&[u8], &[u8], _, _, &[u8]), _)| {
                 Task {
-                    declaration: std::str::from_utf8(d).unwrap().to_string(),
-                    flight: std::str::from_utf8(f).unwrap().to_string(),
-                    text: std::str::from_utf8(t).unwrap().trim().to_string(),
+                    declaration: String::from_utf8_lossy(d).into_owned(),
+                    flight: String::from_utf8_lossy(f).into_owned(),
+                    text: String::from_utf8_lossy(t).into_owned(),
                     turnpoints,
                 }
                 .into()

@@ -53,8 +53,8 @@ pub fn a_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
     delimited(b'A', (n_alphanum(3), till_robust_ending), robust_ending_eof)
         .map(|(m, u): (&[u8], &[u8])| {
             Recorder {
-                manufacturer: std::str::from_utf8(m).unwrap().to_string(),
-                uid: std::str::from_utf8(u).unwrap().to_string(),
+                manufacturer: String::from_utf8_lossy(m).into_owned(),
+                uid: String::from_utf8_lossy(u).into_owned(),
                 data: None,
             }
             .into()
