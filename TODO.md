@@ -8,6 +8,7 @@
 * Add multi takeoff/detection, flight split (early phase detection)
 * Add flight phase analysis (thermaling, transition, etc ...)
 * Flight Scoring support
+* Add strict to disable some compatibility crap in the parser
 
 # IDEAS:
 * Smoothing: (for flight dynamics and phases analysis - not scoring)

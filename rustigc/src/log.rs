@@ -62,9 +62,16 @@ impl TryFrom<RawLog<'_>> for Log {
             }
         }
 
-        let recorder = recorder.ok_or_else(|| {
-            super::LError::Doh("Recorder not found - Missing A Record".into())
-        })?;
+        // How can one miss this in the IGC spec ?
+        // it is literally the first thing !
+        let recorder = recorder.unwrap_or_else(|| {
+            eprintln!("Missing Record \"A\". Please fix your flight recorder");
+            Recorder {
+                manufacturer: "BAD".into(),
+                uid: "123456789ABC".into(),
+                data: None,
+            }
+        });
 
         Ok(Self {
             recorder,
