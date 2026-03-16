@@ -130,11 +130,12 @@ fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
 pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'H', (horigin, hkey, till_robust_ending), robust_ending_eof)
         .map(|(origin, key, v)| {
-            let key = String::from_utf8_lossy(key).into_owned();
+            let key = String::from_utf8_lossy(key).to_string();
+            let text = String::from_utf8_lossy(v).trim().to_string();
             Header {
                 key,
                 value: HeaderData {
-                    text: String::from_utf8_lossy(v).into_owned(),
+                    text,
                     origin,
                 },
             }
