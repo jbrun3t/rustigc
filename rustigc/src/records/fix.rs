@@ -11,13 +11,13 @@
 
 use std::fmt;
 
-use winnow::ascii::till_line_ending;
 use winnow::combinator::alt;
 use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
 use super::utils::robust_ending_eof;
+use super::utils::till_robust_ending;
 use super::utils::{latitude, longitude, n_digits, ts_to_sec};
 use super::utils::{latitude_to_igc, longitude_to_igc, ts_to_igc};
 use super::Record;
@@ -138,7 +138,7 @@ fn fix(input: &mut &[u8]) -> PResult<(Fix, bool)> {
 }
 
 pub fn b_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'B', (fix, till_line_ending), robust_ending_eof)
+    delimited(b'B', (fix, till_robust_ending), robust_ending_eof)
         .map(|((fix, valid), ext)| RawFix { fix, valid, ext }.into())
         .parse_next(input)
 }
@@ -209,6 +209,16 @@ mod tests {
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             let formatted = format!("{}\n", rec);
             assert_eq!(formatted.as_bytes(), &line[1..]);
+        } else {
+            panic!()
+        };
+    }
+
+    #[test]
+    fn test_parse_many_cr() {
+        let line = b"B1639004549904N00256219EA0245602531 \r\r\n";
+        if let Record::B(rec) = b_record.parse(line).unwrap() {
+            assert!(rec.valid);
         } else {
             panic!()
         };
