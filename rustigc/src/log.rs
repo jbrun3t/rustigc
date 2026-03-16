@@ -9,6 +9,7 @@ use crate::geometry::BBox;
 use crate::records::*;
 use crate::{LError, LResult, RawLog};
 
+use log::warn;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -65,7 +66,7 @@ impl TryFrom<RawLog<'_>> for Log {
         // How can one miss this in the IGC spec ?
         // it is literally the first thing !
         let recorder = recorder.unwrap_or_else(|| {
-            eprintln!("Missing Record \"A\". Please fix your flight recorder");
+            warn!("Missing Record \"A\". Please fix your flight recorder");
             Recorder {
                 manufacturer: "BAD".into(),
                 uid: "123456789ABC".into(),

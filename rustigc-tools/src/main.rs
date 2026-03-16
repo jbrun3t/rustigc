@@ -1,4 +1,5 @@
 use clap::Parser;
+use log::error;
 use rustigc::*;
 use std::io::Write;
 use std::io::{self, Read};
@@ -13,18 +14,19 @@ struct Args {
 }
 
 fn main() -> io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
 
     let mut content = Vec::new();
     let bytes_read = io::stdin().lock().read_to_end(&mut content)?;
 
     if bytes_read == 0 {
-        eprintln!("No input on stdin");
+        error!("No input on stdin");
         std::process::exit(0);
     }
 
     let log = Log::new(&content).unwrap_or_else(|e| {
-        eprintln!("Error: {}", e);
+        error!("{}", e);
         std::process::exit(1);
     });
 

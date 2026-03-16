@@ -2,6 +2,7 @@
 //!
 //! Catch all parser for bad records
 
+use log::warn;
 use winnow::combinator::{alt, eof, not, repeat};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
@@ -20,11 +21,8 @@ pub fn bad_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
         (repeat(1.., (not(eof), any))).map(|_: ()| ()),
     ))
     .with_taken()
-    .map(|(_, taken): (_, &[u8])| {
-        eprintln!(
-            "Bad Record: {}",
-            std::str::from_utf8(taken).unwrap_or_else(|_| "Non ASCII")
-        );
+        .map(|(_, taken): (_, &[u8])| {
+            warn!("Bad Record: {}", String::from_utf8_lossy(taken));
         Record::BAD(taken)
     })
     .parse_next(input)
