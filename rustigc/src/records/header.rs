@@ -20,6 +20,7 @@ use winnow::combinator::alt;
 use winnow::combinator::{delimited, opt};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
+use winnow::token::take;
 
 use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 use super::Record;
@@ -37,6 +38,7 @@ pub enum HeaderOrigin {
     FlightRecorder,
     Observer,
     Pilot,
+    Unknown,
 }
 
 impl HeaderOrigin {
@@ -45,6 +47,7 @@ impl HeaderOrigin {
             HeaderOrigin::FlightRecorder => b'F',
             HeaderOrigin::Observer => b'O',
             HeaderOrigin::Pilot => b'P',
+            HeaderOrigin::Unknown => b'U',
         }
     }
 
@@ -53,6 +56,7 @@ impl HeaderOrigin {
             HeaderOrigin::FlightRecorder => "Flight Recorder",
             HeaderOrigin::Observer => "Observer",
             HeaderOrigin::Pilot => "Pilot",
+            HeaderOrigin::Unknown => "Unknown",
         }
     }
 }
@@ -111,6 +115,7 @@ fn horigin(input: &mut &[u8]) -> PResult<HeaderOrigin> {
         (HeaderOrigin::FlightRecorder.as_byte()).value(HeaderOrigin::FlightRecorder),
         (HeaderOrigin::Observer.as_byte()).value(HeaderOrigin::Observer),
         (HeaderOrigin::Pilot.as_byte()).value(HeaderOrigin::Pilot),
+        (take(1usize)).value(HeaderOrigin::Unknown), // Match creative origins
     ))
     .parse_next(input)
 }
@@ -168,7 +173,12 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_origin() {
-        assert!(h_record.parse(b"HXDTE150120\n").is_err());
+        let line = b"HXDTE150120\n";
+        if let Record::H(inner) = h_record.parse(line).unwrap() {
+            assert_eq!(inner.value.origin, HeaderOrigin::Unknown);
+        } else {
+            panic!();
+        }
     }
 
     #[test]
