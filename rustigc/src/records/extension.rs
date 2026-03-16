@@ -20,7 +20,7 @@ use winnow::combinator::{delimited, repeat};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
-use super::utils::{line_ending_eof, n_alphanum, n_digits};
+use super::utils::{n_alphanum, n_digits, robust_ending_eof};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -107,13 +107,13 @@ fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensi
 }
 
 pub fn i_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'I', extension(35), line_ending_eof)
+    delimited(b'I', extension(35), robust_ending_eof)
         .map(Record::I)
         .parse_next(input)
 }
 
 pub fn j_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'J', extension(7), line_ending_eof)
+    delimited(b'J', extension(7), robust_ending_eof)
         .map(Record::J)
         .parse_next(input)
 }

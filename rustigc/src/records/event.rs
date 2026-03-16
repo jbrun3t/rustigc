@@ -35,10 +35,10 @@ use std::fmt;
 
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
-use winnow::{ascii::till_line_ending, combinator::delimited};
+use winnow::combinator::delimited;
 
-use super::utils::ts_to_sec;
-use super::utils::{line_ending_eof, ts_to_igc};
+use super::utils::{robust_ending_eof, till_robust_ending};
+use super::utils::{ts_to_igc,ts_to_sec};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -76,7 +76,7 @@ impl fmt::Display for TimedEvent<'_> {
 
 fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
     move |input: &mut &[u8]| {
-        till_line_ending
+        till_robust_ending
             .map(|text| TextEvent { text })
             .parse_next(input)
     }
@@ -84,44 +84,44 @@ fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
 
 fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
     move |input: &mut &[u8]| {
-        (ts_to_sec, till_line_ending)
+        (ts_to_sec, till_robust_ending)
             .map(|(timestamp, text): (_, &[u8])| TimedEvent { timestamp, text })
             .parse_next(input)
     }
 }
 
 pub fn d_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'D', text_event(), line_ending_eof)
+    delimited(b'D', text_event(), robust_ending_eof)
         .map(Record::D)
         .parse_next(input)
 }
 
 pub fn l_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'L', text_event(), line_ending_eof)
+    delimited(b'L', text_event(), robust_ending_eof)
         .map(Record::L)
         .parse_next(input)
 }
 
 pub fn g_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'G', text_event(), line_ending_eof)
+    delimited(b'G', text_event(), robust_ending_eof)
         .map(Record::G)
         .parse_next(input)
 }
 
 pub fn e_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'E', timed_event(), line_ending_eof)
+    delimited(b'E', timed_event(), robust_ending_eof)
         .map(Record::E)
         .parse_next(input)
 }
 
 pub fn f_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'F', timed_event(), line_ending_eof)
+    delimited(b'F', timed_event(), robust_ending_eof)
         .map(Record::F)
         .parse_next(input)
 }
 
 pub fn k_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    delimited(b'K', timed_event(), line_ending_eof)
+    delimited(b'K', timed_event(), robust_ending_eof)
         .map(Record::K)
         .parse_next(input)
 }

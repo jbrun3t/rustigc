@@ -34,9 +34,9 @@ use winnow::error::Result as PResult;
 use winnow::prelude::*;
 use winnow::stream::AsChar;
 use winnow::token::{take, take_while};
-use winnow::{ascii::till_line_ending, combinator::delimited};
+use winnow::combinator::delimited;
 
-use super::utils::{latitude, line_ending_eof, longitude};
+use super::utils::{latitude, longitude, robust_ending_eof, till_robust_ending};
 use super::utils::{latitude_to_igc, longitude_to_igc};
 use super::Record;
 
@@ -121,8 +121,8 @@ impl From<Task> for Record<'_> {
 pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
     delimited(
         b'C',
-        (latitude, longitude, till_line_ending),
-        line_ending_eof,
+        (latitude, longitude, till_robust_ending),
+        robust_ending_eof,
     )
     .map(|(ns, ew, t): (_, _, &[u8])| TurnPoint {
         lat: (ns as f64) / 60000.0,
@@ -154,9 +154,9 @@ pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
                 take_while(6..=6, AsChar::is_dec_digit),
                 take(4usize), // Obsolete field
                 take(2usize),
-                till_line_ending,
+                till_robust_ending,
             ),
-            line_ending_eof,
+            robust_ending_eof,
         ),
         repeat(1.., turnpoint),
     )

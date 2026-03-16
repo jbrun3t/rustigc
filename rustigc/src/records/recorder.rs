@@ -9,12 +9,11 @@
 
 use std::fmt;
 
-use winnow::ascii::till_line_ending;
 use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
-use super::utils::{line_ending_eof, n_alphanum};
+use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -51,7 +50,7 @@ impl From<Recorder> for Record<'_> {
 }
 
 pub fn a_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
-    delimited(b'A', (n_alphanum(3), till_line_ending), line_ending_eof)
+    delimited(b'A', (n_alphanum(3), till_robust_ending), robust_ending_eof)
         .map(|(m, u): (&[u8], &[u8])| {
             Recorder {
                 manufacturer: std::str::from_utf8(m).unwrap().to_string(),
@@ -101,5 +100,14 @@ mod tests {
         } else {
             panic!()
         };
+    }
+
+    #[test]
+    fn test_recorder_crazy_carriage() {
+        if let Record::A(rec) = a_record.parse(b"AXSLGiveMeMyCarriageBack\r\r\n").unwrap() {
+            assert_eq!(rec.manufacturer, "XSL");
+        } else {
+            panic!()
+        }
     }
 }
