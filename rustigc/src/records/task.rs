@@ -29,7 +29,7 @@
 
 use std::fmt;
 
-use winnow::combinator::repeat;
+use winnow::combinator::{opt, repeat};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 use winnow::stream::AsChar;
@@ -68,40 +68,49 @@ impl fmt::Display for TurnPoint {
     }
 }
 
+/// Task Declaration
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+pub struct Declaration {
+    pub date: String, // As DDMMYYHHMMSS
+    pub flight: String,      // As DDMMYY
+    pub text: String,
+}
+
 /// Declared task
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Task {
-    pub declaration: String, // As DDMMYYHHMMSS
-    pub flight: String,      // As DDMMYY
-    pub text: String,
+    pub declaration: Option<Declaration>,
     pub turnpoints: Vec<TurnPoint>,
 }
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if f.alternate() {
-            write!(
-                f,
-                "{} TP - {} - {} - {}",
-                self.turnpoints.len(),
-                self.declaration,
-                self.flight,
-                self.text
-            )?;
-        } else {
-            write!(
-                f,
-                "{}{}0000{:02}{}",
-                self.declaration,
-                self.flight,
-                if self.turnpoints.len() < 2 {
-                    0
-                } else {
-                    self.turnpoints.len() - 2
-                },
-                self.text
-            )?;
+        if let Some(d) = &self.declaration {
+            if f.alternate() {
+                write!(
+                    f,
+                    "{} TP - {} - {} - {}",
+                    self.turnpoints.len(),
+                    d.date,
+                    d.flight,
+                    d.text
+                )?;
+            } else {
+                write!(
+                    f,
+                    "{}{}0000{:02}{}",
+                    d.date,
+                    d.flight,
+                    if self.turnpoints.len() < 2 {
+                        0
+                    } else {
+                        self.turnpoints.len() - 2
+                    },
+                   d.text
+                )?;
+            }
         }
 
         for tp in &self.turnpoints {
@@ -132,6 +141,27 @@ pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
     .parse_next(input)
 }
 
+pub fn task_declaration(input: &mut &[u8]) -> PResult<Declaration> {
+    delimited(
+        b'C',
+        (
+            take_while(12..=12, AsChar::is_dec_digit),
+            take_while(6..=6, AsChar::is_dec_digit),
+            take(4usize), // Obsolete field
+            take(2usize),
+            till_robust_ending,
+        ),
+        robust_ending_eof,
+    )
+        .map(|(d, f, _, _, t): (&[u8], &[u8], _, _, &[u8])|
+             Declaration {
+                 date: String::from_utf8_lossy(d).into_owned(),
+                 flight: String::from_utf8_lossy(f).into_owned(),
+                 text: String::from_utf8_lossy(t).into_owned(),
+             })
+        .parse_next(input)
+}
+
 // NOTE: This record does not behave like the other.
 // It will consume more than one line. It assumes that all C-Records are
 // following each other which makes sense and seems to be the case. It
@@ -145,32 +175,19 @@ pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
 // the number of TP found could be NN + 2, or NN + 4 depending on
 // the FR and Task entered. The info is not needed actually, just
 // ignore it
+//
+// NOTE #3: While the IGC specification is pretty Task should have
+// a declaration header, many FR omit it. In practice, in makes sense.
+// Most pilot do not contact the FAI before their flight to declare
+// the task, so instead of making the fields up, the FR omit the
+// header. Support that quirk.
 pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     (
-        delimited(
-            b'C',
-            (
-                take_while(12..=12, AsChar::is_dec_digit),
-                take_while(6..=6, AsChar::is_dec_digit),
-                take(4usize), // Obsolete field
-                take(2usize),
-                till_robust_ending,
-            ),
-            robust_ending_eof,
-        ),
+        opt(task_declaration),
         repeat(1.., turnpoint),
     )
-        .map(
-            |((d, f, _, _, t), turnpoints): ((&[u8], &[u8], _, _, &[u8]), _)| {
-                Task {
-                    declaration: String::from_utf8_lossy(d).into_owned(),
-                    flight: String::from_utf8_lossy(f).into_owned(),
-                    text: String::from_utf8_lossy(t).into_owned(),
-                    turnpoints,
-                }
-                .into()
-            },
-        )
+        .map(|(declaration, turnpoints)|
+             Task{declaration, turnpoints}.into())
         .parse_next(input)
 }
 
@@ -190,9 +207,10 @@ mod tests {
                       C0000000N00000000E\n";
 
         if let Record::C(task) = c_record.parse(input).unwrap() {
-            assert_eq!(task.declaration, "050822090459");
-            assert_eq!(task.flight, "000000");
-            assert_eq!(task.text, "");
+            let d = task.declaration.unwrap();
+            assert_eq!(d.date, "050822090459");
+            assert_eq!(d.flight, "000000");
+            assert_eq!(d.text, "");
             assert_eq!(task.turnpoints.len(), 6);
 
             assert_eq!(task.turnpoints[0].text, "");
