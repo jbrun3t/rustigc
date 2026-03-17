@@ -87,7 +87,12 @@ fn latlon_to_igc(input: u32) -> (u32, u32) {
 
 /// Parse a Latitude in the form DDMMmmmN
 pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
-    (latlon(true), alt(((b'N').value(1), (b'S').value(-1))))
+    (latlon(true),
+     alt(((b'N').value(1),
+          (b'S').value(-1),
+          (b'+').value(1),
+          (b'-').value(-1),
+     )))
         .map(|(v, s)| (v as i32) * s)
         .parse_next(input)
 }
@@ -105,7 +110,12 @@ pub fn latitude_to_igc(input: f64) -> String {
 
 /// Parse a Longitude in the form DDDMMmmmE
 pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
-    (latlon(false), alt(((b'E').value(1), (b'W').value(-1))))
+    (latlon(false),
+     alt(((b'E').value(1),
+          (b'W').value(-1),
+          (b'+').value(1),
+          (b'-').value(-1),
+     )))
         .map(|(v, s)| (v as i32) * s)
         .parse_next(input)
 }
