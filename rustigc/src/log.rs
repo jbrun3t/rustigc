@@ -36,6 +36,8 @@ impl TryFrom<RawLog<'_>> for Log {
         let mut task: Option<Task> = None;
         let mut recorder: Option<Recorder> = None;
         let mut _bextensions: Option<Vec<RecordExtension>> = None;
+        let mut bad_count: usize = 0;
+        let count = raw.records.len();
 
         for rec in raw.records.into_iter() {
             match rec {
@@ -59,8 +61,16 @@ impl TryFrom<RawLog<'_>> for Log {
                 Record::I(inner) => {
                     _bextensions = Some(inner.vext);
                 }
+                Record::BAD(_) => { bad_count += 1 }
                 _ => {}
             }
+        }
+
+        // Reject a file that is more than 80% bad
+        // TODO: Try to reject earlier, while parsing
+        if ((bad_count * 10) / count) >= 8 {
+            return Err(LError::Doh(
+                format!("Invalid content: {bad_count} bad records")));
         }
 
         // How can one miss this in the IGC spec ?
