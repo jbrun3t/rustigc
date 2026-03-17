@@ -4,10 +4,16 @@
   > C4551116N0613229EB01
   * REVERSALE VGP2010
 
-* Minutes coordinates out of bounds (>=60)
+* Invalid Coordinates
   > B1257364513713N00560000EA0000002039
   * French CFD Server 2.1
   * XCTrack Version ??
+  > B11040718000000N18000000EA0000000000
+  * Garmin Forerunner205 ?
+
+* Invalid Timestamps
+  > B1449604549859N00636577EA017540175401808
+  * XCSoar Version ??
 
 * Undocumented header origin:
   > HSCCLCOMPETITION CLASS:FAI-3
@@ -26,7 +32,6 @@
   * Flymaster GpsSD
 
 * Missing new line at end of file
-  * Flymaster NavSD (XLF) / Logfly version 3->4.1.7
   * Many ...
 
 * Missing Recorder ID
@@ -34,9 +39,14 @@
   * Syride, SYS'GPS
   * Syride, SYS'Nav
 
-* Missing A Record
+* Missing/Bad A Record
   * Syride, SYS-Ky
+  * FLYTEC,6020
 
-* Missing task declaration
-  * BRAUNIGER,COMPEO+
+* Missing task header
+  * Many ...
 
+
+* Random missing characters
+  > B133757440620839EA0188802041000
+  * BRAUNIGER,COMPETINO
