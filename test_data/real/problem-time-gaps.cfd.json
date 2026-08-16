@@ -1,0 +1,19 @@
+{
+  "description": "Distance 3 points",
+  "distance": 27.97,
+  "raw_distance": 27972.996,
+  "gap": 0.0,
+  "penalty": 0.0,
+  "score": 27.97,
+  "multiplier": 1.0,
+  "takeoff": 0,
+  "entry": 86,
+  "turnpoints": [
+    240,
+    412,
+    3104
+  ],
+  "exit": 3144,
+  "landing": 3148,
+  "circuit": false
+}

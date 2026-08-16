@@ -29,12 +29,12 @@
 
 use std::fmt;
 
+use winnow::combinator::delimited;
 use winnow::combinator::{opt, repeat};
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 use winnow::stream::AsChar;
 use winnow::token::{take, take_while};
-use winnow::combinator::delimited;
 
 use super::utils::{latitude, longitude, robust_ending_eof, till_robust_ending};
 use super::utils::{latitude_to_igc, longitude_to_igc};
@@ -72,8 +72,8 @@ impl fmt::Display for TurnPoint {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Declaration {
-    pub date: String, // As DDMMYYHHMMSS
-    pub flight: String,      // As DDMMYY
+    pub date: String,   // As DDMMYYHHMMSS
+    pub flight: String, // As DDMMYY
     pub text: String,
 }
 
@@ -108,7 +108,7 @@ impl fmt::Display for Task {
                     } else {
                         self.turnpoints.len() - 2
                     },
-                   d.text
+                    d.text
                 )?;
             }
         }
@@ -153,41 +153,39 @@ pub fn task_declaration(input: &mut &[u8]) -> PResult<Declaration> {
         ),
         robust_ending_eof,
     )
-        .map(|(d, f, _, _, t): (&[u8], &[u8], _, _, &[u8])|
-             Declaration {
-                 date: String::from_utf8_lossy(d).into_owned(),
-                 flight: String::from_utf8_lossy(f).into_owned(),
-                 text: String::from_utf8_lossy(t).into_owned(),
-             })
-        .parse_next(input)
+    .map(|(d, f, _, _, t): (&[u8], &[u8], _, _, &[u8])| Declaration {
+        date: String::from_utf8_lossy(d).into_owned(),
+        flight: String::from_utf8_lossy(f).into_owned(),
+        text: String::from_utf8_lossy(t).into_owned(),
+    })
+    .parse_next(input)
 }
 
-// NOTE: This record does not behave like the other.
-// It will consume more than one line. It assumes that all C-Records are
-// following each other which makes sense and seems to be the case. It
-// allows to construct the Task directly which makes the parsing a lot
-// simpler
+// NOTE: This record does not behave like the others. It consumes more than
+// one line, assuming all C-records follow each other — which makes sense and
+// seems to be the case. It lets the Task be built directly, which makes the
+// parsing a lot simpler.
 //
-// NOTE #2: Do not bother validating the number of turnpoints declared.
-// The spec is not clear on that point. It says the number exclude
-// start/finish, says nothing nothing about takeoff/landing or how
-// the parser is supposed to recognize those TP. In the end, the
-// the number of TP found could be NN + 2, or NN + 4 depending on
-// the FR and Task entered. The info is not needed actually, just
-// ignore it
+// NOTE #2: Do not bother validating the declared number of turnpoints. The
+// spec is not clear on that point: it says the number excludes start/finish,
+// says nothing about takeoff/landing, and nothing about how the parser is
+// supposed to recognize those TP. In the end the number of TP found could be
+// NN + 2 or NN + 4, depending on the FR and the task entered. The info is not
+// needed anyway, so just ignore it.
 //
-// NOTE #3: While the IGC specification is pretty Task should have
-// a declaration header, many FR omit it. In practice, in makes sense.
-// Most pilot do not contact the FAI before their flight to declare
-// the task, so instead of making the fields up, the FR omit the
-// header. Support that quirk.
+// NOTE #3: While the IGC specification is pretty clear a task should have a
+// declaration header, many FR omit it. In practice it makes sense: most pilots
+// do not contact the FAI before their flight to declare the task, so rather
+// than make the fields up the FR drops the header. Support that quirk.
 pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
-    (
-        opt(task_declaration),
-        repeat(1.., turnpoint),
-    )
-        .map(|(declaration, turnpoints)|
-             Task{declaration, turnpoints}.into())
+    (opt(task_declaration), repeat(1.., turnpoint))
+        .map(|(declaration, turnpoints)| {
+            Task {
+                declaration,
+                turnpoints,
+            }
+            .into()
+        })
         .parse_next(input)
 }
 

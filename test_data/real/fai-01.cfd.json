@@ -1,0 +1,19 @@
+{
+  "description": "Triangle FAI",
+  "distance": 622.92,
+  "raw_distance": 622919.527,
+  "gap": 0.07,
+  "penalty": 0.0,
+  "score": 872.09,
+  "multiplier": 1.4,
+  "takeoff": 125,
+  "entry": 125,
+  "turnpoints": [
+    1374,
+    11790,
+    19270
+  ],
+  "exit": 25421,
+  "landing": 25457,
+  "circuit": true
+}

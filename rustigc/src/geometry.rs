@@ -1,15 +1,18 @@
 //! Geometry primitives and operations
 //!
-//! This module provides generic 2D geometry support for both Euclidean and spherical
-//! coordinate systems. Euclidean points are represented as plain `[T; 2]` arrays for
-//! zero-cost abstraction and direct kdtree compatibility.
+//! A point is a plain `[T; 2]` array — zero-cost, and what `rstar` already indexes. What the two
+//! coordinates mean is the metric's business, not the point's: [`Flat`] reads them as a Euclidean
+//! plane, [`Fcc`] and [`Geodesic`] as (lon, lat) on the Earth.
 
+use crate::projector::lon_round;
+use geographiclib_rs::InverseGeodesic;
 use num_traits::Float;
+use smallvec::{smallvec, SmallVec};
 
 // ============= Traits =============
 
-/// Provides access to 2D coordinates
-pub trait Coords<T: Float> {
+/// Read access to 2D coordinates
+pub trait PointCoords<T: Float> {
     /// X coordinate (or longitude for spherical)
     fn x(&self) -> T;
 
@@ -17,43 +20,53 @@ pub trait Coords<T: Float> {
     fn y(&self) -> T;
 }
 
-/// Geometric operations on points (distance, bearing)
-pub trait PointOps<T: Float>: Coords<T> {
-    /// Distance between this point and another
-    fn distance(&self, other: &Self) -> T;
+/// Write access to 2D coordinates
+pub trait PointSetCoords<T: Float> {
+    /// X coordinate (or longitude for spherical)
+    fn set_x(&mut self, x: T);
 
-    /// Bearing from this point to another (degrees, 0=North, 90=East)
-    fn bearing(&self, other: &Self) -> T;
+    /// Y coordinate (or latitude for spherical)
+    fn set_y(&mut self, y: T);
+}
+
+pub trait PointDistance<T: Float> {
+    fn distance<U: PointCoords<T>>(a: &U, b: &U) -> T;
+}
+
+#[allow(dead_code)]
+pub trait PointBearing<T: Float> {
+    fn bearing<U: PointCoords<T>>(a: &U, b: &U) -> T;
 }
 
 /// Constructible 2D point from coordinates
-pub trait Point2D<T: Float>: Coords<T> + Copy {
+pub trait PointNew<T: Float>: PointCoords<T> + Copy {
     /// Create a point from coordinates [x, y]
-    fn from_coords(coords: [T; 2]) -> Self;
+    fn new(x: T, y: T) -> Self;
 }
 
-// ============= Euclidean: plain [T; 2] =============
+// ==== Euclidian Math ====
 
-impl<T: Float> Coords<T> for [T; 2] {
-    fn x(&self) -> T {
-        self[0]
-    }
+pub struct Flat;
 
-    fn y(&self) -> T {
-        self[1]
+impl Flat {
+    /// Squared distance, for ranking only: monotone in [`Flat::distance`], without its `sqrt`.
+    pub fn distance_squared<T: Float, U: PointCoords<T>>(a: &U, b: &U) -> T {
+        let dx = b.x() - a.x();
+        let dy = b.y() - a.y();
+        dx * dx + dy * dy
     }
 }
 
-impl<T: Float> PointOps<T> for [T; 2] {
-    fn distance(&self, other: &Self) -> T {
-        let dx = self[0] - other[0];
-        let dy = self[1] - other[1];
-        (dx * dx + dy * dy).sqrt()
+impl<T: Float> PointDistance<T> for Flat {
+    fn distance<U: PointCoords<T>>(a: &U, b: &U) -> T {
+        Flat::distance_squared(a, b).sqrt()
     }
+}
 
-    fn bearing(&self, other: &Self) -> T {
-        let dx = self[0] - other[0];
-        let dy = self[1] - other[1];
+impl<T: Float> PointBearing<T> for Flat {
+    fn bearing<U: PointCoords<T>>(a: &U, b: &U) -> T {
+        let dx = a.x() - b.x();
+        let dy = a.y() - b.y();
         let mut bearing = (-dx).atan2(-dy).to_degrees();
         // Normalize to [0, 360)
         if bearing < T::zero() {
@@ -63,48 +76,116 @@ impl<T: Float> PointOps<T> for [T; 2] {
     }
 }
 
-impl<T: Float> Point2D<T> for [T; 2] {
-    fn from_coords(coords: [T; 2]) -> Self {
-        coords
+// ==== Earth Distance using the FCC Simplification ====
+
+pub struct Fcc;
+
+/// `cos` of a mean latitude in radians — **only valid on [-π/2, π/2]**, where it is a 6-term minimax
+/// polynomial in `fm²` (Remez, degree 10). Latitudes parse within ±90° (`records/utils.rs`), so their
+/// mean cannot leave that range; outside it this diverges fast.
+///
+/// Worth 4.9× libm's `cos`, which spends most of its work on the argument reduction a general `cos`
+/// owes any input and this one never needs. The 2.2e-10 it costs on `cos` lands ~0.8 mm per 100 km on
+/// the distance, against the FCC formula's own ~7.9 m per 100 km versus the WGS84 geodesic — the two
+/// errors add, so this is a 0.0001 % widening of a budget that was already there.
+///
+/// Hand-rolled because nothing on crates.io covers it: the f64 `cos`es on offer are general-purpose
+/// and pay for that reduction, and `sleef-trig` — the only credible one — measured 0.97× libm here.
+fn cos_lat<T: Float>(fm: T) -> T {
+    let a0 = T::from(0.9999999997806517).unwrap();
+    let a1 = T::from(-0.49999999358471703).unwrap();
+    let a2 = T::from(0.04166663625806798).unwrap();
+    let a3 = T::from(-0.0013888361400249912).unwrap();
+    let a4 = T::from(2.4760161351450572e-05).unwrap();
+    let a5 = T::from(-2.605149519760686e-07).unwrap();
+
+    let u = fm * fm;
+    a0 + u * (a1 + u * (a2 + u * (a3 + u * (a4 + u * a5))))
+}
+
+impl<T: Float> PointDistance<T> for Fcc {
+    fn distance<U: PointCoords<T>>(a: &U, b: &U) -> T {
+        let one = T::from(1).unwrap();
+        let two = T::from(2).unwrap();
+
+        let df = b.y() - a.y();
+        let dg = lon_round(b.x() - a.x());
+        let fm = ((a.y() + b.y()) / two).to_radians();
+
+        let cos_fm = cos_lat(fm);
+        let cos2fm = two * cos_fm * cos_fm - one;
+        let cos3fm = cos_fm * (two * cos2fm - one);
+        let cos4fm = two * cos2fm * cos2fm - one;
+        let cos5fm = two * cos2fm * cos3fm - cos_fm;
+
+        // the FCC formula as per 47 CFR 73.208
+        let k1c1 = T::from(111.13209).unwrap();
+        let k1c2 = T::from(0.56605).unwrap();
+        let k1c3 = T::from(0.00120).unwrap();
+        let k1 = k1c1 - k1c2 * cos2fm + k1c3 * cos4fm;
+
+        let k2c1 = T::from(111.41513).unwrap();
+        let k2c2 = T::from(0.09455).unwrap();
+        let k2c3 = T::from(0.00012).unwrap();
+        let k2 = k2c1 * cos_fm - k2c2 * cos3fm + k2c3 * cos5fm;
+
+        let thousand = T::from(1000).unwrap();
+        ((k1 * k1 * df * df) + (k2 * k2 * dg * dg)).sqrt() * thousand
     }
 }
 
-// ============= Spherical: lon/lat coordinates =============
+// ==== WGS84 Geodesic Math ====
 
-/// Spherical point (longitude, latitude in degrees)
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct SphericalPoint<T> {
-    pub lon: T,
-    pub lat: T,
-}
+pub struct Geodesic;
 
-impl<T: Float> SphericalPoint<T> {
-    pub fn new(lon: T, lat: T) -> Self {
-        Self { lon, lat }
+impl PointDistance<f64> for Geodesic {
+    fn distance<U: PointCoords<f64>>(a: &U, b: &U) -> f64 {
+        let g = geographiclib_rs::Geodesic::wgs84();
+        let (dist, _, _, _) = g.inverse(a.y(), a.x(), b.y(), b.x());
+        dist
     }
 }
 
-impl<T: Float> Coords<T> for SphericalPoint<T> {
+// ============= plain [T; 2] Point =============
+
+impl<T: Float> PointCoords<T> for [T; 2] {
+    #[inline]
     fn x(&self) -> T {
-        self.lon
+        self[0]
     }
 
+    #[inline]
     fn y(&self) -> T {
-        self.lat
+        self[1]
     }
 }
 
-impl<T: Float> Point2D<T> for SphericalPoint<T> {
-    fn from_coords(coords: [T; 2]) -> Self {
-        use crate::projector::lon_round;
-        Self {
-            lon: lon_round(coords[0]),
-            lat: coords[1],
-        }
+impl<T: Float> PointSetCoords<T> for [T; 2] {
+    #[inline]
+    fn set_x(&mut self, x: T) {
+        self[0] = x;
+    }
+
+    #[inline]
+    fn set_y(&mut self, y: T) {
+        self[1] = y;
     }
 }
 
-// TODO: Implement PointOps for SphericalPoint with haversine distance and great circle bearing
+impl<T: Float> PointNew<T> for [T; 2] {
+    #[inline]
+    fn new(x: T, y: T) -> Self {
+        [x, y]
+    }
+}
+
+pub type TPoint<T> = [T; 2];
+
+/// The `f64` point the scoring engine (`scoring/`) and flight detection (`analysis.rs`) both work in.
+pub type SPoint = TPoint<f64>;
+
+/// A `BBox`'s vertices: at most 4, held inline so a box costs no allocation.
+pub type Vertices<P> = SmallVec<[P; 4]>;
 
 // ============= Bounding Box =============
 
@@ -112,61 +193,159 @@ impl<T: Float> Point2D<T> for SphericalPoint<T> {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BBox<P> {
     /// Bottom-left corner (or southwest for spherical)
-    pub bl: P,
+    pub min: P,
     /// Top-right corner (or northeast for spherical)
-    pub tr: P,
+    pub max: P,
 }
 
 impl<P> BBox<P> {
+    #[allow(unused)]
+    pub fn default<T>() -> Self
+    where
+        T: Float,
+        P: PointNew<T>,
+    {
+        BBox {
+            min: P::new(T::infinity(), T::infinity()),
+            max: P::new(T::neg_infinity(), T::neg_infinity()),
+        }
+    }
+
     /// Create bounding box from a slice of items with coordinates
     pub fn from_items<T, I>(items: &[I]) -> Option<Self>
     where
         T: Float,
-        P: Point2D<T>,
-        I: Coords<T>,
+        P: PointNew<T>,
+        I: PointCoords<T>,
     {
-        let mut iter = items.iter();
-        let first = iter.next()?;
-        let (first_x, first_y) = (first.x(), first.y());
+        let iter = items.iter();
+        let first = items.first()?;
 
-        let (min, max) = iter.fold(
-            ([first_x, first_y], [first_x, first_y]),
-            |(mut min, mut max), item| {
+        // TODO: consider itertools minmax_by
+        let (l, b, r, t) = iter.fold(
+            (first.x(), first.y(), first.x(), first.y()),
+            |(mut l, mut b, mut r, mut t), item| {
                 let (x, y) = (item.x(), item.y());
-                min[0] = T::min(min[0], x);
-                min[1] = T::min(min[1], y);
-                max[0] = T::max(max[0], x);
-                max[1] = T::max(max[1], y);
-                (min, max)
+                l = T::min(l, x);
+                b = T::min(b, y);
+                r = T::max(r, x);
+                t = T::max(t, y);
+                (l, b, r, t)
             },
         );
 
         Some(BBox {
-            bl: P::from_coords(min),
-            tr: P::from_coords(max),
+            min: P::new(l, b),
+            max: P::new(r, t),
         })
+    }
+
+    #[allow(unused)]
+    pub fn from_boxes<T>(items: &[Self]) -> Option<Self>
+    where
+        T: Float,
+        P: PointNew<T> + PointCoords<T>,
+    {
+        let mut iter = items.iter();
+        let first = iter.next()?;
+
+        let (l, b, r, t) = iter.fold(
+            (first.min.x(), first.min.y(), first.max.x(), first.max.y()),
+            |(mut l, mut b, mut r, mut t), item| {
+                l = T::min(l, item.min.x());
+                b = T::min(b, item.min.y());
+                r = T::max(r, item.max.x());
+                t = T::max(t, item.max.y());
+                (l, b, r, t)
+            },
+        );
+
+        Some(BBox {
+            min: P::new(l, b),
+            max: P::new(r, t),
+        })
+    }
+
+    #[allow(unused)]
+    pub fn extend<T, U>(&mut self, point: &U)
+    where
+        T: Float,
+        U: PointCoords<T>,
+        P: PointSetCoords<T> + PointCoords<T>,
+    {
+        self.min.set_x(T::min(self.min.x(), point.x()));
+        self.min.set_y(T::min(self.min.y(), point.y()));
+        self.max.set_x(T::max(self.max.x(), point.x()));
+        self.max.set_y(T::max(self.max.y(), point.y()));
+    }
+
+    pub fn merge<T>(&mut self, other: &Self)
+    where
+        T: Float,
+        P: PointSetCoords<T> + PointCoords<T>,
+    {
+        self.min.set_x(T::min(self.min.x(), other.min.x()));
+        self.min.set_y(T::min(self.min.y(), other.min.y()));
+        self.max.set_x(T::max(self.max.x(), other.max.x()));
+        self.max.set_y(T::max(self.max.y(), other.max.y()));
     }
 
     /// Get the center point of the bounding box
     pub fn center<T>(&self) -> P
     where
         T: Float,
-        P: Point2D<T>,
+        P: PointNew<T>,
     {
         let two = T::from(2).unwrap();
-        P::from_coords([
-            (self.bl.x() + self.tr.x()) / two,
-            (self.bl.y() + self.tr.y()) / two,
-        ])
+        P::new(
+            (self.min.x() + self.max.x()) / two,
+            (self.min.y() + self.max.y()) / two,
+        )
     }
 
+    #[allow(unused)]
     /// Diagonal length of the bounding box
-    pub fn diagonal<T>(&self) -> T
+    pub fn diagonal<T, M>(&self, _metric: M) -> T
     where
         T: Float,
-        P: PointOps<T>,
+        P: PointCoords<T>,
+        M: PointDistance<T>,
     {
-        self.bl.distance(&self.tr)
+        M::distance(&self.min, &self.max)
+    }
+
+    /// Returns true if this bounding box intersects another.
+    /// For spherical points, intersection is checked in lon/lat coordinate space.
+    /// TODO: does not handle antimeridian crossing (lon wraps at ±180°).
+    #[allow(unused)]
+    pub fn intersects<T>(&self, other: &Self) -> bool
+    where
+        T: Float,
+        P: PointCoords<T>,
+    {
+        self.min.x() <= other.max.x()
+            && self.max.x() >= other.min.x()
+            && self.min.y() <= other.max.y()
+            && self.max.y() >= other.min.y()
+    }
+
+    pub fn vertices<T>(&self) -> Vertices<P>
+    where
+        T: Float,
+        P: PointNew<T>,
+    {
+        if (self.min.x() == self.max.x()) && (self.min.y() == self.max.y()) {
+            smallvec![self.min]
+        } else if (self.min.x() == self.max.x()) || (self.min.y() == self.max.y()) {
+            smallvec![self.min, self.max]
+        } else {
+            smallvec![
+                self.min,
+                self.max,
+                P::new(self.min.x(), self.max.y()), // Top Left
+                P::new(self.max.x(), self.min.y()), // Bottom Right
+            ]
+        }
     }
 }
 
@@ -174,41 +353,61 @@ impl<P> BBox<P> {
 mod tests {
     use super::*;
 
-    fn test_box() -> BBox<[f64; 2]> {
+    fn test_box() -> BBox<TPoint<f64>> {
         let v = vec![[1.0, 1.0], [1.0, 3.0], [1.4, 2.7], [5.0, 1.0], [5.0, 3.0]];
 
         BBox::from_items(v.as_slice()).unwrap()
     }
 
+    // The polynomial is only sound on [-pi/2, pi/2] and only useful if it stays far under the FCC
+    // formula's own error, so pin both ends of that: swept against libm across the whole domain.
+    #[test]
+    fn cos_lat_holds_its_bound_over_every_latitude() {
+        const BOUND: f64 = 2.2e-10;
+
+        let mut worst = 0f64;
+        for i in 0..=2_000_000 {
+            let fm = (-90.0 + 180.0 * (i as f64) / 2_000_000.0).to_radians();
+            worst = worst.max((cos_lat(fm) - fm.cos()).abs());
+        }
+
+        assert!(worst <= BOUND, "max error {worst:e} exceeds {BOUND:e}");
+        // A polynomial quietly replaced by something weaker should fail here, not silently degrade
+        assert!(
+            worst > BOUND / 100.0,
+            "max error {worst:e} unexpectedly small — stale bound?"
+        );
+    }
+
     #[test]
     fn euclidean_distance() {
-        let p1: [f64; 2] = [0.0, 0.0];
-        let p2: [f64; 2] = [3.0, 4.0];
-        assert_eq!(p1.distance(&p2), 5.0);
+        let p1: TPoint<f64> = [0.0, 0.0];
+        let p2: TPoint<f64> = [3.0, 4.0];
+        assert_eq!(Flat::distance(&p1, &p2), 5.0);
     }
 
     #[test]
     fn euclidean_bearing() {
-        let p1: [f64; 2] = [0.0, 0.0];
-        let p2: [f64; 2] = [0.0, 1.0]; // Due north
-        assert_eq!(p1.bearing(&p2), 0.0);
+        let p1: TPoint<f64> = [0.0, 0.0];
+        let p2: TPoint<f64> = [0.0, 1.0]; // Due north
+        assert_eq!(Flat::bearing(&p1, &p2), 0.0);
 
-        let p3: [f64; 2] = [1.0, 0.0]; // Due east
-        assert_eq!(p1.bearing(&p3), 90.0);
+        let p2: TPoint<f64> = [1.0, 0.0]; // Due east
+        assert_eq!(Flat::bearing(&p1, &p2), 90.0);
 
-        let p4: [f64; 2] = [0.0, -1.0]; // Due south
-        assert_eq!(p1.bearing(&p4), 180.0);
+        let p2: TPoint<f64> = [0.0, -1.0]; // Due south
+        assert_eq!(Flat::bearing(&p1, &p2), 180.0);
 
-        let p5: [f64; 2] = [-1.0, 0.0]; // Due west
-        assert_eq!(p1.bearing(&p5), 270.0);
+        let p2: TPoint<f64> = [-1.0, 0.0]; // Due west
+        assert_eq!(Flat::bearing(&p1, &p2), 270.0);
     }
 
     #[test]
     fn bbox_from_items() {
         let b = test_box();
 
-        assert_eq!(b.bl, [1.0, 1.0]);
-        assert_eq!(b.tr, [5.0, 3.0]);
+        assert_eq!(b.min, [1.0, 1.0]);
+        assert_eq!(b.max, [5.0, 3.0]);
     }
 
     #[test]
@@ -223,21 +422,21 @@ mod tests {
     fn bbox_diagonal() {
         let b = test_box();
 
-        assert!((b.diagonal() - 4.472136).abs() < 0.00001);
+        assert!((b.diagonal(Flat) - 4.472136).abs() < 0.00001);
     }
 
     #[test]
     fn bbox_empty() {
-        let points: Vec<[f64; 2]> = vec![];
-        assert!(BBox::<[f64; 2]>::from_items(&points).is_none());
+        let points: Vec<TPoint<f64>> = vec![];
+        assert!(BBox::<TPoint<f64>>::from_items(&points).is_none());
     }
 
     #[test]
     fn bbox_single_point() {
         let points = vec![[2.0, 3.0]];
-        let bbox = BBox::<[f64; 2]>::from_items(&points).unwrap();
-        assert_eq!(bbox.bl, [2.0, 3.0]);
-        assert_eq!(bbox.tr, [2.0, 3.0]);
-        assert_eq!(bbox.diagonal(), 0.0);
+        let bbox = BBox::<TPoint<f64>>::from_items(&points).unwrap();
+        assert_eq!(bbox.min, [2.0, 3.0]);
+        assert_eq!(bbox.max, [2.0, 3.0]);
+        assert_eq!(bbox.diagonal(Flat), 0.0);
     }
 }

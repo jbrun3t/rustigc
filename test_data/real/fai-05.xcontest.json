@@ -1,0 +1,19 @@
+{
+  "description": "Closed Free Triangle",
+  "distance": 117.89,
+  "raw_distance": 117890.462,
+  "gap": 1.17,
+  "penalty": 1.17,
+  "score": 165.05,
+  "multiplier": 1.4,
+  "takeoff": 0,
+  "entry": 894,
+  "turnpoints": [
+    2995,
+    11639,
+    19192
+  ],
+  "exit": 20537,
+  "landing": 20537,
+  "circuit": true
+}

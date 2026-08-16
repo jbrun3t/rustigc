@@ -1,0 +1,19 @@
+{
+  "description": "Free Flight",
+  "distance": 26.49,
+  "raw_distance": 26488.45,
+  "gap": 0.0,
+  "penalty": 0.0,
+  "score": 26.49,
+  "multiplier": 1.0,
+  "takeoff": 0,
+  "entry": 167,
+  "turnpoints": [
+    1755,
+    1886,
+    2819
+  ],
+  "exit": 4054,
+  "landing": 4081,
+  "circuit": false
+}

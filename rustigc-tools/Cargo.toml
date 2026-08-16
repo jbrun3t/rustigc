@@ -12,8 +12,12 @@ description = "CLI tools for IGC file parsing and analysis"
 readme = "README.md"
 
 [[bin]]
-name = "rustigc"
+name = "rustigc-parse"
 path = "src/main.rs"
+
+[[bin]]
+name = "rustigc-xc-score"
+path = "src/score.rs"
 
 [dependencies]
 log = "0.4"

@@ -4,7 +4,7 @@ import pytest
 from rustigcpy import Log
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_properties(igc_content):
     """Access latitude, longitude, altitude properties"""
     log = Log.from_bytes(igc_content)
@@ -19,7 +19,7 @@ def test_track_properties(igc_content):
     assert track._timestamp.dtype == numpy.uint32
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_indexing(igc_content):
     """Support indexing and slicing"""
     log = Log.from_bytes(igc_content)
@@ -32,7 +32,7 @@ def test_track_indexing(igc_content):
     subset = track._npdata[0:100]
     assert len(subset) == 100
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_fix_object(igc_content):
     """Test Fix object properties"""
     log = Log.from_bytes(igc_content)
@@ -47,7 +47,7 @@ def test_fix_object(igc_content):
     assert "Fix" in repr(fix)
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_numpy_operations(igc_content):
     """Test vectorized numpy operations"""
     log = Log.from_bytes(igc_content)
@@ -62,7 +62,7 @@ def test_track_numpy_operations(igc_content):
     assert max_alt >= min_alt
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_repr(igc_content):
     """Test Track.__repr__"""
     log = Log.from_bytes(igc_content)
@@ -72,7 +72,7 @@ def test_track_repr(igc_content):
     assert "fixes=25459" in repr_str
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_coordinates(igc_content):
     """Test coordinate values are in valid ranges"""
     log = Log.from_bytes(igc_content)
@@ -84,7 +84,7 @@ def test_track_coordinates(igc_content):
     assert numpy.all(track._longitude <= 180)
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_iteration(igc_content):
     """Test iterating over track"""
     log = Log.from_bytes(igc_content)

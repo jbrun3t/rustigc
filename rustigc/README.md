@@ -1,20 +1,13 @@
 # Rustigc
 
-Fast IGC file parser and analysis library for aviation sports (gliding, paragliding, hang gliding).
-
-## Features
-
-- Parse IGC files into structured data
-- Roundtrip: parse and write back valid IGC
-- Optional serde support for serialization
+Fast IGC library for aviation sports
 
 ## Usage
 
 Add to `Cargo.toml`:
 ```toml
+[dependencies]
 rustigc = "0.1"
-# or with serde support:
-rustigc = { version = "0.1", features = ["serde"] }
 ```
 
 ### Basic parsing
@@ -49,7 +42,7 @@ for fix in &log.track {
 `RawLog` keeps references to the original bytes for minimal allocations:
 
 ```rust
-use rustigc::RawLog;
+use rustigc::{Log, RawLog};
 
 let content = std::fs::read("flight.igc")?;
 let raw = RawLog::new(&content)?;
@@ -58,7 +51,7 @@ let raw = RawLog::new(&content)?;
 println!("{}", raw);
 
 // Convert to Log when needed
-let log: Log = raw.into();
+let log: Log = raw.try_into()?;
 ```
 
 ### Error handling
@@ -72,6 +65,28 @@ match Log::new(&content) {
 }
 ```
 
+### Scoring
+
+`Log::score` runs every rule of a league in one search and reports the best. `league_names()` lists
+what the `league` argument accepts.
+
+```rust
+use rustigc::{Analysis, Log};
+
+let log = Log::new(&content)?;
+
+// Scoring works on a fix window; flight detection gives a sensible one
+let (start, stop) = Analysis::new(&log.track).flight().unwrap();
+
+if let Some(result) = log.score("xcontest", start, stop) {
+    println!("{}: {} points over {} km", result.description, result.score, result.distance);
+    println!("turnpoints: {:?}", result.turnpoints);
+}
+```
+
+See [`documentation/scoring-overview.md`](../documentation/scoring-overview.md) for how the search
+works, and [`documentation/add-a-league.md`](../documentation/add-a-league.md) to add a league.
+
 ## Build & Test
 
 ```bash
@@ -81,4 +96,4 @@ cargo test
 
 ## License
 
-MIT
+LGPLv2.1+

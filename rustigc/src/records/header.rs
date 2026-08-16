@@ -1,15 +1,10 @@
 //! H-record (header/metadata) parser
 //!
 //! H-records contain flight metadata in various formats:
-//! - HFDTE: Date (DDMMYY)
-//! - HFPLT + PILOT: Pilot name
-//! - HFGTY + GLIDERTYPE: Glider type
-//! - HFGID + GLIDERID: Glider ID
-//! - HFSTA + SITE: Takeoff site
 //!
-//! General format: H[F/O][XXX][colon][text]
+//! General format: H[F/O/P][XXX][colon][text]
 //! - H: Record type
-//! - F: Fixed data / P: Pilot entered / O: Official observer
+//! - F: Flight recorder / O: Official observer / P: Pilot entered
 //! - XXX: 3-letter code
 //! - Optional colon separator and value
 
@@ -126,7 +121,7 @@ fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
         .parse_next(input)
 }
 
-/// Provide a tuple with ( HeaderID, HeaderData ) ready for insertion in hashmap
+/// Parses one H-record into a [`Header`], its key ready to index the log's header map.
 pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'H', (horigin, hkey, till_robust_ending), robust_ending_eof)
         .map(|(origin, key, v)| {
@@ -134,10 +129,7 @@ pub fn h_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
             let text = String::from_utf8_lossy(v).trim().to_string();
             Header {
                 key,
-                value: HeaderData {
-                    text,
-                    origin,
-                },
+                value: HeaderData { text, origin },
             }
             .into()
         })

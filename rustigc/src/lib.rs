@@ -10,9 +10,11 @@ mod log;
 mod projector;
 mod rawlog;
 mod records;
+mod scoring;
 
-pub use analysis::FRawData;
+pub use analysis::Analysis;
 pub use error::{LError, LResult};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use records::Fix;
+pub use scoring::{league_names, Scorer, ScoringResult};

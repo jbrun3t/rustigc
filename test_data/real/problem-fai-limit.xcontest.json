@@ -1,0 +1,19 @@
+{
+  "description": "Closed FAI Triangle",
+  "distance": 28.69,
+  "raw_distance": 28692.623,
+  "gap": 1.06,
+  "penalty": 1.06,
+  "score": 45.91,
+  "multiplier": 1.6,
+  "takeoff": 0,
+  "entry": 90,
+  "turnpoints": [
+    712,
+    2744,
+    4677
+  ],
+  "exit": 6393,
+  "landing": 6691,
+  "circuit": true
+}

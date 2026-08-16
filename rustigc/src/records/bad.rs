@@ -10,7 +10,7 @@ use winnow::token::{any, take_while};
 
 use super::Record;
 
-/// Match bad record and store them for analysis in the rawlog
+/// Match bad records and store them for analysis in the rawlog
 pub fn bad_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     // Bad record condition:
     // 1st: handle bad records in the middle of the file, taking care
@@ -21,9 +21,9 @@ pub fn bad_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
         (repeat(1.., (not(eof), any))).map(|_: ()| ()),
     ))
     .with_taken()
-        .map(|(_, taken): (_, &[u8])| {
-            warn!("Bad Record: {}", String::from_utf8_lossy(taken));
-        Record::BAD(taken)
+    .map(|(_, taken): (_, &[u8])| {
+        warn!("Bad Record: {}", String::from_utf8_lossy(taken));
+        Record::Bad(taken)
     })
     .parse_next(input)
 }

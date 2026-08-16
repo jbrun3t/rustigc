@@ -21,7 +21,7 @@ log = Log.from_file("flight.igc")
 # Access metadata
 print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
-print(f"Date: {log.date}")
+print(f"Date: {log.datetime}")
 
 # Flight phase analysis
 log.analyze()  # Optional: manually trigger analysis
@@ -54,7 +54,7 @@ first_100 = track._data[0:100]  # numpy slice
 
 **Class methods:**
 - `Log.from_bytes(content: bytes) -> Log`
-- `Log.from_file(path: str) -> Log`  (Consider Removing)
+- `Log.from_file(path: str) -> Log`
 
 **Methods:**
 - `analyze() -> None` - Run flight phase analysis
@@ -62,7 +62,7 @@ first_100 = track._data[0:100]  # numpy slice
 **Properties:**
 - `pilot_name: str | None`
 - `glider_type: str | None`
-- `date: datetime.date | None`
+- `datetime: datetime.datetime | None` - Flight date from the `DTE` header, at UTC midnight
 - `takeoff: Fix | None`
 - `landing: Fix | None`
 - `track: Track`
@@ -142,7 +142,7 @@ print(f"Altitudes: {track['baro_altitude']}")
 **Methods:**
 - `RustLog.from_bytes(content: bytes) -> Log` - Parse IGC file from bytes
 - `get_header(key: str) -> tuple[str, str] | None` - Get header by 3-char key (e.g., "PLT", "GTY", "DTE")
-  - Returns `(text, origin)` where origin is "Flight Recorder", "Observer", or "Pilot"
+  - Returns `(text, origin)` where origin is "Flight Recorder", "Observer", "Pilot" or "Unknown"
 - `analyze() -> None` - Run flight phase analysis
 
 **Properties:**
@@ -179,4 +179,4 @@ python -m pytest -v
 
 ## License
 
-LGPLv2.1
+LGPLv2.1+

@@ -5,8 +5,8 @@
 //! - I: Record type
 //! - nn: Number of extensions (2 digits)
 //! - For each extension: start byte (2 digits), end byte (2 digits), 3-letter code
-//! - Note: the position provided are 1 based, and include the end character. It is
-//!         stored with index 0-based, excluding the end-character
+//! - Note: the positions in the file are 1-based and inclusive of the end character. They are stored
+//!   here 0-based and exclusive, so that `start..finish` slices a B/K-record directly.
 //!
 //! Example: I033638FXA3940SIU4143ENL
 //! - 03 extensions
@@ -30,9 +30,9 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
 pub struct RecordExtension<'a> {
-    /// Start byte position
+    /// Start byte, 0-based within the record's extension area
     pub start: usize,
-    /// End byte position
+    /// End byte, exclusive
     pub finish: usize,
     /// Three-letter code for this extension (e.g., FXA, SIU, ENL)
     pub tlc: &'a [u8],

@@ -1,0 +1,19 @@
+{
+  "description": "Triangle plat",
+  "distance": 16.4,
+  "raw_distance": 16396.369,
+  "gap": 0.68,
+  "penalty": 0.0,
+  "score": 19.68,
+  "multiplier": 1.2,
+  "takeoff": 0,
+  "entry": 16,
+  "turnpoints": [
+    1235,
+    2768,
+    4546
+  ],
+  "exit": 4611,
+  "landing": 4638,
+  "circuit": true
+}

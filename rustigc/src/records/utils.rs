@@ -7,21 +7,19 @@ use winnow::stream::AsChar;
 use winnow::token::{any, take_while};
 use winnow::{combinator::alt, token::take};
 
-
-/// Eat trailing whitespace and cariage returns
-pub fn trailing_space_cr<'a>(input: &mut &'a [u8]) -> PResult<()> {
+/// Eat trailing whitespace and carriage returns
+pub fn trailing_space_cr(input: &mut &[u8]) -> PResult<()> {
     (
         take_while(0.., |c| c == b' '),
-        take_while(0.., |c| c == b'\r')
-    ).map(|(_, _)| ()).parse_next(input)
+        take_while(0.., |c| c == b'\r'),
+    )
+        .map(|(_, _)| ())
+        .parse_next(input)
 }
 
 /// Gracefully handle missing newline at file end
 pub fn robust_ending_eof<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
-    (
-        trailing_space_cr,
-        alt(("\n".as_bytes(), peek(eof)))
-    )
+    (trailing_space_cr, alt(("\n".as_bytes(), peek(eof))))
         .map(|(_, ending)| ending)
         .parse_next(input)
 }
@@ -67,7 +65,7 @@ pub fn ts_to_igc(input: u32) -> String {
     format!("{:02}{:02}{:02}", h, m, s)
 }
 
-/// Parse a arc value in the form (D)DDMMmmm
+/// Parse an arc value in the form (D)DDMMmmm
 fn latlon(islat: bool) -> impl Fn(&mut &[u8]) -> PResult<u32> {
     move |input: &mut &[u8]| {
         (
@@ -87,12 +85,15 @@ fn latlon_to_igc(input: u32) -> (u32, u32) {
 
 /// Parse a Latitude in the form DDMMmmmN
 pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
-    (latlon(true),
-     alt(((b'N').value(1),
-          (b'S').value(-1),
-          (b'+').value(1),
-          (b'-').value(-1),
-     )))
+    (
+        latlon(true),
+        alt((
+            (b'N').value(1),
+            (b'S').value(-1),
+            (b'+').value(1),
+            (b'-').value(-1),
+        )),
+    )
         .map(|(v, s)| (v as i32) * s)
         .parse_next(input)
 }
@@ -100,22 +101,20 @@ pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
 pub fn latitude_to_igc(input: f64) -> String {
     let lat: u32 = (input.abs() * 60000.0) as u32;
     let (d, mm) = latlon_to_igc(lat);
-    format!(
-        "{:02}{:05}{}",
-        d,
-        mm,
-        if input < 0.0 { 'S' } else { 'N' }
-    )
+    format!("{:02}{:05}{}", d, mm, if input < 0.0 { 'S' } else { 'N' })
 }
 
 /// Parse a Longitude in the form DDDMMmmmE
 pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
-    (latlon(false),
-     alt(((b'E').value(1),
-          (b'W').value(-1),
-          (b'+').value(1),
-          (b'-').value(-1),
-     )))
+    (
+        latlon(false),
+        alt((
+            (b'E').value(1),
+            (b'W').value(-1),
+            (b'+').value(1),
+            (b'-').value(-1),
+        )),
+    )
         .map(|(v, s)| (v as i32) * s)
         .parse_next(input)
 }
@@ -123,12 +122,7 @@ pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
 pub fn longitude_to_igc(input: f64) -> String {
     let lon: u32 = (input.abs() * 60000.0) as u32;
     let (d, mm) = latlon_to_igc(lon);
-    format!(
-        "{:03}{:05}{}",
-        d,
-        mm,
-        if input < 0.0 { 'W' } else { 'E' }
-    )
+    format!("{:03}{:05}{}", d, mm, if input < 0.0 { 'W' } else { 'E' })
 }
 
 #[cfg(test)]

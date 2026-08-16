@@ -11,7 +11,7 @@ def test_import():
     assert rib.__version__ is not None
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_parse(igc_content):
     """Parse IGC file"""
     log = rib.RustLog.from_bytes(igc_content)
@@ -19,7 +19,7 @@ def test_parse(igc_content):
     assert len(log.track_bytes) == 814688
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_track_bytes_numpy(igc_content):
     """Verify numpy conversion works"""
     log = rib.RustLog.from_bytes(igc_content)
@@ -32,7 +32,7 @@ def test_track_bytes_numpy(igc_content):
     assert len(track['timestamp']) == 25459
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_metadata(igc_content):
     """Test metadata access via get_header"""
     log = rib.RustLog.from_bytes(igc_content)
@@ -48,7 +48,7 @@ def test_metadata(igc_content):
     assert date == ("050822", "Flight Recorder")
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_flight_phases(igc_content):
     """Test takeoff/landing detection"""
     log = rib.RustLog.from_bytes(igc_content)
@@ -62,7 +62,7 @@ def test_invalid_content():
         rib.RustLog.from_bytes(b"INVALID")
 
 
-@pytest.mark.parametrize("igc_content", ["complex_example_lxn.igc"], indirect=True)
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_repr(igc_content):
     """Test Log.__repr__"""
     log = rib.RustLog.from_bytes(igc_content)

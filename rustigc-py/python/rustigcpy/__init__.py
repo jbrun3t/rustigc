@@ -6,7 +6,7 @@ parser with automatic numpy conversion and caching.
 Example:
     >>> from rustigcpy import Log
     >>> log = Log.from_file("flight.igc")
-    >>> log.track.latitude.mean()  # numpy operations
+    >>> log.track._latitude.mean()  # numpy operations
     52.1234
 """
 

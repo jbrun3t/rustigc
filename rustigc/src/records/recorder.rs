@@ -19,7 +19,7 @@ use super::Record;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Flight Recorder Indentification
+/// Flight recorder identification
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Recorder {
@@ -104,7 +104,8 @@ mod tests {
 
     #[test]
     fn test_recorder_crazy_carriage() {
-        if let Record::A(rec) = a_record.parse(b"AXSLGiveMeMyCarriageBack\r\r\n").unwrap() {
+        if let Record::A(rec) = a_record.parse(b"AXSLGiveMeMyCarriageBack\r\r\n").unwrap()
+        {
             assert_eq!(rec.manufacturer, "XSL");
         } else {
             panic!()

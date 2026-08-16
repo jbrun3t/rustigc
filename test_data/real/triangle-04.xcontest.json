@@ -1,0 +1,19 @@
+{
+  "description": "Free Triangle",
+  "distance": 21.03,
+  "raw_distance": 21026.073,
+  "gap": 3.34,
+  "penalty": 3.34,
+  "score": 25.23,
+  "multiplier": 1.2,
+  "takeoff": 0,
+  "entry": 0,
+  "turnpoints": [
+    1963,
+    2651,
+    4108
+  ],
+  "exit": 4191,
+  "landing": 4199,
+  "circuit": true
+}

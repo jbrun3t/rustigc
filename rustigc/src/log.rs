@@ -1,12 +1,8 @@
-//! Main IGC file parser
-//!
-//! This module orchestrates parsing of complete IGC files by dispatching
-//! each line to the appropriate record parser.
+//! Main Log file representation
 
 use std::collections::HashMap;
 
-use crate::geometry::BBox;
-use crate::records::*;
+use crate::{records::*, Scorer, ScoringResult};
 use crate::{LError, LResult, RawLog};
 
 use log::warn;
@@ -19,9 +15,9 @@ use serde::{Deserialize, Serialize};
 pub struct Log {
     /// Logger identification
     pub recorder: Recorder,
-    /// headers, lazilly stored
+    /// H-records, keyed by their 3-letter code
     pub headers: HashMap<String, HeaderData>,
-    /// Position fixes (B-records)
+    /// Position fixes (B-records), timestamps strictly increasing
     pub track: Vec<Fix>,
     /// Declared Task
     pub task: Option<Task>,
@@ -38,6 +34,9 @@ impl TryFrom<RawLog<'_>> for Log {
         let mut _bextensions: Option<Vec<RecordExtension>> = None;
         let mut bad_count: usize = 0;
         let count = raw.records.len();
+        // -1 so the first fix passes whatever its timestamp
+        let mut last_ts: i64 = -1;
+        let mut dropped: usize = 0;
 
         for rec in raw.records.into_iter() {
             match rec {
@@ -45,9 +44,12 @@ impl TryFrom<RawLog<'_>> for Log {
                     recorder = Some(inner);
                 }
                 Record::B(inner) => {
-                    if !inner.valid {
+                    let ts = inner.fix.timestamp as i64;
+                    if !inner.valid || ts <= last_ts {
+                        dropped += 1;
                         continue;
                     }
+                    last_ts = ts;
 
                     // TODO: Handle LOD/LAD, Possibly TDS
                     track.push(inner.fix);
@@ -61,7 +63,7 @@ impl TryFrom<RawLog<'_>> for Log {
                 Record::I(inner) => {
                     _bextensions = Some(inner.vext);
                 }
-                Record::BAD(_) => { bad_count += 1 }
+                Record::Bad(_) => bad_count += 1,
                 _ => {}
             }
         }
@@ -69,8 +71,13 @@ impl TryFrom<RawLog<'_>> for Log {
         // Reject a file that is more than 80% bad
         // TODO: Try to reject earlier, while parsing
         if ((bad_count * 10) / count) >= 8 {
-            return Err(LError::Doh(
-                format!("Invalid content: {bad_count} bad records")));
+            return Err(LError::Doh(format!(
+                "Invalid content: {bad_count} bad records"
+            )));
+        }
+
+        if dropped > 0 {
+            warn!("Dropped {dropped} invalid or out-of-order fix(es)");
         }
 
         // How can one miss this in the IGC spec ?
@@ -99,16 +106,14 @@ impl Log {
         raw.try_into()
     }
 
-    pub fn center(&self) -> (f64, f64) {
-        use crate::geometry::{Coords, SphericalPoint};
-
-        match BBox::<SphericalPoint<f64>>::from_items(&self.track) {
-            Some(bbox) => {
-                let center = bbox.center();
-                (center.y(), center.x()) // (lat, lon) - lon_round applied in from_coords
-            }
-            None => (0.0, 0.0),
-        }
+    /// Scores the fixes in `[start, stop]` against `league`'s rules
+    pub fn score(
+        &self,
+        league: &str,
+        start: usize,
+        stop: usize,
+    ) -> Option<ScoringResult> {
+        Scorer::new(&self.track, start, stop)?.solve(league)
     }
 }
 

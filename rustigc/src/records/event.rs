@@ -33,12 +33,12 @@
 
 use std::fmt;
 
+use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
-use winnow::combinator::delimited;
 
 use super::utils::{robust_ending_eof, till_robust_ending};
-use super::utils::{ts_to_igc,ts_to_sec};
+use super::utils::{ts_to_igc, ts_to_sec};
 use super::Record;
 
 #[cfg(feature = "serde")]

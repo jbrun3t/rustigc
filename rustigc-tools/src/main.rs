@@ -5,7 +5,7 @@ use std::io::Write;
 use std::io::{self, Read};
 
 #[derive(Parser, Debug)]
-#[command(name = "rustigc")]
+#[command(name = "rustigc-parse")]
 #[command(about = "Parse IGC files", long_about = None)]
 struct Args {
     /// Suppress all output (useful for profiling)

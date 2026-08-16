@@ -40,14 +40,14 @@ pub enum Record<'a> {
     J(Extensions<'a>),
     K(TimedEvent<'a>),
     L(TextEvent<'a>),
-    BAD(&'a [u8]),
+    Bad(&'a [u8]),
 }
 
 impl fmt::Display for Record<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.alternate() {
             match self {
-                Record::A(inner) => write!(f, "Recoder {:#}", inner)?,
+                Record::A(inner) => write!(f, "Recorder {:#}", inner)?,
                 Record::B(inner) => write!(f, "Fix {:#}", inner)?,
                 Record::C(inner) => write!(f, "Task {:#}", inner)?,
                 Record::D(inner) => write!(f, "DGPS {:#}", inner)?,
@@ -59,10 +59,10 @@ impl fmt::Display for Record<'_> {
                 Record::J(inner) => write!(f, "Data Extensions {:#}", inner)?,
                 Record::K(inner) => write!(f, "Data {:#}", inner)?,
                 Record::L(inner) => write!(f, "Comment {:#}", inner)?,
-                Record::BAD(inner) => write!(
+                Record::Bad(inner) => write!(
                     f,
                     "Invalid Record: {}",
-                    std::str::from_utf8(inner).unwrap_or_else(|_| "Non ASCII")
+                    std::str::from_utf8(inner).unwrap_or("Non ASCII")
                 )?,
             }
         } else {
@@ -79,7 +79,7 @@ impl fmt::Display for Record<'_> {
                 Record::J(inner) => write!(f, "J{}", inner)?,
                 Record::K(inner) => write!(f, "K{}", inner)?,
                 Record::L(inner) => write!(f, "L{}", inner)?,
-                Record::BAD(_inner) => write!(f, "")?,
+                Record::Bad(_inner) => write!(f, "")?,
             }
         }
         Ok(())
