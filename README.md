@@ -22,7 +22,7 @@ rustigc/
   - ⏳ Extension support:
     - `LOD`/`LAD`: Coordinate higher precision
     - `TDS`: Sub-second time division
-- ✅ Flight scoring
+- ✅ Flight scoring: see [dedicated documentation](documentation/scoring-overview.md)
   - Generic scoring over a configurable number of turnpoints
   - Optimized for fast searches
   - Supports Xcontest, FFVL's CFD, and more ...
