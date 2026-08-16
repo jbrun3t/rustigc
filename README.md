@@ -97,8 +97,8 @@ maturin develop
 I'm still exploring everything Rust has to offer, so there is a good chance some things in there are
 not done correctly or could be improved. Public APIs are likely to be reworked and change.
 
-However, `rustigc` is tested on thousands of tracklogs, accounting for many oddities found in the
-real world.
+However, `rustigc` is tested on thousands of tracklogs, [accounting for many oddities found in the
+real world](documentation/igc-spec-errors.md).
 
 If you have a tracklog that does not parse or score correctly, please open an issue and share the
 tracklog.
