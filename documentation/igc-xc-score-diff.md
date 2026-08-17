@@ -1,8 +1,7 @@
 # Comparison with igc-xc-score
 
-`rustigc`'s scoring is a Rust re-write of [igc-xc-score](https://github.com/mmomtchev/igc-xc-score),
-originally written to see what moving the same algorithm to Rust would buy. It would not exist
-without it, and the general design idea is entirely igc-xc-score's.
+`rustigc`'s scoring started as Rust re-implementation of [igc-xc-score](https://github.com/mmomtchev/igc-xc-score)
+ideas. It would not exist without it, and the general design idea is entirely igc-xc-score's.
 
 This document records where the two differ and why, for anyone comparing them. Reference: igc-xc-score
 v1.8.0.
