@@ -103,6 +103,18 @@ real world](documentation/igc-spec-errors.md).
 If you have a tracklog that does not parse or score correctly, please open an issue and share the
 tracklog.
 
+## Credit
+
+The following sources of information have been extremely helpful to build `rustigc` so far:
+
+* [FAI IGC Specificication](https://www.fai.org/page/igc-approved-flight-recorders)
+* [Ondřej Palkovský's Paper on Paragliding Competition Tracklog Optimization](https://web.archive.org/web/20230320111732/http://www.penguin.cz/~ondrap/algorithm.pdf)
+* [igc-xc-score](https://github.com/mmomtchev/igc-xc-score):
+  [details on `rustigc` scoring algorithm](documentation/scoring-overview.md) and the [differences with `igc-xc-score`](documentation/igc-xc-score-diff.md) 
+* [Python libigc](https://github.com/surajmandalcell/libigc)
+* [Rust igc_parser](https://github.com/LWEdslev/igc_parser)
+* [Rust igc-rs](https://github.com/Joey9801/igc-rs)
+
 ## License
 
 LGPLv2.1+, except `rustigc-tools` which is GPLv2+.
