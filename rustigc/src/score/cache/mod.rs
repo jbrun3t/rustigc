@@ -14,7 +14,7 @@ pub use bbox::BoxCache;
 pub use closing::ClosingCache;
 pub use furthest::{Furthest, Leg, Terminals};
 
-use crate::geometry::{BBox, SPoint, Vertices};
+use crate::utils::geometry::{BBox, SPoint, Vertices};
 
 use super::Scorer;
 

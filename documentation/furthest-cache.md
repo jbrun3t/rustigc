@@ -1,6 +1,6 @@
 # The furthest-point cache
 
-This describes how `scoring/cache/furthest.rs` works, and why it is shaped the way it is. An **open
+This describes how `score/cache/furthest.rs` works, and why it is shaped the way it is. An **open
 distance** has to know how far out its two ends reach — the leg before the first turnpoint and the
 leg after the last.
 

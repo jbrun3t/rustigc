@@ -5,7 +5,7 @@
 
 use rustc_hash::FxHashMap;
 
-use crate::geometry::{BBox, SPoint};
+use crate::utils::geometry::{BBox, SPoint};
 
 #[derive(Debug)]
 pub struct BoxCache(FxHashMap<(usize, usize), BBox<SPoint>>);

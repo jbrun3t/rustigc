@@ -10,8 +10,8 @@ use rstar::{
     PointDistance as _, RStarInsertionStrategy, RTree, RTreeObject, RTreeParams, AABB,
 };
 
-use crate::geometry::{BBox, Fcc, PointDistance, SPoint};
-use crate::projector::CheapProjection;
+use crate::utils::geometry::{BBox, Fcc, PointDistance, SPoint};
+use crate::utils::projector::CheapProjection;
 
 #[derive(Debug)]
 struct ClosingCacheEntry {

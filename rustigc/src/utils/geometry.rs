@@ -4,7 +4,7 @@
 //! coordinates mean is the metric's business, not the point's: [`Flat`] reads them as a Euclidean
 //! plane, [`Fcc`] and [`Geodesic`] as (lon, lat) on the Earth.
 
-use crate::projector::lon_round;
+use crate::utils::projector::lon_round;
 use geographiclib_rs::InverseGeodesic;
 use num_traits::Float;
 use smallvec::{smallvec, SmallVec};
@@ -81,7 +81,7 @@ impl<T: Float> PointBearing<T> for Flat {
 pub struct Fcc;
 
 /// `cos` of a mean latitude in radians — **only valid on [-π/2, π/2]**, where it is a 6-term minimax
-/// polynomial in `fm²` (Remez, degree 10). Latitudes parse within ±90° (`records/utils.rs`), so their
+/// polynomial in `fm²` (Remez, degree 10). Latitudes parse within ±90° (`decode/utils.rs`), so their
 /// mean cannot leave that range; outside it this diverges fast.
 ///
 /// Worth 4.9× libm's `cos`, which spends most of its work on the argument reduction a general `cos`
@@ -181,7 +181,7 @@ impl<T: Float> PointNew<T> for [T; 2] {
 
 pub type TPoint<T> = [T; 2];
 
-/// The `f64` point the scoring engine (`scoring/`) and flight detection (`analysis.rs`) both work in.
+/// The `f64` point the scoring engine (`score/`) and flight detection (`analysis/`) both work in.
 pub type SPoint = TPoint<f64>;
 
 /// A `BBox`'s vertices: at most 4, held inline so a box costs no allocation.

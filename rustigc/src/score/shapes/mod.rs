@@ -11,9 +11,9 @@ pub mod polyline;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
-use crate::geometry::{SPoint, Vertices};
-use crate::scoring::engine::Candidate;
-use crate::scoring::Scorer;
+use crate::score::engine::Candidate;
+use crate::score::Scorer;
+use crate::utils::geometry::{SPoint, Vertices};
 use common::TransitionMatrix;
 
 pub trait ShapeBound: Debug {

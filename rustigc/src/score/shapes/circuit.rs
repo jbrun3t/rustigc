@@ -1,6 +1,6 @@
 //! Common circuit tools
 
-use crate::geometry::{Geodesic, PointDistance};
+use crate::utils::geometry::{Geodesic, PointDistance};
 
 use super::{Candidate, Scorer, Shape, ShapeCommon, ShapeKind, Task, TransitionMatrix};
 

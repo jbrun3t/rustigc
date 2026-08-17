@@ -12,9 +12,11 @@ use std::cell::RefCell;
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
-use crate::geometry::{BBox, Fcc, Flat, PointCoords, PointDistance, SPoint, Vertices};
-use crate::projector::CheapProjection;
-use crate::scoring::Scorer;
+use crate::score::Scorer;
+use crate::utils::geometry::{
+    BBox, Fcc, Flat, PointCoords, PointDistance, SPoint, Vertices,
+};
+use crate::utils::projector::CheapProjection;
 
 /// Reach of an entry or exit leg, one value per vertex of the adjacent turnpoint box.
 pub type Terminals = SmallVec<[f64; 4]>;

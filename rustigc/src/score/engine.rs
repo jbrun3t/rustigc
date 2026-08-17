@@ -14,7 +14,7 @@
 //!
 //! **Floor.** The highest score found so far, all rules included.
 
-use crate::geometry::{BBox, PointCoords, SPoint, Vertices};
+use crate::utils::geometry::{BBox, PointCoords, SPoint, Vertices};
 use log::{debug, info};
 use std::cmp::{max, min, Ordering};
 use std::collections::BinaryHeap;

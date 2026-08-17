@@ -2,8 +2,8 @@
 
 use smallvec::{smallvec, SmallVec};
 
-use crate::geometry::{BBox, Fcc, Geodesic, PointDistance, SPoint};
-use crate::scoring::cache::Leg;
+use crate::score::cache::Leg;
+use crate::utils::geometry::{BBox, Fcc, Geodesic, PointDistance, SPoint};
 
 use super::common::{dynamic_search, pairs, transition_matrices};
 use super::{

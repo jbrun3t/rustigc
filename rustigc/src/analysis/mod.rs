@@ -5,8 +5,8 @@
 
 use log::{debug, warn};
 
-use crate::geometry::{BBox, Flat, PointDistance, SPoint};
-use crate::projector::CheapProjection;
+use crate::utils::geometry::{BBox, Flat, PointDistance, SPoint};
+use crate::utils::projector::CheapProjection;
 use crate::Fix;
 
 /// Minimal flight speed

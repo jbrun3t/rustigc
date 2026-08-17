@@ -7,7 +7,7 @@ use std::fmt;
 use winnow::combinator::{alt, repeat};
 use winnow::prelude::*;
 
-use crate::records::*;
+use crate::decode::*;
 use crate::{LResult, Log};
 
 #[cfg(feature = "serde")]

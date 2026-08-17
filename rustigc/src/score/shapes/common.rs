@@ -1,6 +1,6 @@
 //! DP shared by every shape.
 
-use crate::geometry::{Fcc, PointDistance, SPoint, Vertices};
+use crate::utils::geometry::{Fcc, PointDistance, SPoint, Vertices};
 
 use super::{Candidate, Scorer};
 use super::{Path, Transitions};

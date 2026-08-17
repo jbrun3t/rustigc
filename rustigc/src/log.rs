@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{records::*, Scorer, ScoringResult};
+use crate::{decode::*, Scorer, ScoringResult};
 use crate::{LError, LResult, RawLog};
 
 use log::warn;

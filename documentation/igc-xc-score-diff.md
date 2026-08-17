@@ -90,7 +90,7 @@ is insignificant.
 Both find the closest pair between the two ends by indexing one side and querying with the other, and
 both cache the answer the same way (above). Everything inside that differs.
 
-| | igc-xc-score (`geom.js`) | `rustigc` (`scoring/cache/closing.rs`) |
+| | igc-xc-score (`geom.js`) | `rustigc` (`score/cache/closing.rs`) |
 |---|---|---|
 | index | packed Hilbert R-tree (`Flatbush`) | `rstar::RTree` |
 | indexed side | Entry side, `[launch..p1]` | the **shorter** of the two |

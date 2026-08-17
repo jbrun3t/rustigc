@@ -2,7 +2,7 @@
 
 use num_traits::Float;
 
-use crate::geometry::{PointCoords, PointNew};
+use crate::utils::geometry::{PointCoords, PointNew};
 
 /// Wraps a longitude *difference* into [-180, 180]. Callers pass the difference of two longitudes,
 /// so the input is in [-360, 360]; a larger one is wrapped only once and comes out wrong.

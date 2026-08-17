@@ -4,17 +4,16 @@
 //! flight recorder files used in gliding and paragliding.
 
 mod analysis;
+mod decode;
 mod error;
-mod geometry;
 mod log;
-mod projector;
 mod rawlog;
-mod records;
-mod scoring;
+mod score;
+mod utils;
 
 pub use analysis::Analysis;
+pub use decode::Fix;
 pub use error::{LError, LResult};
 pub use log::Log;
 pub use rawlog::RawLog;
-pub use records::Fix;
-pub use scoring::{league_names, Scorer, ScoringResult};
+pub use score::{league_names, Scorer, ScoringResult};

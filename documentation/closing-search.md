@@ -1,6 +1,6 @@
 # The closing search and its cache
 
-This describes how `scoring/cache/closing.rs` works, and why it is shaped the way it is. It answers
+This describes how `score/cache/closing.rs` works, and why it is shaped the way it is. It answers
 one question, as fast as it can: for a circuit candidate, how far apart are the two ends of the
 flight?
 

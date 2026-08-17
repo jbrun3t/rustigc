@@ -39,7 +39,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Fix {
     /// Seconds since UTC midnight. A flight crossing midnight keeps counting past 86400
-    /// (`records::ts_offset`), so this can exceed one day.
+    /// (`decode::ts_offset`), so this can exceed one day.
     pub timestamp: u32,
     /// Point Latitude
     pub lat: f64,
@@ -61,7 +61,7 @@ impl fmt::Display for Fix {
     }
 }
 
-impl crate::geometry::PointCoords<f64> for Fix {
+impl crate::utils::geometry::PointCoords<f64> for Fix {
     #[inline]
     fn x(&self) -> f64 {
         self.lon

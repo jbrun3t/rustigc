@@ -1,6 +1,6 @@
 # Adding a league or rule
 
-Everything lives in `rustigc/src/scoring/rules/`, one file per league. A rule never touches the
+Everything lives in `rustigc/src/score/rules/`, one file per league. A rule never touches the
 search: it only says which geometry to fly and what a distance and a closing gap are worth.
 
 ---
