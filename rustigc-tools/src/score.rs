@@ -42,6 +42,53 @@ fn parse_window(s: &str) -> Result<(usize, usize), String> {
     Ok((start, stop))
 }
 
+fn human_output(log: &Log, result: &ScoringResult) {
+    // Get time origin for the flight and create display helper
+    let origin = log.datetime();
+
+    let coord = |i: usize| format!("{:.04},{:.04}", log.track[i].lat, log.track[i].lon);
+    let disp = |i: usize| match &origin {
+        Some(o) => {
+            format!(
+                "{} - [{}] - @{i}",
+                log.track[i].datetime(o).strftime("%H:%M:%S"),
+                coord(i)
+            )
+        }
+        None => format!("[{}] - @{i}", coord(i)),
+    };
+
+    // Display the flight date, locally.
+    if let Some(o) = &origin {
+        let entry = log.track[result.entry].datetime(o);
+        println!("{}", entry.strftime("Flight on %Y-%m-%d %Z"));
+    } else {
+        println!("Flight has no date !");
+    }
+
+    // Points location
+    println!("Takeoff: {}", disp(result.takeoff));
+    println!(" Entry : {}", disp(result.entry));
+    for (i, tp) in result.turnpoints.iter().enumerate() {
+        println!("  TP{i}  : {}", disp(*tp));
+    }
+    println!(" Exit  : {}", disp(result.exit));
+    println!("Landing: {}", disp(result.landing));
+
+    // Final score report
+    print!(
+        "{} {} points, {} km",
+        result.description, result.score, result.distance
+    );
+    if result.multiplier != 1.0 {
+        print!(" (×{})", result.multiplier);
+    }
+    if result.circuit {
+        print!(" [ closing distance: {} km ]", result.gap);
+    }
+    println!();
+}
+
 fn main() -> io::Result<()> {
     env_logger::init();
     let args = Args::parse();
@@ -68,26 +115,11 @@ fn main() -> io::Result<()> {
                 println!("{}", serde_json::to_string_pretty(&result)?);
             }
             Format::Human => {
-                println!("Entry @{}", result.entry);
-                println!("Exit  @{}", result.exit);
-                for (i, tp) in result.turnpoints.iter().enumerate() {
-                    println!("  - TP{} @{}", i, tp);
-                }
-                print!(
-                    "{} {} points, {} km",
-                    result.description, result.score, result.distance
-                );
-                if result.multiplier != 1.0 {
-                    print!(" (×{})", result.multiplier);
-                }
-                if result.circuit {
-                    print!(" [ closing distance: {} km ]", result.gap);
-                }
-                println!();
+                human_output(&log, &result);
             }
         },
         None => {
-            eprintln!("No TP found");
+            eprintln!("Could not score");
             match args.format {
                 Format::Json => println!("null"),
                 Format::Human => {}
