@@ -104,9 +104,7 @@ fn main() -> io::Result<()> {
     let log =
         Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
-    // The detected bracket is reported as such whatever `--window` scores.
-    let flight = Analysis::new(&log.track).flight();
-    let window = args.window.or(flight);
+    let window = args.window.or(Analysis::new(&log.track).flight());
     let scored = window.and_then(|(start, stop)| log.score(&args.league, start, stop));
 
     match scored {
