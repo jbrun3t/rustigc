@@ -58,6 +58,17 @@ pub fn ts_to_sec(input: &mut &[u8]) -> PResult<u32> {
         .parse_next(input)
 }
 
+/// Parse a DDMMYY date and convert it to (year, month, day)
+pub fn date_to_ymd(input: &mut &[u8]) -> PResult<(i16, i8, i8)> {
+    (
+        n_digits(2).verify(|&d| (1..=31).contains(&d)),
+        n_digits(2).verify(|&m| (1..=12).contains(&m)),
+        n_digits(2),
+    )
+        .map(|(d, m, y): (u8, u8, u8)| (2000 + i16::from(y), m as i8, d as i8))
+        .parse_next(input)
+}
+
 pub fn ts_to_igc(input: u32) -> String {
     let input = input % (24 * 60 * 60);
     let (h, rem) = (input / 3600, input % 3600);
@@ -139,6 +150,18 @@ mod tests {
     #[test]
     fn test_parse_bad_time() {
         assert!(ts_to_sec.parse(b"117135").is_err());
+    }
+
+    #[test]
+    fn test_parse_date() {
+        assert_eq!(date_to_ymd.parse(b"150120").unwrap(), (2020, 1, 15));
+    }
+
+    #[test]
+    fn test_parse_date_nn() {
+        let (rest, ymd) = date_to_ymd.parse_peek(&b"180825,01"[..]).unwrap();
+        assert_eq!(ymd, (2025, 8, 18));
+        assert_eq!(rest, b",01");
     }
 
     #[test]
