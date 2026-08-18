@@ -106,31 +106,6 @@ print(f"Longitudes: {track['longitude']}")
 print(f"Altitudes: {track['baro_altitude']}")
 ```
 
-### API
-
-### `rustigcpy._bindings.RustLog`
-
-**Methods:**
-- `RustLog.from_bytes(content: bytes) -> Log` - Parse IGC file from bytes
-- `get_header(key: str) -> tuple[str, str] | None` - Get header by 3-char key (e.g., "PLT", "GTY", "DTE")
-  - Returns `(text, origin)` where origin is "Flight Recorder", "Observer", "Pilot" or "Unknown"
-- `analyze() -> None` - Run flight phase analysis
-
-**Properties:**
-- `track_bytes: bytes` - Raw track data (32 bytes per fix)
-- `takeoff: int | None` - Takeoff fix index
-- `landing: int | None` - Landing fix index
-
-### `rustigcpy._bindings.FIX_DTYPE`
-
-NumPy dtype for track data (32 bytes per fix):
-- `timestamp: u32` - Seconds since midnight
-- `_pad: u32` - Alignment padding
-- `latitude: f64` - Decimal degrees
-- `longitude: f64` - Decimal degrees
-- `baro_altitude: i32` - Barometric altitude in meters
-- `gnss_altitude: i32` - GNSS altitude in meters
-
 ## Development
 
 ```bash
