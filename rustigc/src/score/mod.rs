@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Tracklog scoring: what a flight is worth under the rules of a league.
 
 mod cache;

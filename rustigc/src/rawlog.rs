@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Main IGC file parser
 //!
 //! This module orchestrates parsing of complete IGC files by dispatching

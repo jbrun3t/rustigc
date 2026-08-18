@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Search-time caches, owned by the [`Scorer`]: one set per scoring pass, shared by every rule of
 //! that pass.
 //!

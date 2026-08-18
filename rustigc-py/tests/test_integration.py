@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 """Integration tests with real IGC files"""
 from rustigcpy import Log
 from rustigcpy._bindings import FIX_DTYPE

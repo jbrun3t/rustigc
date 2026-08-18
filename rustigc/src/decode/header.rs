@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! H-record (header/metadata) parser
 //!
 //! H-records contain flight metadata in various formats:

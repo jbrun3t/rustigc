@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Bounding-box cache, keyed on the inclusive `(start, end)` fix-index range.
 //!
 //! Building a box is linear in the range length and the search keeps revisiting the same ranges as

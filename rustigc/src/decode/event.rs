@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Event and metadata record parsers
 //!
 //! This module handles various IGC record types for events, comments, and metadata:

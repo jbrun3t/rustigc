@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Data derived from a track.
 //!
 //! Only flight sections so far. Takeoff/landing detection is a crude ground-speed placeholder

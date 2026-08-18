@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Geometry primitives and operations
 //!
 //! A point is a plain `[T; 2]` array — zero-cost, and what `rstar` already indexes. What the two

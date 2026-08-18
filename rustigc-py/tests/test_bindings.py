@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 """Test rustigcpy Rust extension (minimal low-level API)"""
 import json
 from concurrent.futures import ThreadPoolExecutor

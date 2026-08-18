@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Branch-and-bound search scoring a flight against a league.
 //!
 //! A run evaluates every rule of the league at once: candidates of all rules share the

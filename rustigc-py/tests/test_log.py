@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 """Test Python Log wrapper"""
 from datetime import date
 

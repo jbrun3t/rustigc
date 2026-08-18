@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Scoring regression pins: `test_data/real/<fixture>.xcontest.json` holds the plain serde dump of
 //! `log.score("xcontest", ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
 //! mismatch here means scoring math moved, not flight detection.

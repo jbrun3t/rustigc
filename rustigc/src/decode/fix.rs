@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! B-record (position fix) parser
 //!
 //! B-record format: BHHMMSSsDDMMmmmNDDDMMmmmEVPPPPPGGGGG

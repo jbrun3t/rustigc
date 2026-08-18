@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! IGC record parsers
 //!
 //! This module contains parsers for all IGC record types (A-L).

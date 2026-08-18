@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! I/J-record extension definition
 //!
 //! I/J records define additional data fields in B/K-records beyond the standard format.

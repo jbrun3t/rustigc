@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Closing-gap cache: the closest pair of fixes between an entry range, before the first turnpoint,
 //! and an exit range, after the last one — the closing leg of a circuit.
 //!

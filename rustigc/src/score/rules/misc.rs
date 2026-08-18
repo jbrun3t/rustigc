@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Single-rule leagues, each exercising one shape on its own. Their numbers are the [`League`]
 //! defaults — nothing charged, no minimum — except for `Oar`.
 

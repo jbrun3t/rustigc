@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! XContest scoring rules (2026)
 //! https://www.xcontest.org/world/en/rules/
 //!

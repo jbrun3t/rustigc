@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 """Log wrapper - provides high-level API"""
 import json
 from datetime import UTC, datetime

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Corpus fixture list shared by `tests/scoring.rs` and `tests/parsing.rs`, so the two test files
 //! can't drift apart on which fixtures under `test_data/real/` they check.
 

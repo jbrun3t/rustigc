@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Wall-clock date-times for fixes
 //!
 //! A `Fix` timestamp counts seconds from UTC midnight of the flight's first day and carries no

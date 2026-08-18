@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! The geometries a flight can be scored over. A rule names one and prices what it measures.
 
 mod circuit;

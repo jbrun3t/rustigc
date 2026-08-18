@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! DP shared by every shape.
 
 use crate::utils::geometry::{Fcc, PointDistance, SPoint, Vertices};

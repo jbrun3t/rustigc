@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! C-record (task declaration) parser
 //!
 //! C-records define the declared task for a flight. Unlike other records, C-records

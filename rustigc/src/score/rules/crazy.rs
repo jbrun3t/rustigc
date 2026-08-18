@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Crazy testing rules
 //! These rules' sole purpose is to test the engine with different cardinalities.
 //! Expect those rules to be computationally heavy.

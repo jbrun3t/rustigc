@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! Rules: what a league scores, and over which shape.
 //!
 //! One file per league. A league's numbers belong in that file and nowhere else.

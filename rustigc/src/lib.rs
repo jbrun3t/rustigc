@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
+
 //! RustiGC - Fast IGC file parser library
 //!
 //! This library provides parsing and analysis of IGC (International Gliding Commission)
