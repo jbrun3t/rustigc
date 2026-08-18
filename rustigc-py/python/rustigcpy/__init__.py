@@ -2,12 +2,6 @@
 
 This package provides a convenient interface to the fast rustigcpy
 parser with automatic numpy conversion and caching.
-
-Example:
-    >>> from rustigcpy import Log
-    >>> log = Log.from_file("flight.igc")
-    >>> log.track._latitude.mean()  # numpy operations
-    52.1234
 """
 
 from .log import Log

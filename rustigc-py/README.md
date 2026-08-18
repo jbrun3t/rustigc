@@ -46,54 +46,15 @@ mean_lat = track._latitude.mean()
 max_alt = track._baro_altitude.max()
 lats = track._latitude
 first_100 = track._data[0:100]  # numpy slice
-```
 
-### API
 
-#### `Log`
 
-**Class methods:**
-- `Log.from_bytes(content: bytes) -> Log`
-- `Log.from_file(path: str) -> Log`
-
-**Methods:**
-- `analyze() -> None` - Run flight phase analysis
-
-**Properties:**
-- `pilot_name: str | None`
-- `glider_type: str | None`
-- `datetime: datetime.datetime | None` - Flight date from the `DTE` header, at UTC midnight
-- `takeoff: Fix | None`
-- `landing: Fix | None`
-- `track: Track`
-
-#### `Track`
-
-**Properties:**
-- `_latitude: np.ndarray` - Array of latitudes (f64)
-- `_longitude: np.ndarray` - Array of longitudes (f64)
-- `_baro_altitude: np.ndarray` - Array of barometric altitudes (i32)
-- `_gnss_altitude: np.ndarray` - Array of GNSS altitudes (i32)
-- `_timestamp: np.ndarray` - Array of timestamps in seconds since midnight (u32)
-- `_data: np.ndarray` - Full structured numpy array
-
-#### `Fix`
-
-Single position fix from IGC track.
-
-**Properties:**
-- `latitude: float` - Latitude in decimal degrees
-- `longitude: float` - Longitude in decimal degrees
-- `baro_altitude: int` - Barometric altitude in meters
-- `gnss_altitude: int` - GNSS altitude in meters
-- `timestamp: int` - Seconds since midnight
 
 ### Architecture
 
 - Track data is copied from Rust into Python numpy array on first `.track` access
 - All subsequent operations are local Python (no FFI calls)
 - Track is cached for efficient repeated access
-
 
 ## Low level bindings
 
