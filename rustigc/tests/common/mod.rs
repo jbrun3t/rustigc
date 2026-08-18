@@ -28,6 +28,7 @@ macro_rules! for_each_fixture {
         $test!(triangle_05);
         $test!(triangle_06);
 
+        $test!(problem_antimeridian);
         $test!(problem_detect_cadence);
         $test!(problem_duplicate_fixes);
         $test!(problem_fai_limit);
