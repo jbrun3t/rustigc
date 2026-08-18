@@ -1,13 +1,27 @@
 """Log wrapper - provides high-level API"""
+import json
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Optional
 
 import rustigcpy._bindings as rib
 
+from .fix import Fix
+from .score import Score
 from .track import Track
 
-if TYPE_CHECKING:
-    from .fix import Fix
+
+def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
+    """Fix indices of a scoring window, given as indices or as fixes"""
+    start, stop = bounds
+
+    if isinstance(start, Fix) != isinstance(stop, Fix):
+        raise TypeError("window bounds must both be indices or both be fixes")
+    if not isinstance(start, Fix):
+        return start, stop
+    if start.index is None or stop.index is None:
+        raise ValueError("fix has no position in a track")
+
+    return start.index, stop.index
+
 
 class Log:
     """High-level IGC log wrapper
@@ -70,7 +84,7 @@ class Log:
         self._log.analyze()
 
     @property
-    def takeoff(self) -> Optional['Fix']:
+    def takeoff(self) -> Fix | None:
         """Takeoff fix"""
         idx = self._log.takeoff
         if idx is None:
@@ -78,12 +92,27 @@ class Log:
         return self.track[idx]
 
     @property
-    def landing(self) -> Optional['Fix']:
+    def landing(self) -> Fix | None:
         """Landing fix"""
         idx = self._log.landing
         if idx is None:
             return None
         return self.track[idx]
+
+    def score(self, league: str,
+              window: tuple[int, int] | tuple[Fix, Fix] | None = None) -> Score | None:
+        """Score against a `league`"""
+        if window is None:
+            start, stop = self._log.takeoff, self._log.landing
+            if start is None or stop is None:
+                return None
+        else:
+            start, stop = _window(window)
+
+        raw = self._log.score(league, start, stop)
+        if raw is None:
+            return None
+        return Score(self.track, json.loads(raw))
 
     def __repr__(self) -> str:
         return f"Log(fixes={len(self.track)}, pilot={self.pilot_name!r})"

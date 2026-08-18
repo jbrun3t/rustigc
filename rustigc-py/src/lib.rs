@@ -83,10 +83,34 @@ impl PyLog {
         self.analysis().flight().map(|(_, l)| l)
     }
 
+    /// Score the fixes in `[start, stop]` against `league`, passed to Python as JSON dump
+    fn score(
+        &self,
+        py: Python<'_>,
+        league: &str,
+        start: usize,
+        stop: usize,
+    ) -> PyResult<Option<String>> {
+        // FIXME: `None` covers every way this can fail: unknown league, bad window, nothing scored.
+        // Something to fixme in the core
+        let result = py.allow_threads(|| self.inner.score(league, start, stop));
+
+        result
+            .map(|r| serde_json::to_string(&r))
+            .transpose() // Why ?
+            .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
+    }
+
     fn __repr__(&self) -> String {
         let pilot = self.get_header("PLT").map(|(text, _)| text);
         format!("Log(fixes={}, pilot={:?})", self.inner.track.len(), pilot)
     }
+}
+
+/// Every league `score` accepts
+#[pyfunction]
+fn league_names() -> Vec<&'static str> {
+    rustigc::league_names().collect()
 }
 
 /// Python minimal bindings for rustigc parsing library
@@ -95,6 +119,7 @@ impl PyLog {
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
+    m.add_function(wrap_pyfunction!(league_names, m)?)?;
 
     // Export FIX_DTYPE as numpy dtype
     Python::with_gil(|py| {

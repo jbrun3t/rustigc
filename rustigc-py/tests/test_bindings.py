@@ -1,9 +1,15 @@
 """Test rustigcpy Rust extension (minimal low-level API)"""
+import json
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy
 import pytest
 import rustigcpy._bindings as rib
 
 FIX_DTYPE = rib.FIX_DTYPE
+
+# Window of fai-01.xcontest.json, the blessed reference's own, not our detection
+FAI01_WINDOW = (125, 25457)
 
 
 def test_import():
@@ -60,6 +66,26 @@ def test_invalid_content():
     """Test error handling"""
     with pytest.raises(ValueError, match="Failed to parse IGC file"):
         rib.RustLog.from_bytes(b"INVALID")
+
+
+def test_league_names():
+    """Registry is reachable and holds the real leagues"""
+    names = rib.league_names()
+    assert "cfd" in names
+    assert "xcontest" in names
+
+
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
+def test_score_shape(igc_content):
+    """Result carries exactly the fields the wrapper expects"""
+    log = rib.RustLog.from_bytes(igc_content)
+    raw = log.score("xcontest", *FAI01_WINDOW)
+
+    assert set(json.loads(raw)) == {
+        "description", "distance", "raw_distance", "gap", "penalty",
+        "score", "multiplier", "takeoff", "entry", "turnpoints",
+        "exit", "landing", "circuit",
+    }
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

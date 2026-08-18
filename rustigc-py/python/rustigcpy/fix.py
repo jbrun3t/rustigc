@@ -5,9 +5,15 @@ import numpy
 class Fix:
     """Single position fix from IGC track"""
 
-    def __init__(self, data):
+    def __init__(self, data, index: int | None = None):
         """Wrap a single numpy structured array element"""
         self._data = data
+        self._index = index
+
+    @property
+    def index(self) -> int | None:
+        """Position in the track it was read from if any"""
+        return self._index
 
     @property
     def latitude(self) -> float:

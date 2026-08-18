@@ -1,7 +1,7 @@
 """Test Track wrapper"""
 import numpy
 import pytest
-from rustigcpy import Log
+from rustigcpy import Fix, Log
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
@@ -96,3 +96,15 @@ def test_track_iteration(igc_content):
         count += 1
         if count >= 10:
             break
+
+
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
+def test_track_fix_index(igc_content):
+    """A fix read from a track knows its position, negative subscripts included"""
+    track = Log.from_bytes(igc_content).track
+    last = len(track) - 1
+
+    assert track[125].index == 125
+    assert track[-1].index == last
+    assert track[-1] == track[last]
+    assert [fix.index for fix in track][:5] == [0, 1, 2, 3, 4]

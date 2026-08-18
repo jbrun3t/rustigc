@@ -53,12 +53,15 @@ class Track:
 
     def __getitem__(self, idx: int) -> Fix:
         """Get a single fix as Fix object"""
-        return Fix(self._npdata[idx])
+        fix = self._npdata[idx]
+
+        # Do not let a negative index slip through
+        return Fix(fix, idx if idx >= 0 else idx + len(self._npdata))
 
     def __iter__(self):
         """Iterate over fixes"""
         for i in range(len(self._npdata)):
-            yield Fix(self._npdata[i])
+            yield Fix(self._npdata[i], i)
 
     def __repr__(self) -> str:
         return f"Track(fixes={len(self)})"

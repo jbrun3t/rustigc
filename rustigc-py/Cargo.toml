@@ -16,6 +16,7 @@ name = "rustigcpy"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustigc = { path = "../rustigc" }
+rustigc = { path = "../rustigc", features = ["serde"] }
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py310"] }
 numpy = "0.22"
+serde_json = "1"

@@ -47,8 +47,18 @@ max_alt = track._baro_altitude.max()
 lats = track._latitude
 first_100 = track._data[0:100]  # numpy slice
 
+# Scoring, over the detected flight or an explicit window
+from rustigcpy import league_names
 
+print(league_names())
+score = log.score("xcontest")
+score = log.score("xcontest", (125, 25457))            # fix indices
+score = log.score("xcontest", (log.takeoff, log.landing))  # or fixes
 
+if score:
+    print(f"{score.description}: {score.score} points over {score.distance} km")
+    print(f"Turnpoints: {[tp.index for tp in score.turnpoints]}")
+```
 
 ### Architecture
 
