@@ -365,7 +365,7 @@ impl Scorer {
 
         let track: Vec<SPoint> = track[start..=stop]
             .iter()
-            .map(|fix| [fix.x(), fix.y()])
+            .map(|fix| [fix.y(), fix.x()])
             .collect();
         let caches = Caches::new(track.len());
         let band = Self::band(&track);

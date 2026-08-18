@@ -148,34 +148,36 @@ impl PointDistance<f64> for Geodesic {
 
 // ============= plain [T; 2] Point =============
 
+// Stored `[y, x]`, so a geographic point reads `[lat, lon]`
+
 impl<T: Float> PointCoords<T> for [T; 2] {
     #[inline]
     fn x(&self) -> T {
-        self[0]
+        self[1]
     }
 
     #[inline]
     fn y(&self) -> T {
-        self[1]
+        self[0]
     }
 }
 
 impl<T: Float> PointSetCoords<T> for [T; 2] {
     #[inline]
     fn set_x(&mut self, x: T) {
-        self[0] = x;
+        self[1] = x;
     }
 
     #[inline]
     fn set_y(&mut self, y: T) {
-        self[1] = y;
+        self[0] = y;
     }
 }
 
 impl<T: Float> PointNew<T> for [T; 2] {
     #[inline]
     fn new(x: T, y: T) -> Self {
-        [x, y]
+        [y, x]
     }
 }
 
@@ -389,16 +391,16 @@ mod tests {
     #[test]
     fn euclidean_bearing() {
         let p1: TPoint<f64> = [0.0, 0.0];
-        let p2: TPoint<f64> = [0.0, 1.0]; // Due north
+        let p2: TPoint<f64> = [1.0, 0.0]; // Due north
         assert_eq!(Flat::bearing(&p1, &p2), 0.0);
 
-        let p2: TPoint<f64> = [1.0, 0.0]; // Due east
+        let p2: TPoint<f64> = [0.0, 1.0]; // Due east
         assert_eq!(Flat::bearing(&p1, &p2), 90.0);
 
-        let p2: TPoint<f64> = [0.0, -1.0]; // Due south
+        let p2: TPoint<f64> = [-1.0, 0.0]; // Due south
         assert_eq!(Flat::bearing(&p1, &p2), 180.0);
 
-        let p2: TPoint<f64> = [-1.0, 0.0]; // Due west
+        let p2: TPoint<f64> = [0.0, -1.0]; // Due west
         assert_eq!(Flat::bearing(&p1, &p2), 270.0);
     }
 

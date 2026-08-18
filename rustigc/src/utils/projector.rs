@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn flat_projection_on_ref() {
-        let refp = [31., 50.];
+        let refp = [50., 31.];
         let proj = CheapProjection::new(&refp);
         let out: [f64; 2] = proj.project(&refp);
 
@@ -120,8 +120,8 @@ mod tests {
 
     #[test]
     fn flat_projection() {
-        let input = [30.8, 50.5];
-        let proj = CheapProjection::new(&[31., 50.]);
+        let input = [50.5, 30.8];
+        let proj = CheapProjection::new(&[50., 31.]);
         let out: [f64; 2] = proj.project(&input);
 
         assert!((out.x() - -14339.15072).abs() < 0.00001);
@@ -130,8 +130,8 @@ mod tests {
 
     #[test]
     fn flat_unprojection() {
-        let input = [10000., -30000.];
-        let proj = CheapProjection::new(&[31., 50.]);
+        let input = [-30000., 10000.];
+        let proj = CheapProjection::new(&[50., 31.]);
         let out: [f64; 2] = proj.unproject(&input);
 
         assert!((out.y() - 49.730286).abs() < 0.00001);
