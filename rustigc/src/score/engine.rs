@@ -16,7 +16,9 @@
 //!
 //! **Floor.** The highest score found so far, all rules included.
 
-use crate::utils::geometry::{BBox, PointCoords, SPoint, Vertices};
+use crate::utils::geometry::{
+    AntimeridianCheck, AntimeridianUnwrap, BBox, PointCoords, SPoint, Vertices,
+};
 use log::{debug, info};
 use std::cmp::{max, min, Ordering};
 use std::collections::BinaryHeap;
@@ -355,7 +357,8 @@ impl Scorer {
         })
     }
 
-    /// Collects the fixes of `[start, stop]` into the cache-friendly layout the search reads.
+    /// Collects the fixes of `[start, stop]` into the cache-friendly layout the search reads, with
+    /// longitude "unwrapped" so the antimeridian is not longer an issue.
     pub fn new<P: PointCoords<f64>>(
         track: &[P],
         start: usize,
@@ -365,10 +368,13 @@ impl Scorer {
             return None;
         }
 
-        let track: Vec<SPoint> = track[start..=stop]
-            .iter()
-            .map(|fix| [fix.y(), fix.x()])
-            .collect();
+        let fixes = &track[start..=stop];
+        let points = fixes.iter().map(|fix| [fix.y(), fix.x()]);
+        let track: Vec<SPoint> = if fixes.crosses_antimeridian() {
+            points.unwrapped().collect()
+        } else {
+            points.collect()
+        };
         let caches = Caches::new(track.len());
         let band = Self::band(&track);
 

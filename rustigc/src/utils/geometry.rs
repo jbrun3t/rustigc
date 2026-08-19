@@ -191,6 +191,45 @@ pub type SPoint = TPoint<f64>;
 /// A `BBox`'s vertices: at most 4, held inline so a box costs no allocation.
 pub type Vertices<P> = SmallVec<[P; 4]>;
 
+/// Longitudes made continuous across ±180: every point keeps the shortest step from the one before,
+/// so a track straddling the antimeridian reads as one interval instead of two.
+pub trait AntimeridianCheck<T: Float> {
+    fn crosses_antimeridian(&self) -> bool;
+}
+
+impl<T: Float, P: PointCoords<T>> AntimeridianCheck<T> for [P] {
+    fn crosses_antimeridian(&self) -> bool {
+        let half = T::from(180).unwrap();
+
+        self.windows(2).any(|w| (w[1].x() - w[0].x()).abs() > half)
+    }
+}
+
+pub trait AntimeridianUnwrap<T: Float>: Iterator + Sized {
+    fn unwrapped(self) -> impl Iterator<Item = Self::Item>;
+}
+
+impl<T: Float, I> AntimeridianUnwrap<T> for I
+where
+    I: Iterator,
+    I::Item: PointCoords<T> + PointSetCoords<T>,
+{
+    // NOTE: This does not unroll well because of the loop dependency, so it is worth
+    // checking if unwrapping is necessary before doing it
+    fn unwrapped(self) -> impl Iterator<Item = Self::Item> {
+        self.scan(None, |carry: &mut Option<(T, T)>, mut point| {
+            let (lon, raw) = match *carry {
+                Some((lon, raw)) => (lon + lon_round(point.x() - raw), point.x()),
+                None => (point.x(), point.x()),
+            };
+            *carry = Some((lon, raw));
+            point.set_x(lon);
+
+            Some(point)
+        })
+    }
+}
+
 // ============= Bounding Box =============
 
 /// Axis-aligned bounding box
@@ -291,7 +330,7 @@ mod tests {
     use super::*;
 
     fn test_box() -> BBox<TPoint<f64>> {
-        let v = vec![[1.0, 1.0], [1.0, 3.0], [1.4, 2.7], [5.0, 1.0], [5.0, 3.0]];
+        let v = [[1.0, 1.0], [1.0, 3.0], [1.4, 2.7], [5.0, 1.0], [5.0, 3.0]];
 
         BBox::from_items(v.as_slice()).unwrap()
     }
@@ -340,6 +379,21 @@ mod tests {
     }
 
     #[test]
+    fn unwrapped_without_crossing() {
+        let t = vec![[45.0, 6.9], [45.1, 7.0], [45.2, 7.1]];
+
+        assert_eq!(t.iter().copied().unwrapped().collect::<Vec<_>>(), t);
+    }
+
+    #[test]
+    fn unwrapped_with_crossing() {
+        let t = [[45.0, 179.9], [45.0, -179.9], [45.0, 179.9]];
+        let want = [[45.0, 179.9], [45.0, 180.1], [45.0, 179.9]];
+
+        assert_eq!(t.iter().copied().unwrapped().collect::<Vec<_>>(), want);
+    }
+
+    #[test]
     fn bbox_from_items() {
         let b = test_box();
 
@@ -370,7 +424,7 @@ mod tests {
 
     #[test]
     fn bbox_single_point() {
-        let points = vec![[2.0, 3.0]];
+        let points = [[2.0, 3.0]];
         let bbox = BBox::<TPoint<f64>>::from_items(&points).unwrap();
         assert_eq!(bbox.min, [2.0, 3.0]);
         assert_eq!(bbox.max, [2.0, 3.0]);

@@ -76,6 +76,8 @@ impl<T: Float> CheapProjection<T> {
     }
 
     /// Inverse of [`CheapProjection::project`], back to (lon, lat).
+    ///
+    /// Unlike `project` the result here is folded back into ±180
     #[allow(dead_code)]
     pub fn unproject<P, R>(&self, input: &P) -> R
     where
