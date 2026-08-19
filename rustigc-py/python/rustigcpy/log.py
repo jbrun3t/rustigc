@@ -37,6 +37,11 @@ class Log:
         """Initialize from rustigcpy.Log instance"""
         self._log = log
         self._track: Track | None = None
+        self._flights: Flights | None = None
+
+    def reset(self) -> None:
+        """Drop the cached detection, so the next call runs it again"""
+        self._flights = None
 
     @classmethod
     def from_bytes(cls, content: bytes) -> 'Log':
@@ -83,17 +88,17 @@ class Log:
         return datetime.strptime(date_part, '%d%m%y').replace(tzinfo=UTC)
 
     def flights(self) -> Flights:
-        """Detect the flight sections, fresh on every call"""
-        return Flights(
-            Flight(self.track, data) for data in json.loads(self._log.flights())
-        )
+        """Flight sections detected in the track, cached until `reset()`"""
+        if self._flights is None:
+            self._flights = Flights(
+                Flight(self.track, data) for data in json.loads(self._log.flights())
+            )
+        return self._flights
 
     def score(self, league: str,
               window: tuple[int, int] | tuple[Fix, Fix] | None = None) -> Score | None:
         """Score against a `league`"""
         if window is None:
-            # FIXME: re-detects on every call. Implicit for now, until who owns the
-            # lifetime of a detection result is settled.
             flight = self.flights().longest
             if flight is None:
                 return None

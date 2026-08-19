@@ -23,9 +23,9 @@ print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
 print(f"Date: {log.datetime}")
 
-# Flight detection, run fresh on every call
-flights = log.flights()          # every section detected
-flight = flights.longest         # None when nothing was detected
+# Flight detection, cached after the first call
+flight = log.flights().longest   # None when nothing was detected
+print(f"Sections: {len(log.flights())}")
 print(f"Takeoff: {flight.takeoff}")  # Returns Fix object
 print(f"Landing: {flight.landing}")  # Returns Fix object
 
@@ -66,6 +66,7 @@ if score:
 - Track data is copied from Rust into Python numpy array on first `.track` access
 - All subsequent operations are local Python (no FFI calls)
 - Track is cached for efficient repeated access
+- Flight detection is cached too, `reset()` drops it
 
 ## Low level bindings
 

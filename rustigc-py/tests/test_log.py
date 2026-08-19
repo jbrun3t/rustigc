@@ -61,6 +61,13 @@ def test_track_cached(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
+def test_flights_cached(igc_content):
+    """Detection runs once per log"""
+    log = Log.from_bytes(igc_content)
+    assert log.flights() is log.flights()
+
+
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_repr(igc_content):
     """Test Log.__repr__"""
     log = Log.from_bytes(igc_content)
