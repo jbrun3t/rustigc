@@ -108,4 +108,4 @@ Example output:
 
 ## License
 
-GPLv2+
+`GPL-2.0-or-later`

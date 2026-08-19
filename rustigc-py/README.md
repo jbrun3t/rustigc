@@ -125,4 +125,4 @@ python -m pytest -v
 
 ## License
 
-LGPLv2.1+
+`GPL-2.0-or-later WITH Classpath-exception-2.0`

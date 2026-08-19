@@ -116,8 +116,8 @@ The following sources of information have been extremely helpful to build `rusti
 
 ## License
 
-`GPL-2.0-or-later WITH Classpath-exception-2.0` for `rustigc` and `rustigc-py`, `GPL-2.0-or-later`
-for `rustigc-tools`.
+* `GPL-2.0-or-later WITH Classpath-exception-2.0` for `rustigc` and `rustigc-py`
+* `GPL-2.0-or-later` for `rustigc-tools`.
 
 The Classpath exception means linking against `rustigc` or `rustigc-py` — statically or
 dynamically, from Rust, Python, or any other language — does not require your own code to be
