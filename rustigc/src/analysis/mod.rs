@@ -7,7 +7,7 @@
 
 use log::{debug, warn};
 
-use crate::utils::geometry::{BBox, Flat, PointDistance, SPoint};
+use crate::utils::geometry::{Flat, PointDistance};
 use crate::utils::projector::CheapProjection;
 use crate::Fix;
 
@@ -52,8 +52,13 @@ impl Analysis {
 /// Detect the flight sections of a track, one per stretch free of a gap longer than `max_gap`.
 /// Empty when no flight is detected.
 fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<[usize; 2]> {
-    let bbox = BBox::<SPoint>::from_items(track).unwrap();
-    let projection = CheapProjection::new(&bbox.center());
+    // Avoid using a BBox here so we don't to unwrap the coordinates first.
+    // The projections only care for the latitude. longitude is just an offset carried around
+    // This saves a bit of runtime while handling the antimeridian correctly
+    let (south, north) = track.iter().fold((f64::MAX, f64::MIN), |(s, n), fix| {
+        (s.min(fix.lat), n.max(fix.lat))
+    });
+    let projection = CheapProjection::new(&[(south + north) / 2.0, track[0].lon]);
     let mut bad: usize = 0;
 
     // Project the track on a flat surface
