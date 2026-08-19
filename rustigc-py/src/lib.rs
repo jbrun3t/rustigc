@@ -6,20 +6,12 @@ use ::rustigc;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
-use std::sync::OnceLock;
+use rustigc::FlightDetection;
 
 /// Python binding interface for IGC log
 #[pyclass(name = "RustLog")]
 struct PyLog {
     inner: rustigc::Log,
-    analysis: OnceLock<rustigc::Analysis>,
-}
-
-impl PyLog {
-    fn analysis(&self) -> &rustigc::Analysis {
-        self.analysis
-            .get_or_init(|| rustigc::Analysis::new(&self.inner.track))
-    }
 }
 
 #[pymethods]
@@ -33,10 +25,7 @@ impl PyLog {
                 PyValueError::new_err(format!("Failed to parse IGC file: {e}"))
             })?;
 
-        Ok(PyLog {
-            inner,
-            analysis: OnceLock::new(),
-        })
+        Ok(PyLog { inner })
     }
 
     /// Get track as raw bytes, laid out for `FIX_DTYPE` (32 bytes per fix with padding).
@@ -68,21 +57,13 @@ impl PyLog {
             .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 
-    /// Forward flight analysis manual trigger
-    fn analyze(&self) {
-        self.analysis();
-    }
+    /// Detect the flight sections, passed to Python as JSON dump
+    fn flights(&self, py: Python<'_>) -> PyResult<String> {
+        let flights = py.allow_threads(|| self.inner.track.flights());
 
-    /// Takeoff fix index
-    #[getter]
-    fn takeoff(&self) -> Option<usize> {
-        self.analysis().flight().map(|(t, _)| t)
-    }
-
-    /// Landing fix index
-    #[getter]
-    fn landing(&self) -> Option<usize> {
-        self.analysis().flight().map(|(_, l)| l)
+        serde_json::to_string(&flights).map_err(|e| {
+            PyValueError::new_err(format!("Failed to serialize flights: {e}"))
+        })
     }
 
     /// Score the fixes in `[start, stop]` against `league`, passed to Python as JSON dump

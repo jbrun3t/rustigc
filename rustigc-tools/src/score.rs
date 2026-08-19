@@ -106,7 +106,9 @@ fn main() -> io::Result<()> {
     let log =
         Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
 
-    let window = args.window.or(Analysis::new(&log.track).flight());
+    let window = args
+        .window
+        .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
     let scored = window.and_then(|(start, stop)| log.score(&args.league, start, stop));
 
     match scored {

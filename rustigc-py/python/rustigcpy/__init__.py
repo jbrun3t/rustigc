@@ -9,9 +9,10 @@ parser with automatic numpy conversion and caching.
 from rustigcpy._bindings import league_names
 
 from .fix import Fix
+from .flight import Flight, Flights
 from .log import Log
 from .score import Score
 from .track import Track
 
 __version__ = "0.1.0"
-__all__ = ["Log", "Track", "Fix", "Score", "league_names"]
+__all__ = ["Log", "Track", "Fix", "Flight", "Flights", "Score", "league_names"]

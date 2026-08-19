@@ -71,14 +71,15 @@ match Log::new(&content) {
 what the `league` argument accepts.
 
 ```rust
-use rustigc::{Analysis, Log};
+use rustigc::{FlightDetection, FlightSelection, Log};
 
 let log = Log::new(&content)?;
 
 // Scoring works on a fix window; flight detection gives a sensible one
-let (start, stop) = Analysis::new(&log.track).flight().unwrap();
+let flights = log.track.flights();
+let flight = flights.longest().unwrap();
 
-if let Some(result) = log.score("xcontest", start, stop) {
+if let Some(result) = log.score("xcontest", flight.start, flight.stop) {
     println!("{}: {} points over {} km", result.description, result.score, result.distance);
     println!("turnpoints: {:?}", result.turnpoints);
 }

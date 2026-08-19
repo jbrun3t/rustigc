@@ -4,7 +4,7 @@
 
 mod common;
 
-use rustigc::{Analysis, Log};
+use rustigc::{FlightDetection, FlightSelection, Log};
 
 use common::{for_each_fixture, stem_of};
 use std::fs;
@@ -57,13 +57,14 @@ fn flight_window_stops_at_time_gap() {
     let path = fixture_test_dir().join("real/problem-time-gaps.igc");
     let log = fixture_parse_file(&path);
 
-    let (start, stop) = Analysis::new(&log.track)
-        .flight()
-        .expect("a flight is detected");
+    let flights = log.track.flights();
+    let flight = flights.longest().expect("a flight is detected");
 
     assert!(
-        stop <= 3103,
-        "window [{start}, {stop}] reaches past the gap"
+        flight.stop <= 3103,
+        "window [{}, {}] reaches past the gap",
+        flight.start,
+        flight.stop
     );
 }
 

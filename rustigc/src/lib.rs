@@ -13,7 +13,7 @@ mod rawlog;
 mod score;
 mod utils;
 
-pub use analysis::Analysis;
+pub use analysis::flight::{Flight, FlightDetection, FlightSelection};
 pub use decode::Fix;
 pub use error::{LError, LResult};
 pub use log::Log;

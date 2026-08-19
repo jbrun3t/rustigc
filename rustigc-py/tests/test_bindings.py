@@ -57,11 +57,10 @@ def test_metadata(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_flight_phases(igc_content):
-    """Test takeoff/landing detection"""
+def test_flights_detection(igc_content):
+    """Detection reports the section bounds"""
     log = rib.RustLog.from_bytes(igc_content)
-    assert log.takeoff == 125
-    assert log.landing == 25425
+    assert json.loads(log.flights()) == [{"start": 125, "stop": 25425}]
 
 
 def test_invalid_content():

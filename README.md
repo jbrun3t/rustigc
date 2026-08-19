@@ -61,9 +61,10 @@ print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
 print(f"Fixes: {len(log.track)}")
 
-# Flight phases
-print(f"Takeoff: {log.takeoff}")
-print(f"Landing: {log.landing}")
+# Flight sections
+flight = log.flights().longest
+print(f"Takeoff: {flight.takeoff}")
+print(f"Landing: {flight.landing}")
 ```
 
 See [rustigc-py/README.md](rustigc-py/README.md)

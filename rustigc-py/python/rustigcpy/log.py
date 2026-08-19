@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import rustigcpy._bindings as rib
 
 from .fix import Fix
+from .flight import Flight, Flights
 from .score import Score
 from .track import Track
 
@@ -81,33 +82,22 @@ class Log:
         date_part = date_str.split(',')[0]
         return datetime.strptime(date_part, '%d%m%y').replace(tzinfo=UTC)
 
-    def analyze(self) -> None:
-        """Run flight phase analysis"""
-        self._log.analyze()
-
-    @property
-    def takeoff(self) -> Fix | None:
-        """Takeoff fix"""
-        idx = self._log.takeoff
-        if idx is None:
-            return None
-        return self.track[idx]
-
-    @property
-    def landing(self) -> Fix | None:
-        """Landing fix"""
-        idx = self._log.landing
-        if idx is None:
-            return None
-        return self.track[idx]
+    def flights(self) -> Flights:
+        """Detect the flight sections, fresh on every call"""
+        return Flights(
+            Flight(self.track, data) for data in json.loads(self._log.flights())
+        )
 
     def score(self, league: str,
               window: tuple[int, int] | tuple[Fix, Fix] | None = None) -> Score | None:
         """Score against a `league`"""
         if window is None:
-            start, stop = self._log.takeoff, self._log.landing
-            if start is None or stop is None:
+            # FIXME: re-detects on every call. Implicit for now, until who owns the
+            # lifetime of a detection result is settled.
+            flight = self.flights().longest
+            if flight is None:
                 return None
+            start, stop = _window((flight.takeoff, flight.landing))
         else:
             start, stop = _window(window)
 

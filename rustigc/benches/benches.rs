@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rustigc::{Analysis, Log};
+use rustigc::{Flight, FlightDetection, FlightSelection, Log};
 use std::time::Duration;
 
 fn load_test_files(files: &[(&'static str, &str)]) -> Vec<(&'static str, Vec<u8>)> {
@@ -53,7 +53,7 @@ fn bench_analysis(c: &mut Criterion) {
     let mut group = c.benchmark_group("analysis");
     for (name, log) in &logs {
         group.bench_with_input(BenchmarkId::from_parameter(name), log, |b, log| {
-            b.iter(|| Analysis::new(&black_box(log).track));
+            b.iter(|| black_box(log).track.flights());
         });
     }
 
@@ -75,7 +75,8 @@ fn bench_score(c: &mut Criterion) {
     let mut group = c.benchmark_group("score");
     for (name, log) in &logs {
         // Resolved outside the loop: the bench measures scoring, not flight detection
-        let Some((start, stop)) = Analysis::new(&log.track).flight() else {
+        let flights = log.track.flights();
+        let Some(&Flight { start, stop }) = flights.longest() else {
             continue;
         };
 

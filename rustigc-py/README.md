@@ -23,10 +23,11 @@ print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
 print(f"Date: {log.datetime}")
 
-# Flight phase analysis
-log.analyze()  # Optional: manually trigger analysis
-print(f"Takeoff: {log.takeoff}")  # Returns Fix object
-print(f"Landing: {log.landing}")  # Returns Fix object
+# Flight detection, run fresh on every call
+flights = log.flights()          # every section detected
+flight = flights.longest         # None when nothing was detected
+print(f"Takeoff: {flight.takeoff}")  # Returns Fix object
+print(f"Landing: {flight.landing}")  # Returns Fix object
 
 # Access track data
 track = log.track
@@ -52,8 +53,8 @@ from rustigcpy import league_names
 
 print(league_names())
 score = log.score("xcontest")
-score = log.score("xcontest", (125, 25457))            # fix indices
-score = log.score("xcontest", (log.takeoff, log.landing))  # or fixes
+score = log.score("xcontest", (125, 25457))                  # fix indices
+score = log.score("xcontest", (flight.takeoff, flight.landing))  # or fixes
 
 if score:
     print(f"{score.description}: {score.score} points over {score.distance} km")
@@ -74,6 +75,7 @@ Low-level Python bindings for the rustigc IGC file parser.
 
 ```python
 import rustigcpy._bindings as rib
+import json
 import numpy
 
 # Parse IGC file
@@ -90,10 +92,9 @@ glider = log.get_header("GTY")
 if glider:
     print(f"Glider: {glider[0]}")
 
-# Flight phases (run analysis first if needed)
-log.analyze()
-print(f"Takeoff index: {log.takeoff}")
-print(f"Landing index: {log.landing}")
+# Flight detection, as a JSON dump of the sections
+flights = json.loads(log.flights())
+print(f"Sections: {flights}")  # [{"start": 125, "stop": 25425}]
 
 # Access track data as numpy array
 track = numpy.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)

@@ -39,22 +39,15 @@ def test_date_parsing(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_flight_phases(igc_content):
-    """Test takeoff/landing detection"""
+def test_flights_bounds_as_fixes(igc_content):
+    """Section bounds come back as Fix objects, not indices"""
     log = Log.from_bytes(igc_content)
 
-    # Should return Fix objects, not indices
-    takeoff = log.takeoff
-    landing = log.landing
+    flight = log.flights().longest
+    assert flight is not None
 
-    assert takeoff is not None
-    assert landing is not None
-    assert hasattr(takeoff, 'latitude')
-    assert hasattr(landing, 'latitude')
-
-    # Verify they correspond to expected indices
-    assert takeoff == log.track[125]
-    assert landing == log.track[25425]
+    assert flight.takeoff == log.track[125]
+    assert flight.landing == log.track[25425]
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

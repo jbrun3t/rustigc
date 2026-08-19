@@ -11,7 +11,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use common::{for_each_fixture, stem_of};
-use rustigc::{Analysis, Log};
+use rustigc::{FlightDetection, FlightSelection, Log};
 use serde_json::Value;
 
 fn corpus_dir() -> PathBuf {
@@ -25,7 +25,7 @@ fn window_of(expected: &Value, log: &Log) -> Option<(usize, usize)> {
         (Some(t), Some(l)) => {
             Some((t.as_u64().unwrap() as usize, l.as_u64().unwrap() as usize))
         }
-        _ => Analysis::new(&log.track).flight(),
+        _ => log.track.flights().longest().map(|f| (f.start, f.stop)),
     }
 }
 
