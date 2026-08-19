@@ -112,7 +112,7 @@ pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
 }
 
 pub fn latitude_to_igc(input: f64) -> String {
-    let lat: u32 = (input.abs() * 60000.0) as u32;
+    let lat: u32 = (input.abs() * 60000.0).round() as u32;
     let (d, mm) = latlon_to_igc(lat);
     format!("{:02}{:05}{}", d, mm, if input < 0.0 { 'S' } else { 'N' })
 }
@@ -133,7 +133,7 @@ pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
 }
 
 pub fn longitude_to_igc(input: f64) -> String {
-    let lon: u32 = (input.abs() * 60000.0) as u32;
+    let lon: u32 = (input.abs() * 60000.0).round() as u32;
     let (d, mm) = latlon_to_igc(lon);
     format!("{:03}{:05}{}", d, mm, if input < 0.0 { 'W' } else { 'E' })
 }
