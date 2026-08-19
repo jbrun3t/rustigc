@@ -203,18 +203,6 @@ pub struct BBox<P> {
 }
 
 impl<P> BBox<P> {
-    #[allow(unused)]
-    pub fn default<T>() -> Self
-    where
-        T: Float,
-        P: PointNew<T>,
-    {
-        BBox {
-            min: P::new(T::infinity(), T::infinity()),
-            max: P::new(T::neg_infinity(), T::neg_infinity()),
-        }
-    }
-
     /// Create bounding box from a slice of items with coordinates
     pub fn from_items<T, I>(items: &[I]) -> Option<Self>
     where
@@ -244,45 +232,6 @@ impl<P> BBox<P> {
         })
     }
 
-    #[allow(unused)]
-    pub fn from_boxes<T>(items: &[Self]) -> Option<Self>
-    where
-        T: Float,
-        P: PointNew<T> + PointCoords<T>,
-    {
-        let mut iter = items.iter();
-        let first = iter.next()?;
-
-        let (l, b, r, t) = iter.fold(
-            (first.min.x(), first.min.y(), first.max.x(), first.max.y()),
-            |(mut l, mut b, mut r, mut t), item| {
-                l = T::min(l, item.min.x());
-                b = T::min(b, item.min.y());
-                r = T::max(r, item.max.x());
-                t = T::max(t, item.max.y());
-                (l, b, r, t)
-            },
-        );
-
-        Some(BBox {
-            min: P::new(l, b),
-            max: P::new(r, t),
-        })
-    }
-
-    #[allow(unused)]
-    pub fn extend<T, U>(&mut self, point: &U)
-    where
-        T: Float,
-        U: PointCoords<T>,
-        P: PointSetCoords<T> + PointCoords<T>,
-    {
-        self.min.set_x(T::min(self.min.x(), point.x()));
-        self.min.set_y(T::min(self.min.y(), point.y()));
-        self.max.set_x(T::max(self.max.x(), point.x()));
-        self.max.set_y(T::max(self.max.y(), point.y()));
-    }
-
     pub fn merge<T>(&mut self, other: &Self)
     where
         T: Float,
@@ -307,7 +256,6 @@ impl<P> BBox<P> {
         )
     }
 
-    #[allow(unused)]
     /// Diagonal length of the bounding box
     pub fn diagonal<T, M>(&self, _metric: M) -> T
     where
@@ -316,21 +264,6 @@ impl<P> BBox<P> {
         M: PointDistance<T>,
     {
         M::distance(&self.min, &self.max)
-    }
-
-    /// Returns true if this bounding box intersects another.
-    /// For spherical points, intersection is checked in lon/lat coordinate space.
-    /// TODO: does not handle antimeridian crossing (lon wraps at ±180°).
-    #[allow(unused)]
-    pub fn intersects<T>(&self, other: &Self) -> bool
-    where
-        T: Float,
-        P: PointCoords<T>,
-    {
-        self.min.x() <= other.max.x()
-            && self.max.x() >= other.min.x()
-            && self.min.y() <= other.max.y()
-            && self.max.y() >= other.min.y()
     }
 
     pub fn vertices<T>(&self) -> Vertices<P>
