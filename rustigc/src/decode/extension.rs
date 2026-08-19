@@ -38,7 +38,8 @@ pub struct RecordExtension<'a> {
     pub finish: usize,
     /// Three-letter code for this extension (e.g., FXA, SIU, ENL)
     pub tlc: &'a [u8],
-    /// Correction offset in recorded data
+    /// Length of the owning record's fixed part (35 for B, 7 for K), kept so `Display` can
+    /// re-emit the file's original 1-based inclusive positions
     pub offset: usize,
 }
 
@@ -92,14 +93,16 @@ fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensi
             n_digits(2),
             repeat(
                 0..,
-                (n_digits(2), n_digits(2), n_alphanum(3)).map(
-                    move |(s, f, tlc): (usize, usize, &[u8])| RecordExtension {
+                (n_digits(2), n_digits(2), n_alphanum(3))
+                    .verify(move |&(s, f, _): &(usize, usize, &[u8])| {
+                        s > offset && f >= s
+                    })
+                    .map(move |(s, f, tlc): (usize, usize, &[u8])| RecordExtension {
                         start: s - offset - 1,
                         finish: f - offset,
                         tlc,
                         offset,
-                    },
-                ),
+                    }),
             ),
         )
             .verify(|(nn, vext): &(usize, Vec<RecordExtension>)| *nn == vext.len())
@@ -199,5 +202,15 @@ mod tests {
     #[test]
     fn test_parse_invalid_count_mismatch() {
         assert!(i_record.parse(b"I023638FXA\n").is_err());
+    }
+
+    #[test]
+    fn test_j_start_below_offset() {
+        assert!(j_record.parse(b"J010102HDT\n").is_err());
+    }
+
+    #[test]
+    fn test_i_finish_before_start() {
+        assert!(i_record.parse(b"I013836FXA\n").is_err());
     }
 }
