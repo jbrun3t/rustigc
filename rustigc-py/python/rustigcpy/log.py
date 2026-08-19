@@ -4,7 +4,9 @@
 import json
 from datetime import UTC, datetime
 
+import numpy
 import rustigcpy._bindings as rib
+from rustigcpy._bindings import FIX_DTYPE
 
 from .fix import Fix
 from .flight import Flight, Flights
@@ -42,6 +44,17 @@ class Log:
     def reset(self) -> None:
         """Drop the cached detection, so the next call runs it again"""
         self._flights = None
+
+    def push(self, track: numpy.ndarray) -> None:
+        """Replace the track with `track`, dropping cached derived data"""
+        if track.dtype != FIX_DTYPE:
+            raise TypeError(f"track must be a {FIX_DTYPE} array, got {track.dtype}")
+
+        self._log.set_track_bytes(track.tobytes())
+
+        # Let the track come back up again from the Rust side
+        self._track = None
+        self.reset()
 
     @classmethod
     def from_bytes(cls, content: bytes) -> 'Log':

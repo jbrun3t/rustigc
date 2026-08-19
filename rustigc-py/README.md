@@ -42,6 +42,11 @@ for fix in track:
     print(f"{fix.timestamp}s - {fix.latitude:.6f}, {fix.longitude:.6f}")
     break
 
+# Editing the track: work on a copy, then push it back
+edited = track._data.copy()
+edited['baro_altitude'] += 10   # or trim: track._data[1000:]
+log.push(edited)                # fix count may change, timestamps stay increasing
+
 # Vectorized numpy operations (fast / intended for internal usage mostly)
 mean_lat = track._latitude.mean()
 max_alt = track._baro_altitude.max()
@@ -67,6 +72,8 @@ if score:
 - All subsequent operations are local Python (no FFI calls)
 - Track is cached for efficient repeated access
 - Flight detection is cached too, `reset()` drops it
+- The track is read-only, so it always matches what Rust holds.
+- `push()` is the way to change it. it drops the caches so everything derived is computed again.
 
 ## Low level bindings
 

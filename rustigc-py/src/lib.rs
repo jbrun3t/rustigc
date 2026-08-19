@@ -44,6 +44,47 @@ impl PyLog {
         PyBytes::new_bound(py, bytes)
     }
 
+    /// Replace the track with `data`, laid out for `FIX_DTYPE`. The fix count may change.
+    fn set_track_bytes(&mut self, py: Python<'_>, data: &[u8]) -> PyResult<()> {
+        let stride = std::mem::size_of::<rustigc::Fix>();
+        if !data.len().is_multiple_of(stride) {
+            return Err(PyValueError::new_err(format!(
+                "track of {} bytes is not a whole number of {stride}-byte fixes",
+                data.len()
+            )));
+        }
+
+        let count = data.len() / stride;
+        let track: Vec<rustigc::Fix> = py.allow_threads(|| {
+            let mut track = Vec::<rustigc::Fix>::with_capacity(count);
+            // SAFETY: reinterpreting `data` as `Fix`es is safe because:
+            // - Fix is repr(C) and still a guraenteed layout
+            // - the length check above makes `count * stride` exactly `data.len()`
+            // - `with_capacity` gives an allocation aligned for Fix, large enough, and distinct
+            //   from `data`, so the copy cannot overlap
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    data.as_ptr(),
+                    track.as_mut_ptr() as *mut u8,
+                    data.len(),
+                );
+                track.set_len(count);
+            }
+            track
+        });
+
+        // Make sure the timestamps are stricly increasing
+        if let Some(w) = track.windows(2).find(|w| w[1].timestamp <= w[0].timestamp) {
+            return Err(PyValueError::new_err(format!(
+                "timestamps must be strictly increasing, got {} then {}",
+                w[0].timestamp, w[1].timestamp
+            )));
+        }
+
+        self.inner.track = track;
+        Ok(())
+    }
+
     /// Get header value and origin by key (e.g., "PLT", "GTY", "DTE")
     /// Returns tuple of (text, origin), origin being "Flight Recorder", "Observer", "Pilot" or
     /// "Unknown"

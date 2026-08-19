@@ -68,6 +68,32 @@ def test_flights_cached(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
+def test_push_replaces_track(igc_content):
+    """A pushed track lands in Rust, fix count and detection follow"""
+    log = Log.from_bytes(igc_content)
+    before = log.flights()
+
+    log.push(log.track._data[1000:])
+
+    assert len(log.track) == 25459 - 1000
+    assert log.flights() is not before
+    assert log.score("xcontest") is not None
+
+
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
+def test_push_rejects_unordered(igc_content):
+    """Timestamps must stay strictly increasing, and a refused push changes nothing"""
+    log = Log.from_bytes(igc_content)
+    unordered = log.track._data.copy()
+    unordered["timestamp"][5] = unordered["timestamp"][4]
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        log.push(unordered)
+
+    assert len(log.track) == 25459
+
+
+@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_repr(igc_content):
     """Test Log.__repr__"""
     log = Log.from_bytes(igc_content)
