@@ -42,13 +42,6 @@ pub fn candidate_to_path(scorer: &Scorer, c: &Candidate) -> Path {
     c.ranges.iter().map(|r| scorer.bbox(r).vertices()).collect()
 }
 
-/// Consecutive pairs of `s`; `wraps` adds the last-to-first one, closing a circuit.
-pub fn pairs<T>(s: &[T], wraps: bool) -> impl Iterator<Item = (&T, &T)> + '_ {
-    s.iter()
-        .zip(s.iter().cycle().skip(1))
-        .take(if wraps { s.len() } else { s.len() - 1 })
-}
-
 /// Dynamic Programming (DP) path search  — through one vertex of each turnpoint box, in order.
 pub fn dynamic_search<F>(
     entry: &[f64],

@@ -6,8 +6,9 @@ use smallvec::{smallvec, SmallVec};
 
 use crate::score::cache::Leg;
 use crate::utils::geometry::{BBox, Fcc, Geodesic, PointDistance, SPoint};
+use crate::utils::iter::pairs;
 
-use super::common::{dynamic_search, pairs, transition_matrices};
+use super::common::{dynamic_search, transition_matrices};
 use super::{
     Candidate, Path, Scorer, ShapeBound, ShapeCommon, ShapeKind, ShapePeek, Task,
 };

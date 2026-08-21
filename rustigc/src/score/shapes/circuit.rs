@@ -3,10 +3,11 @@
 //! Common circuit tools
 
 use crate::utils::geometry::{Geodesic, PointDistance};
+use crate::utils::iter::pairs;
 
 use super::{Candidate, Scorer, Shape, ShapeCommon, ShapeKind, Task, TransitionMatrix};
 
-use super::common::{dynamic_search, pairs};
+use super::common::dynamic_search;
 
 use std::fmt::Debug;
 
