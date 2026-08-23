@@ -13,10 +13,12 @@ readme = "README.md"
 
 [features]
 crazy-test = []
+geojson = ["dep:geojson"]
 
 [dependencies]
 btoi = "0.4"
 geographiclib-rs = "0.2"
+geojson = { version = "1.0", default-features = false, optional = true }
 jiff = "0.2"
 log = "0.4"
 num-traits = "0.2"
@@ -31,7 +33,7 @@ winnow = "0.7"
 [dev-dependencies]
 pretty_assertions = "1"
 criterion = "0.5"
-rustigc = { path = ".", features = ["serde"] }
+rustigc = { path = ".", features = ["serde", "geojson"] }
 serde_json = "1"
 
 

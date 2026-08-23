@@ -14,11 +14,6 @@ pub use engine::Scorer;
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
-/// Meters to kilometers, at the hundredth — the unit of every distance below but `raw_distance`.
-fn round_km(meters: f64) -> f64 {
-    (meters / 10.0).round() / 100.0
-}
-
 fn round_mm(meters: f64) -> f64 {
     (meters * 1000.0).round() / 1000.0
 }

@@ -19,3 +19,5 @@ pub use error::{LError, LResult};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};
+#[cfg(feature = "geojson")]
+pub use utils::export::{GeoJson, TrackLine};

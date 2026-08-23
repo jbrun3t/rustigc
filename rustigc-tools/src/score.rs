@@ -9,6 +9,7 @@ use std::io::{self, Read};
 enum Format {
     Human,
     Json,
+    Geojson,
 }
 
 #[derive(Parser, Debug)]
@@ -111,20 +112,29 @@ fn main() -> io::Result<()> {
         .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
     let scored = window.and_then(|(start, stop)| log.score(&args.league, start, stop));
 
-    match scored {
-        Some(result) => match args.format {
-            Format::Json => {
-                println!("{}", serde_json::to_string_pretty(&result)?);
+    if scored.is_none() {
+        eprintln!("Could not score");
+    }
+
+    match args.format {
+        Format::Geojson => {
+            let flight = window.map(|(start, stop)| Flight { start, stop });
+            let mut layers: Vec<&dyn GeoJson> = Vec::new();
+            if let Some(flight) = &flight {
+                layers.push(flight);
             }
-            Format::Human => {
-                human_output(&log, &result);
+            if let Some(result) = &scored {
+                layers.push(result);
             }
+            println!("{}", serde_json::to_string(&log.export(&layers))?);
+        }
+        Format::Json => match &scored {
+            Some(result) => println!("{}", serde_json::to_string_pretty(result)?),
+            None => println!("null"),
         },
-        None => {
-            eprintln!("Could not score");
-            match args.format {
-                Format::Json => println!("null"),
-                Format::Human => {}
+        Format::Human => {
+            if let Some(result) = &scored {
+                human_output(&log, result);
             }
         }
     }

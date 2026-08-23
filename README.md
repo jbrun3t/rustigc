@@ -29,8 +29,8 @@ rustigc/
 - ✅ Python bindings with numpy support
 - ⏳ WASM bindings
 - 🏗️ Takeoff/landing detection (currently basic - average speed ~15km/h)
+- ✅ GeoJSON export: see [the crate README](rustigc/README.md#geojson-export)
 - 🏗️ CLI tools
-  - ⏳ Geojson support
 - ⏳ Flight dynamics smoothing
 - ⏳ Flights phases identification
 
