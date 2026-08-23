@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Score wrapper"""
+import json
 from typing import TYPE_CHECKING
 
 from .track import Track
@@ -12,9 +13,12 @@ if TYPE_CHECKING:
 class Score:
     """Scoring result of one league over one window"""
 
-    def __init__(self, track: Track, data: dict):
+    def __init__(self, track: Track, handle):
+        # The handle is the result as Rust still holds it, so `Log.export` can draw it without
+        # scoring again. Its scalars are read from the JSON dump.
+        self._handle = handle
         self._track = track
-        self._data = data
+        self._data = json.loads(handle.json())
 
     def __getattr__(self, name):
         """Scalars of the result: description, distance, score, gap, penalty, multiplier, circuit"""

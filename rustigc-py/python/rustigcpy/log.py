@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Log wrapper - provides high-level API"""
-import json
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
 import numpy
+
 import rustigcpy._bindings as rib
 from rustigcpy._bindings import FIX_DTYPE
 
@@ -12,6 +13,15 @@ from .fix import Fix
 from .flight import Flight, Flights
 from .score import Score
 from .track import Track
+
+
+def _handle(item: 'Flight | Score'):
+    """The Rust-side layer behind a wrapper, which is what draws it"""
+    handle = getattr(item, "_handle", None)
+    if handle is None:
+        raise TypeError(f"cannot draw a {type(item).__name__}")
+
+    return handle
 
 
 def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
@@ -104,7 +114,7 @@ class Log:
         """Flight sections detected in the track, cached until `reset()`"""
         if self._flights is None:
             self._flights = Flights(
-                Flight(self.track, data) for data in json.loads(self._log.flights())
+                Flight(self.track, handle) for handle in self._log.flights()
             )
         return self._flights
 
@@ -119,10 +129,27 @@ class Log:
         else:
             start, stop = _window(window)
 
-        raw = self._log.score(league, start, stop)
-        if raw is None:
+        handle = self._log.score(league, start, stop)
+        if handle is None:
             return None
-        return Score(self.track, json.loads(raw))
+        return Score(self.track, handle)
+
+    def describe(self, league: str) -> str:
+        """Everything this log describes about itself, as GeoJSON
+
+        The longest flight detected in the track, and what it scored under `league`. A layer it
+        cannot produce is absent: an unscorable league leaves the track behind on its own.
+        """
+        return self._log.describe(league)
+
+    def export(self, items: Iterable[Flight | Score] = (), track: bool = True) -> str:
+        """This log and each of `items`, in the order given, as GeoJSON
+
+        The track's flown line and the instant its fix timestamps count from come with it; `track`
+        draws the line. Indices are taken on trust — an item detected or scored before a `push()`
+        no longer refers to the track it came from.
+        """
+        return self._log.export([_handle(item) for item in items], track)
 
     def __repr__(self) -> str:
         return f"Log(fixes={len(self.track)}, pilot={self.pilot_name!r})"

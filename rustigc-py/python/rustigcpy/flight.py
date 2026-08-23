@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Flight wrapper"""
+import json
 from typing import TYPE_CHECKING
 
 from .track import Track
@@ -12,9 +13,12 @@ if TYPE_CHECKING:
 class Flight:
     """One flight section detected in a track"""
 
-    def __init__(self, track: Track, data: dict):
+    def __init__(self, track: Track, handle):
+        # The handle is the section as Rust still holds it, so `Log.export` can draw it without
+        # detecting again. Its scalars are read from the JSON dump.
+        self._handle = handle
         self._track = track
-        self._data = data
+        self._data = json.loads(handle.json())
 
     def __getattr__(self, name):
         """Scalars of the section, as detection reports them"""

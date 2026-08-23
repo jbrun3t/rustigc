@@ -3,15 +3,71 @@
 #![allow(clippy::useless_conversion)]
 
 use ::rustigc;
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
-use rustigc::FlightDetection;
+use rustigc::{FlightDetection, GeoJson};
 
 /// Python binding interface for IGC log
 #[pyclass(name = "RustLog")]
 struct PyLog {
     inner: rustigc::Log,
+}
+
+/// A layer of a flight, kept alive on this side so it can be drawn later.
+///
+/// Python reads a layer's scalars from `json`, and hands the handle itself back to [`PyLog::export`].
+/// Neither `Flight` nor `ScoringResult` can be rebuilt from that JSON — `ScoringResult` carries a
+/// `&'static str` — and re-deriving one would mean detecting or scoring a second time.
+macro_rules! layer {
+    ($name:ident, $py_name:literal, $inner:ty, $what:literal) => {
+        #[pyclass(name = $py_name)]
+        struct $name {
+            inner: $inner,
+        }
+
+        #[pymethods]
+        impl $name {
+            /// The layer as a JSON dump, the shape its Python wrapper reads its scalars from
+            fn json(&self) -> PyResult<String> {
+                serde_json::to_string(&self.inner).map_err(|e| {
+                    PyValueError::new_err(format!("Failed to serialize {}: {e}", $what))
+                })
+            }
+        }
+    };
+}
+
+layer!(PyFlight, "RustFlight", rustigc::Flight, "flight");
+layer!(PyScore, "RustScore", rustigc::ScoringResult, "score");
+
+/// One borrowed layer handle, held while the slice of trait objects pointing into it is built.
+enum Layer<'py> {
+    Flight(PyRef<'py, PyFlight>),
+    Score(PyRef<'py, PyScore>),
+}
+
+impl<'py> Layer<'py> {
+    fn borrow(item: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if let Ok(flight) = item.extract::<PyRef<'py, PyFlight>>() {
+            return Ok(Self::Flight(flight));
+        }
+        if let Ok(score) = item.extract::<PyRef<'py, PyScore>>() {
+            return Ok(Self::Score(score));
+        }
+
+        Err(PyTypeError::new_err(format!(
+            "cannot draw a {}",
+            item.get_type()
+        )))
+    }
+
+    fn as_layer(&self) -> &dyn GeoJson {
+        match self {
+            Self::Flight(flight) => &flight.inner,
+            Self::Score(score) => &score.inner,
+        }
+    }
 }
 
 #[pymethods]
@@ -98,31 +154,65 @@ impl PyLog {
             .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 
-    /// Detect the flight sections, passed to Python as JSON dump
-    fn flights(&self, py: Python<'_>) -> PyResult<String> {
+    /// Detect the flight sections, one handle each
+    fn flights(&self, py: Python<'_>) -> Vec<PyFlight> {
         let flights = py.allow_threads(|| self.inner.track.flights());
 
-        serde_json::to_string(&flights).map_err(|e| {
-            PyValueError::new_err(format!("Failed to serialize flights: {e}"))
-        })
+        flights
+            .into_iter()
+            .map(|inner| PyFlight { inner })
+            .collect()
     }
 
-    /// Score the fixes in `[start, stop]` against `league`, passed to Python as JSON dump
+    /// Score the fixes in `[start, stop]` against `league`
     fn score(
         &self,
         py: Python<'_>,
         league: &str,
         start: usize,
         stop: usize,
-    ) -> PyResult<Option<String>> {
+    ) -> Option<PyScore> {
         // FIXME: `None` covers every way this can fail: unknown league, bad window, nothing scored.
         // Something to fixme in the core
         let result = py.allow_threads(|| self.inner.score(league, start, stop));
 
-        result
-            .map(|r| serde_json::to_string(&r))
-            .transpose() // Why ?
-            .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
+        result.map(|inner| PyScore { inner })
+    }
+
+    /// Everything the log describes about itself, as one GeoJSON string
+    fn describe(&self, py: Python<'_>, league: &str) -> PyResult<String> {
+        py.allow_threads(|| serde_json::to_string(&self.inner.describe(league)))
+            .map_err(|e| {
+                PyValueError::new_err(format!("Failed to serialize geojson: {e}"))
+            })
+    }
+
+    /// The log, its time reference and each of `layers`, in the order given, as one GeoJSON string.
+    ///
+    /// `track` draws the flown line. Fix indices are taken on trust: nothing checks that a layer was
+    /// detected or scored in the track this log holds now, which `set_track_bytes` can replace.
+    #[pyo3(signature = (layers, track = true))]
+    fn export(
+        &self,
+        py: Python<'_>,
+        layers: Vec<Bound<'_, PyAny>>,
+        track: bool,
+    ) -> PyResult<String> {
+        // Borrow every handle first: the slice below holds references into them.
+        let held: Vec<Layer<'_>> =
+            layers.iter().map(Layer::borrow).collect::<PyResult<_>>()?;
+        let layers: Vec<&dyn GeoJson> = held.iter().map(Layer::as_layer).collect();
+
+        let line = if track {
+            rustigc::TrackLine::Draw
+        } else {
+            rustigc::TrackLine::Skip
+        };
+
+        py.allow_threads(|| serde_json::to_string(&self.inner.export_with(&layers, line)))
+            .map_err(|e| {
+                PyValueError::new_err(format!("Failed to serialize geojson: {e}"))
+            })
     }
 
     fn __repr__(&self) -> String {
@@ -143,6 +233,8 @@ fn league_names() -> Vec<&'static str> {
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
+    m.add_class::<PyFlight>()?;
+    m.add_class::<PyScore>()?;
     m.add_function(wrap_pyfunction!(league_names, m)?)?;
 
     // Export FIX_DTYPE as numpy dtype

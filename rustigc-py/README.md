@@ -64,7 +64,17 @@ score = log.score("xcontest", (flight.takeoff, flight.landing))  # or fixes
 if score:
     print(f"{score.description}: {score.score} points over {score.distance} km")
     print(f"Turnpoints: {[tp.index for tp in score.turnpoints]}")
+
+# GeoJSON, either picked for you or chosen layer by layer
+open("flight.geojson", "w").write(log.describe("xcontest"))
+
+geojson = log.export([flight, score])          # in the order given
+task_only = log.export([score], track=False)   # without the flown line
 ```
+
+Both return the GeoJSON as a string. `describe` takes the longest flight detected and what it scored;
+`export` draws the flights and scores handed to it, and nothing else. See
+[the core's role table](../rustigc/README.md#geojson-export) for what the features carry.
 
 ### Architecture
 
@@ -100,9 +110,9 @@ glider = log.get_header("GTY")
 if glider:
     print(f"Glider: {glider[0]}")
 
-# Flight detection, as a JSON dump of the sections
-flights = json.loads(log.flights())
-print(f"Sections: {flights}")  # [{"start": 125, "stop": 25425}]
+# Flight detection, one opaque handle per section, each dumping itself as JSON
+sections = [json.loads(f.json()) for f in log.flights()]
+print(f"Sections: {sections}")  # [{"start": 125, "stop": 25425}]
 
 # Access track data as numpy array
 track = numpy.frombuffer(log.track_bytes, dtype=rustigcpy.FIX_DTYPE)

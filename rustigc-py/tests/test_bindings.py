@@ -58,9 +58,11 @@ def test_metadata(igc_content):
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_flights_detection(igc_content):
-    """Detection reports the section bounds"""
+    """Detection reports the section bounds, one handle each"""
     log = rib.RustLog.from_bytes(igc_content)
-    assert json.loads(log.flights()) == [{"start": 125, "stop": 25425}]
+    flights = log.flights()
+
+    assert [json.loads(f.json()) for f in flights] == [{"start": 125, "stop": 25425}]
 
 
 def test_invalid_content():
@@ -80,9 +82,9 @@ def test_league_names():
 def test_score_shape(igc_content):
     """Result carries exactly the fields the wrapper expects"""
     log = rib.RustLog.from_bytes(igc_content)
-    raw = log.score("xcontest", *FAI01_WINDOW)
+    handle = log.score("xcontest", *FAI01_WINDOW)
 
-    assert set(json.loads(raw)) == {
+    assert set(json.loads(handle.json())) == {
         "description", "distance", "raw_distance", "gap", "penalty",
         "score", "multiplier", "takeoff", "entry", "turnpoints",
         "exit", "landing", "circuit",
