@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test Python Log wrapper"""
-from datetime import date
+from datetime import UTC, date, timedelta
 
 import pytest
 from rustigcpy import Log
@@ -33,9 +33,21 @@ def test_metadata(igc_content):
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_date_parsing(igc_content):
-    """Parse date to datetime.date"""
+    """The origin comes from Rust, in the zone the track starts in"""
     log = Log.from_bytes(igc_content)
-    assert log.datetime.date() == date(2022, 8, 5)
+
+    origin = log.datetime
+
+    assert origin.date() == date(2022, 8, 5)
+    # UTC midnight read in BST, so an hour past it and an hour east, and named after the zone
+    assert origin.hour == 1
+    assert origin.utcoffset() == timedelta(hours=1)
+    assert origin.tzname() == "BST"
+    assert str(origin.tzinfo) == "Europe/London"
+    # a real zone, so it follows its own rules away from the flight
+    assert (origin + timedelta(days=182)).tzname() == "GMT"
+    # whatever the zone, the instant is midnight UTC: that is what a fix timestamp counts from
+    assert origin.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S") == "2022-08-05 00:00:00"
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

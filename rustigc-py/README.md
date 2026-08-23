@@ -21,7 +21,7 @@ log = Log.from_file("flight.igc")
 # Access metadata
 print(f"Pilot: {log.pilot_name}")
 print(f"Glider: {log.glider_type}")
-print(f"Date: {log.datetime}")
+print(f"Origin: {log.datetime}")  # 2022-08-05 01:00:00+01:00, what fix timestamps count from
 
 # Flight detection, cached after the first call
 flight = log.flights().longest   # None when nothing was detected

@@ -2,7 +2,8 @@
 
 """Log wrapper - provides high-level API"""
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import numpy
 
@@ -101,14 +102,20 @@ class Log:
 
     @property
     def datetime(self) -> datetime | None:
-        """Parse flight date to datetime"""
-        header = self._log.get_header("DTE")
-        if header is None:
+        """Instant this log's fix timestamps count from
+
+        UTC midnight of the flight's date, read in the zone the track starts in — so its own date is
+        the flight's only east of Greenwich. `None` without a usable `HFDTE` header.
+        """
+        origin = self._log.datetime()
+        if origin is None:
             return None
-        date_str = header[0]
-        # IGC format: DDMMYY,FF (flight number after comma)
-        date_part = date_str.split(',')[0]
-        return datetime.strptime(date_part, '%d%m%y').replace(tzinfo=UTC)
+
+        # RFC 9557: the offset pins the instant, the bracket names the zone. `astimezone`, not
+        # `replace`, so this attaches the zone rather than reinterpreting the wall clock against it.
+        stamp, _, zone = origin.partition("[")
+
+        return datetime.fromisoformat(stamp).astimezone(ZoneInfo(zone.rstrip("]")))
 
     def flights(self) -> Flights:
         """Flight sections detected in the track, cached until `reset()`"""

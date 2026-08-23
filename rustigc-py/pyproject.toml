@@ -9,7 +9,7 @@ description = "Python bindings for the rustigc library"
 requires-python = ">=3.11"
 license = { text = "LGPL-2.1-or-later" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
-dependencies = ["numpy>=1.20"]
+dependencies = ["numpy>=1.20", "tzdata; sys_platform == 'win32'"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",

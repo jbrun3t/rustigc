@@ -154,6 +154,15 @@ impl PyLog {
             .map(|data| (data.text.clone(), data.origin.as_str().to_string()))
     }
 
+    /// Instant this log's fix timestamps count from, or `None` without a usable `HFDTE` header.
+    ///
+    /// UTC midnight of the flight's date, in the zone the track starts in, as RFC 9557 —
+    /// `2022-08-05T01:00:00+01:00[Europe/London]`. That is what a `Zoned` prints, offset and zone
+    /// name together, so the other side can rebuild the zone itself rather than be handed pieces.
+    fn datetime(&self) -> Option<String> {
+        self.inner.datetime().map(|origin| origin.to_string())
+    }
+
     /// Detect the flight sections, one handle each
     fn flights(&self, py: Python<'_>) -> Vec<PyFlight> {
         let flights = py.allow_threads(|| self.inner.track.flights());
