@@ -46,7 +46,7 @@ pub trait PointNew<T: Float>: PointCoords<T> + Copy {
     fn new(x: T, y: T) -> Self;
 }
 
-// ==== Euclidian Math ====
+// ==== Euclidean Math ====
 
 pub struct Flat;
 

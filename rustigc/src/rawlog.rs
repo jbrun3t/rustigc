@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Main IGC file parser
-//!
-//! This module orchestrates parsing of complete IGC files by dispatching
-//! each line to the appropriate record parser.
+//! Record-level IGC log.
 
 use std::fmt;
 use winnow::combinator::{alt, repeat};
@@ -15,14 +12,28 @@ use crate::{LResult, Log};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+/// An IGC file as records, borrowing from the bytes it was parsed from.
+///
+/// Keeps every record, including the ones [`Log`] drops, and validates nothing beyond recognizing
+/// them. `Display` renders it back as valid IGC.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
 pub struct RawLog<'a> {
+    /// Every line of the file, in order, unreadable ones included as [`Record::Bad`].
     pub records: Vec<Record<'a>>,
 }
 
 impl<'a> RawLog<'a> {
+    /// Parses `input`, an IGC file read as bytes, borrowing from it.
+    ///
+    /// Timestamps are carried past midnight, so a flight spanning two days keeps counting up.
+    ///
+    /// # Errors
+    ///
+    /// [`LError::Parse`] when not a single record can be read.
+    ///
+    /// [`LError::Parse`]: crate::LError::Parse
     pub fn new(input: &'a [u8]) -> LResult<Self> {
         let mut offset: u32 = 0;
         let mut lastts: u32 = 0;
@@ -40,6 +51,8 @@ impl<'a> RawLog<'a> {
     }
 }
 
+/// Renders a log back as records, with `XRS` as the manufacturer — the result is not what a
+/// recorder wrote.
 impl From<Log> for RawLog<'_> {
     fn from(log: Log) -> Self {
         let mut records: Vec<Record> = Vec::new();
@@ -82,6 +95,7 @@ impl From<Log> for RawLog<'_> {
     }
 }
 
+/// Prints back valid IGC, one record per line.
 impl fmt::Display for RawLog<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for rec in &self.records {

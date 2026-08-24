@@ -48,7 +48,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+/// A record that carries nothing but text: a comment, a signature, a GPS datum.
 pub struct TextEvent<'a> {
+    /// The line past its record letter, as written.
     pub text: &'a [u8],
 }
 
@@ -60,8 +62,11 @@ impl fmt::Display for TextEvent<'_> {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+/// A record that carries text and a time: an event, a satellite list, sensor data.
 pub struct TimedEvent<'a> {
+    /// Seconds from UTC midnight of the flight's first day, carried past 86400.
     pub timestamp: u32,
+    /// The line past the timestamp, as written.
     pub text: &'a [u8],
 }
 

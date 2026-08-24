@@ -169,6 +169,24 @@ impl PartialEq for Solution {
 
 impl Eq for Solution {}
 
+/// A scoring window, prepared once and searched by [`Scorer::solve`].
+///
+/// [`Log::score`] does both steps in one call. Build a `Scorer` to score one window under several
+/// leagues: the fix layout, the caches and the latitude band are then set up once.
+///
+/// ```no_run
+/// use rustigc::{Log, Scorer};
+///
+/// let log = Log::new(&std::fs::read("flight.igc")?)?;
+/// let scorer = Scorer::new(&log.track, 125, 25425).expect("unusable window");
+///
+/// for league in rustigc::league_names() {
+///     println!("{league}: {:?}", scorer.solve(league).map(|r| r.score));
+/// }
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// [`Log::score`]: crate::Log::score
 #[derive(Debug)]
 pub struct Scorer {
     pub(super) track: Vec<SPoint>,
@@ -359,8 +377,12 @@ impl Scorer {
         })
     }
 
-    /// Collects the fixes of `[start, stop]` into the cache-friendly layout the search reads, with
-    /// longitude "unwrapped" so the antimeridian is not longer an issue.
+    /// Prepares the fixes in `[start, stop]` for searching.
+    ///
+    /// `None` when the window is empty, inverted, or reaches past `track`.
+    ///
+    /// Collects the fixes into the cache-friendly layout the search reads, with longitude
+    /// "unwrapped" so the antimeridian is no longer an issue.
     pub fn new<P: PointCoords<f64>>(
         track: &[P],
         start: usize,
@@ -388,11 +410,15 @@ impl Scorer {
         })
     }
 
-    /// Main B&B loop, scoring the window against all the rules of `league`. Evaluating the rules
-    /// together is important to quickly discard the least performing ones.
+    /// Scores the window against every rule of `league` and reports the best.
     ///
-    /// Returns the scoring report if a solution is found, `None` when `league` is not a known
-    /// league or when no candidate could score.
+    /// `None` when `league` is not one of [`league_names`], or when no rule could score the
+    /// window.
+    ///
+    /// Main B&B loop. Evaluating the rules together is important to quickly discard the least
+    /// performing ones.
+    ///
+    /// [`league_names`]: crate::league_names
     pub fn solve(&self, league: &str) -> Option<ScoringResult> {
         let rules = league_rules(league)?;
 

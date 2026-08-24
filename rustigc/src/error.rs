@@ -2,11 +2,14 @@
 
 use winnow::error::{ContextError, ParseError};
 
+/// What went wrong reading a log.
 #[derive(thiserror::Error, Debug)]
 pub enum LError {
+    /// The bytes are not IGC: not one record could be read.
     #[error("Parse error: {0}")]
     Parse(String),
 
+    /// IGC-shaped, but not usable — too much of it is invalid.
     #[error("D'oh: {0}")]
     Doh(String),
 }
@@ -29,4 +32,5 @@ impl From<ContextError> for LError {
     }
 }
 
+/// [`Result`] of this crate's parsing entry points.
 pub type LResult<T> = std::result::Result<T, LError>;

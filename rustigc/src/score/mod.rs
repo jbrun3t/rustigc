@@ -18,13 +18,16 @@ fn round_mm(meters: f64) -> f64 {
     (meters * 1000.0).round() / 1000.0
 }
 
-/// What the best rule scored, as that rule presents it.
+/// What the winning rule scored, as that rule presents it.
+///
+/// Every fix here is an index into the track that was scored, not into the window. `distance` and
+/// `score` are rounded the way the league publishes them; `raw_distance` keeps the metres.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
     /// Identity of the rule, e.g. `"Triangle plat"`.
     pub description: String,
-    /// Scored distance. Presentation defined by the rule.
+    /// Scored distance, as the rule presents it.
     pub distance: f64,
     /// The same distance in meters, rounded to the nearest millimeter.
     pub raw_distance: f64,
@@ -46,6 +49,6 @@ pub struct ScoringResult {
     pub exit: usize,
     /// End of the scoring window.
     pub landing: usize,
-    /// Whether the result closes on itself. Mostly to simplify presentation
+    /// Whether the task closes on itself.
     pub circuit: bool,
 }

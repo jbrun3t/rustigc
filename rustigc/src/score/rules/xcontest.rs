@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 //! XContest scoring rules (2026)
-//! https://www.xcontest.org/world/en/rules/
+//! <https://www.xcontest.org/world/en/rules/>
 //!
 //! No minimum score. Gaps are charged in full, and a gap over 20 % of the distance does not close
 //!

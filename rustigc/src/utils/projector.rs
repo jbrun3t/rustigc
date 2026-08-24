@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Forked from https://github.com/Turbo87/flat-projection-rs.git
+//! Forked from <https://github.com/Turbo87/flat-projection-rs.git>
 
 use num_traits::Float;
 

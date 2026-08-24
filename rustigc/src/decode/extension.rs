@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+/// One extension field, as an I or J record defines it.
 pub struct RecordExtension<'a> {
     /// Start byte, 0-based within the record's extension area
     pub start: usize,
@@ -63,7 +64,9 @@ impl fmt::Display for RecordExtension<'_> {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+/// The extension fields an I or J record defines, in the order they appear.
 pub struct Extensions<'a> {
+    /// The fields, each slicing its own span out of the record it extends.
     pub vext: Vec<RecordExtension<'a>>,
 }
 

@@ -27,29 +27,30 @@ use super::Record;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Single position fix from B-record
+/// One position fix.
 ///
-/// Note: repr(C) with timestamp first (32 bytes with implicit padding)
-/// - u32 timestamp (followed by 4 bytes implicit padding for alignment)
-/// - f64 fields (8-byte aligned)
-/// - i32 fields (4-byte aligned)
+/// The unit of a track. Timestamps count seconds and carry no date; [`Fix::datetime`] renders one
+/// against the origin [`Log::datetime`] gives.
 ///
-/// Benchmarking shows ~5% parsing improvement with timestamp first vs last.
-/// Python/NumPy bindings must include explicit padding field in dtype.
+/// `repr(C)`, 32 bytes: the `u32` timestamp, four bytes of alignment padding, then the `f64` and
+/// `i32` fields. A binding reading a track as raw bytes must account for that padding. Do not
+/// reorder the fields !
+///
+/// [`Log::datetime`]: crate::Log::datetime
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Fix {
-    /// Seconds since UTC midnight. A flight crossing midnight keeps counting past 86400
-    /// (`decode::ts_offset`), so this can exceed one day.
+    /// Seconds since UTC midnight of the flight's first day. A flight crossing midnight keeps
+    /// counting past 86400, so this can exceed one day.
     pub timestamp: u32,
-    /// Point Latitude
+    /// Latitude in decimal degrees, north positive.
     pub lat: f64,
-    /// Point Longitude
+    /// Longitude in decimal degrees, east positive.
     pub lon: f64,
-    /// Pressure altitude in meters
+    /// Pressure altitude in meters.
     pub baro_alt: i32,
-    /// GNSS (GPS) altitude in meters
+    /// GNSS (GPS) altitude in meters.
     pub gnss_alt: i32,
 }
 
@@ -77,9 +78,15 @@ impl crate::utils::geometry::PointCoords<f64> for Fix {
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+/// A fix as its B-record holds it.
+///
+/// [`Log`]: crate::Log
 pub struct RawFix<'a> {
+    /// The position itself.
     pub fix: Fix,
+    /// Whether the recorder called the fix a valid 3D one.
     pub valid: bool,
+    /// Extension bytes past the fixed part, laid out by the file's I-record.
     pub ext: &'a [u8],
 }
 

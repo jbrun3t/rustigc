@@ -21,12 +21,16 @@ use super::Record;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Flight recorder identification
+/// The flight recorder that wrote the file (A-record).
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Recorder {
+    /// Three-letter manufacturer code, `"FLA"`, `"XCT"`, ... `"BAD"` when the file had no
+    /// A-record at all.
     pub manufacturer: String,
+    /// Serial number or logger id.
     pub uid: String,
+    /// Whatever the manufacturer appended past the id.
     pub data: Option<String>,
 }
 

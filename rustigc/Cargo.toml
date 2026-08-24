@@ -8,8 +8,12 @@ authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "IGC file parser library"
+description = "IGC flight log parsing and cross-country scoring"
 readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 crazy-test = []

@@ -164,7 +164,10 @@ pub(crate) fn league_rules(name: &str) -> Option<Ruleset> {
     LEAGUES.iter().find(|l| l.name() == name).map(|l| l.rules())
 }
 
-/// Every league `Log::score` accepts, for listing (e.g. a CLI's `--help`).
+/// Every league name [`Log::score`] and [`Scorer::solve`] accept.
+///
+/// [`Log::score`]: crate::Log::score
+/// [`Scorer::solve`]: crate::Scorer::solve
 pub fn league_names() -> impl Iterator<Item = &'static str> {
     LEAGUES.iter().map(|l| l.name())
 }

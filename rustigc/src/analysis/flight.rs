@@ -24,17 +24,34 @@ const TTHRES: f64 = 30.0;
 const MAX_GAP: f64 = 300.0;
 
 /// One flight section, as fix indices into the track it was detected in.
+///
+/// The window [`Log::score`] takes. With the `geojson` feature it is also a layer `Log::export`
+/// can draw.
+///
+/// [`Log::score`]: crate::Log::score
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Flight {
+    /// Takeoff, as an index into the track.
     pub start: usize,
+    /// Landing, as an index into the track.
     pub stop: usize,
 }
 
-/// Flight detection over a track.
+/// Flight detection over a track, implemented for `[Fix]`.
 pub trait FlightDetection {
-    /// Flight sections, one per stretch free of a gap longer than `MAX_GAP`. Empty when none was
-    /// detected.
+    /// Flight sections of this track, one per stretch free of a gap longer than five minutes.
+    /// Empty when nothing was detected.
+    ///
+    /// ```no_run
+    /// use rustigc::{FlightDetection, Log};
+    ///
+    /// let log = Log::new(&std::fs::read("flight.igc")?)?;
+    /// for flight in log.track.flights() {
+    ///     println!("{}..{}", flight.start, flight.stop);
+    /// }
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     fn flights(&self) -> Vec<Flight>;
 }
 
@@ -44,9 +61,9 @@ impl FlightDetection for [Fix] {
     }
 }
 
-/// Picking one section out of a detection result.
+/// Picking one section out of a detection result, implemented for `[Flight]`.
 pub trait FlightSelection {
-    /// Longest section by fix span.
+    /// Longest section by fix span, `None` when there is none.
     fn longest(&self) -> Option<&Flight>;
 }
 

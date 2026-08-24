@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! IGC record parsers
-//!
-//! This module contains parsers for all IGC record types (A-L).
+//! IGC record parsers, one module per record type.
 
 use std::fmt;
 
@@ -31,19 +29,35 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+/// One line of an IGC file, named after the letter it starts with.
+///
+/// `Display` prints it back as IGC; `{:#}` prints it for a human instead.
 pub enum Record<'a> {
+    /// Flight recorder identification.
     A(Recorder),
+    /// Position fix.
     B(RawFix<'a>),
+    /// Declared task.
     C(Task),
+    /// GPS datum and differential GPS station.
     D(TextEvent<'a>),
+    /// Pilot-initiated event.
     E(TimedEvent<'a>),
+    /// Satellite constellation used for the fixes that follow.
     F(TimedEvent<'a>),
+    /// Security signature.
     G(TextEvent<'a>),
+    /// Flight metadata.
     H(Header),
+    /// Extension fields appended to every [`Record::B`].
     I(Extensions<'a>),
+    /// Extension fields appended to every [`Record::K`].
     J(Extensions<'a>),
+    /// Periodic sensor data, laid out by the [`Record::J`] definitions.
     K(TimedEvent<'a>),
+    /// Free-form comment.
     L(TextEvent<'a>),
+    /// A line no parser recognized, kept verbatim.
     Bad(&'a [u8]),
 }
 
@@ -106,6 +120,9 @@ fn ts_offset(ts: &mut u32, offset: &mut u32, last: &mut u32) {
 }
 
 impl Record<'_> {
+    /// Carries a timestamp past midnight, advancing `offset` by a day whenever it wraps.
+    ///
+    /// `last` is the previous timestamp seen, which is how the wrap is spotted.
     pub fn fix_timestamp(mut self, offset: &mut u32, last: &mut u32) -> Self {
         match self {
             Record::B(ref mut rec) => ts_offset(&mut rec.fix.timestamp, offset, last),
@@ -117,6 +134,7 @@ impl Record<'_> {
         self
     }
 
+    /// Whether this record carries a time of its own.
     pub fn has_timestamp(&self) -> bool {
         matches!(
             self,

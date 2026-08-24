@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Main Log file representation
+//! Decoded IGC log.
 
 use std::collections::HashMap;
 
@@ -11,17 +11,24 @@ use log::warn;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Bare minimum to be exported when parsing an IGC
+/// An IGC file, decoded.
+///
+/// Everything the file states about the flight. Comments, signatures and events are dropped;
+/// [`RawLog`] keeps them. Build one with [`Log::new`], or from a [`RawLog`] when the record-level
+/// view is needed first.
+///
+/// Invalid fixes and fixes whose timestamp does not advance are dropped, so `track` is always
+/// strictly increasing in time. A file that is mostly unparsable is rejected outright.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Log {
-    /// Logger identification
+    /// Flight recorder that produced the file (A-record), synthesized when it is missing.
     pub recorder: Recorder,
-    /// H-records, keyed by their 3-letter code
+    /// Flight metadata (H-records), keyed by 3-letter code: `"PLT"`, `"GTY"`, `"DTE"`, ...
     pub headers: HashMap<String, HeaderData>,
-    /// Position fixes (B-records), timestamps strictly increasing
+    /// Position fixes (B-records), in order, timestamps strictly increasing.
     pub track: Vec<Fix>,
-    /// Declared Task
+    /// Task the pilot declared before the flight (C-records), if any.
     pub task: Option<Task>,
 }
 
@@ -103,12 +110,26 @@ impl TryFrom<RawLog<'_>> for Log {
 }
 
 impl Log {
+    /// Parses `input`, an IGC file read as bytes.
+    ///
+    /// # Errors
+    ///
+    /// [`LError::Parse`] when no record can be read at all, [`LError::Doh`] when more than 80% of
+    /// the records are invalid.
     pub fn new(input: &[u8]) -> LResult<Self> {
         let raw = RawLog::new(input)?;
         raw.try_into()
     }
 
-    /// Scores the fixes in `[start, stop]` against `league`'s rules
+    /// Scores the fixes in `[start, stop]` against every rule of `league`, reporting the best.
+    ///
+    /// The window is a pair of indices into [`Log::track`]; flight detection is the usual source
+    /// of one.
+    ///
+    /// `None` when `league` is not one of [`league_names`], when the window is unusable, or when
+    /// no rule could score it.
+    ///
+    /// [`league_names`]: crate::league_names
     pub fn score(
         &self,
         league: &str,

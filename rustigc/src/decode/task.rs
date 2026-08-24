@@ -6,7 +6,7 @@
 //! span multiple lines to represent the complete task declaration.
 //!
 //! Format:
-//! - Header line: CDDMMYYHHMMSSDDMMYY<4-digit-obsolete><nn><text>
+//! - Header line: `CDDMMYYHHMMSSDDMMYY[4-digit-obsolete][nn][text]`
 //!   - C: Record type
 //!   - DDMMYYHHMMSS: Declaration timestamp (12 digits)
 //!   - DDMMYY: Flight date (6 digits)
@@ -14,7 +14,7 @@
 //!   - nn: Number of turnpoints (2 digits, excludes start/finish but spec is ambiguous)
 //!   - text: Task description
 //!
-//! - Turnpoint lines (one per turnpoint): CDDMMmmmN/SDDDMMmmmE/W<text>
+//! - Turnpoint lines (one per turnpoint): `CDDMMmmmN/SDDDMMmmmE/W[text]`
 //!   - C: Record type
 //!   - DDMMmmmN/S: Latitude
 //!   - DDDMMmmmE/W: Longitude
@@ -45,12 +45,15 @@ use super::Record;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Declared task turnpoint
+/// One turnpoint of a declared task.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct TurnPoint {
+    /// Latitude in decimal degrees, north positive.
     pub lat: f64,
+    /// Longitude in decimal degrees, east positive.
     pub lon: f64,
+    /// Name the pilot gave it.
     pub text: String,
 }
 
@@ -70,20 +73,29 @@ impl fmt::Display for TurnPoint {
     }
 }
 
-/// Task Declaration
+/// When a task was declared and what for.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Declaration {
-    pub date: String,   // As DDMMYYHHMMSS
-    pub flight: String, // As DDMMYY
+    /// When the declaration was made, as written: `DDMMYYHHMMSS`.
+    pub date: String,
+    /// Day the task is flown, as written: `DDMMYY`.
+    pub flight: String,
+    /// Free-form task description.
     pub text: String,
 }
 
-/// Declared task
+/// The task the pilot declared before flying (C-records).
+///
+/// What was *intended*, which scoring ignores — [`Log::score`] measures the track as flown.
+///
+/// [`Log::score`]: crate::Log::score
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Task {
+    /// The declaration header, absent when the file jumps straight to turnpoints.
     pub declaration: Option<Declaration>,
+    /// Turnpoints in order, usually takeoff and landing included.
     pub turnpoints: Vec<TurnPoint>,
 }
 

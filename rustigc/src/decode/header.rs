@@ -2,13 +2,10 @@
 
 //! H-record (header/metadata) parser
 //!
-//! H-records contain flight metadata in various formats:
-//!
-//! General format: H[F/O/P][XXX][colon][text]
-//! - H: Record type
-//! - F: Flight recorder / O: Official observer / P: Pilot entered
-//! - XXX: 3-letter code
-//! - Optional colon separator and value
+//! General format: `H[F/O/P][XXX][:][text]`
+//! - `F`/`O`/`P`: entered by the flight recorder, an official observer, or the pilot
+//! - `XXX`: 3-letter code
+//! - optional colon, then the value
 
 use std::fmt;
 
@@ -31,10 +28,15 @@ use serde::{Deserialize, Serialize};
     derive(Deserialize, Serialize),
     serde(rename_all = "lowercase")
 )]
+/// Who entered a header.
 pub enum HeaderOrigin {
+    /// Written by the recorder itself.
     FlightRecorder,
+    /// Entered by an official observer.
     Observer,
+    /// Entered by the pilot.
     Pilot,
+    /// Unexpected origin.
     Unknown,
 }
 
@@ -48,6 +50,7 @@ impl HeaderOrigin {
         }
     }
 
+    /// Human-readable origin, `"Flight Recorder"`, `"Observer"`, `"Pilot"` or `"Unknown"`.
     pub const fn as_str(&self) -> &str {
         match self {
             HeaderOrigin::FlightRecorder => "Flight Recorder",
@@ -72,18 +75,27 @@ impl fmt::Display for HeaderOrigin {
 // and their number is negligible so we are better allocating
 // the strings directly
 
-/// Single header content entry
+/// The value of one header.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct HeaderData {
+    /// The value as written, trimmed of the key and its separator.
     pub text: String,
+    /// Header origin
     pub origin: HeaderOrigin,
 }
 
+/// One header, as a key and its value (H-record).
+///
+/// [`Log`] keeps these as a map instead; this is the record-level form.
+///
+/// [`Log`]: crate::Log
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Header {
+    /// Three-letter code: `"PLT"` for the pilot, `"GTY"` for the glider, `"DTE"` for the date, ...
     pub key: String,
+    /// What the header holds.
     pub value: HeaderData,
 }
 

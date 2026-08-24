@@ -1,13 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 //! GeoJSON output for a track, the flights detected in it, and what they scored.
-//!
-//! Every feature declares a `role`
-//! - `track` for the flown line,
-//! - `leg` for a scored side of a task,
-//! - `marker` for a fix a rule or a detection picked out,
-//! - `score` for what the rules made of it
-//! -  `metadata` for track side information such as time reference, pilot name, etc ...
 
 use geojson::{Feature, FeatureCollection, Geometry, JsonObject, JsonValue};
 
@@ -22,6 +15,36 @@ use crate::{Fix, Flight, FlightDetection, FlightSelection, Log, ScoringResult};
 const LABELS: [&str; 1] = ["PLT"];
 
 /// One layer of a flight, as GeoJSON.
+///
+/// Implemented by [`Flight`] and [`ScoringResult`], which is what [`Log::export`] draws. A layer
+/// carries fix indices only, so it must be drawn against the track it was produced from.
+///
+/// # Roles
+///
+/// Every feature declares a `role`:
+///
+/// | `role` | geometry | carries |
+/// | --- | --- | --- |
+/// | `track` | LineString, 3D | the whole flown line and its `coordTimes` |
+/// | `marker` | Point, 3D | `name`, `fix`, `timestamp` |
+/// | `leg` | LineString | a scored side: `name` (`leg0`…), `from`, `to`, `distance` |
+/// | `closing` | LineString | a circuit's closing side, named `entry`, `exit` or `gap` |
+/// | `metadata` | none | `datetime`, the instant every `timestamp` counts from, and IGC metadata |
+/// | `score` | none | `rule`, `score`, `distance`, `raw_distance`, `gap`, `penalty`, `multiplier`, `circuit` |
+///
+/// Markers are named `Takeoff`, `Landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
+/// leg's `from`/`to` refer to.
+///
+/// An open task is drawn as `leg`s alone, `leg0` starting at its entry and the last one ending at
+/// its exit. A circuit's `leg`s close over its turnpoints, with `closing` legs — `entry`, `exit`
+/// and `gap` — beside them. A leg's `distance` is its geodesic length in kilometers, so the legs
+/// of a task do not add up to the `score`'s `distance`, which is net of the penalty, if any.
+///
+/// `datetime` is stated once as RFC 9557 — `2022-08-05T01:00:00+01:00[Europe/London]` — UTC
+/// midnight of the flight's date read in the zone the track starts in.
+///
+/// Every position over a fix is `[lon, lat, gnss_alt]`, trimmed to eight decimals — finer than
+/// any fix records.
 pub trait GeoJson: Sync {
     /// Features for `self`, its fix indices resolved against `track`.
     fn features(&self, track: &[Fix]) -> Vec<Feature>;
@@ -188,7 +211,7 @@ impl GeoJson for ScoringResult {
             features.push(leg(track, &exit, &entry, "closing", "gap", "#00a000", 2));
         }
 
-        // At this point, means a cardinality < 2
+        // An empty chain would mean a rule of cardinality below 2.
         assert!(!chain.is_empty());
 
         let legs: Vec<Feature> = pairs(&chain, self.circuit)
@@ -209,7 +232,9 @@ impl GeoJson for ScoringResult {
 /// Whether a log's flown line is drawn.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrackLine {
+    /// Include the `track` feature, the whole line as flown.
     Draw,
+    /// Leave it out, keeping only the metadata and the layers given.
     Skip,
 }
 
@@ -255,7 +280,9 @@ impl Log {
         }
     }
 
-    /// Export Log as GeoJson with the timereference, possibly with the trackline and some features
+    /// Draws `layers` over this log, `line` deciding whether the flown line comes with them.
+    ///
+    /// The `metadata` feature is always there.
     pub fn export_with(
         &self,
         layers: &[&dyn GeoJson],
@@ -292,13 +319,12 @@ impl Log {
         }
     }
 
-    /// Export Log as GeoJson with the trackline and some features
+    /// Draws `layers` over this log, including the trackline
     pub fn export(&self, layers: &[&dyn GeoJson]) -> FeatureCollection {
         self.export_with(layers, TrackLine::Draw)
     }
 
-    // Factoring common code
-    /// Draw `window` and the task `scored` found in it, each when there is one.
+    /// Draws `window` and the task `scored` found in it, each when there is one.
     pub fn export_flight(
         &self,
         window: Option<Flight>,
@@ -318,8 +344,10 @@ impl Log {
         self.export_with(&layers, line)
     }
 
-    /// Everything this log describes about itself: the longest flight detected in it, and what that
-    /// flight scored under `league`.
+    /// Everything this log describes about itself: the longest flight detected in it, and what
+    /// that flight scored under `league`.
+    ///
+    /// Use [`Log::export`] when the flight and score are already at hand.
     pub fn describe(&self, league: &str) -> FeatureCollection {
         let window = self.track.flights().longest().copied();
         let scored = window.and_then(|w| self.score(league, w.start, w.stop));
