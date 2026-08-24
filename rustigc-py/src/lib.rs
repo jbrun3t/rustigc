@@ -8,7 +8,9 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
 use rustigc::{FlightDetection, GeoJson};
 
-/// Python binding interface for IGC log
+/// A parsed IGC log, as Rust holds it.
+///
+/// The raw binding behind `rustigcpy.Log`, which is the interface to use.
 #[pyclass(name = "RustLog")]
 struct PyLog {
     inner: rustigc::Log,
@@ -29,6 +31,7 @@ macro_rules! layer {
         #[pymethods]
         impl $name {
             /// The layer as a JSON dump, the shape its Python wrapper reads its scalars from
+            #[pyo3(text_signature = "($self)")]
             fn json(&self) -> PyResult<String> {
                 serde_json::to_string(&self.inner).map_err(|e| {
                     PyValueError::new_err(format!("Failed to serialize {}: {e}", $what))
@@ -72,8 +75,9 @@ impl<'py> Layer<'py> {
 
 #[pymethods]
 impl PyLog {
-    /// Parse an IGC file content
+    /// Parse IGC content, raising ValueError when it is not usable.
     #[staticmethod]
+    #[pyo3(text_signature = "(content)")]
     fn from_bytes(py: Python<'_>, content: &[u8]) -> PyResult<Self> {
         let inner = py
             .allow_threads(|| rustigc::Log::new(content))
@@ -84,7 +88,7 @@ impl PyLog {
         Ok(PyLog { inner })
     }
 
-    /// Get track as raw bytes, laid out for `FIX_DTYPE` (32 bytes per fix with padding).
+    /// The track as raw bytes, laid out for `FIX_DTYPE`: 32 per fix, padding included.
     #[getter]
     fn track_bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         // SAFETY: Creating a byte slice view of Vec<Fix> is safe because:
@@ -101,6 +105,10 @@ impl PyLog {
     }
 
     /// Replace the track with `data`, laid out for `FIX_DTYPE`. The fix count may change.
+    ///
+    /// Raises ValueError unless `data` is a whole number of fixes with strictly increasing
+    /// timestamps.
+    #[pyo3(text_signature = "($self, data)")]
     fn set_track_bytes(&mut self, py: Python<'_>, data: &[u8]) -> PyResult<()> {
         let stride = std::mem::size_of::<rustigc::Fix>();
         if !data.len().is_multiple_of(stride) {
@@ -114,7 +122,7 @@ impl PyLog {
         let track: Vec<rustigc::Fix> = py.allow_threads(|| {
             let mut track = Vec::<rustigc::Fix>::with_capacity(count);
             // SAFETY: reinterpreting `data` as `Fix`es is safe because:
-            // - Fix is repr(C) and still a guraenteed layout
+            // - Fix is repr(C), so its layout is still guaranteed
             // - the length check above makes `count * stride` exactly `data.len()`
             // - `with_capacity` gives an allocation aligned for Fix, large enough, and distinct
             //   from `data`, so the copy cannot overlap
@@ -129,7 +137,7 @@ impl PyLog {
             track
         });
 
-        // Make sure the timestamps are stricly increasing
+        // Make sure the timestamps are strictly increasing
         if let Some(w) = track.windows(2).find(|w| w[1].timestamp <= w[0].timestamp) {
             return Err(PyValueError::new_err(format!(
                 "timestamps must be strictly increasing, got {} then {}",
@@ -141,9 +149,11 @@ impl PyLog {
         Ok(())
     }
 
-    /// Get header value and origin by key (e.g., "PLT", "GTY", "DTE")
-    /// Returns tuple of (text, origin), origin being "Flight Recorder", "Observer", "Pilot" or
-    /// "Unknown"
+    /// One header as `(text, origin)`, or `None` when the log has no such key.
+    ///
+    /// `key` is a 3-letter code: `"PLT"`, `"GTY"`, `"DTE"`, ... `origin` is who entered it:
+    /// `"Flight Recorder"`, `"Observer"`, `"Pilot"` or `"Unknown"`.
+    #[pyo3(text_signature = "($self, key)")]
     fn get_header(&self, key: &str) -> Option<(String, String)> {
         if key.len() != 3 {
             return None;
@@ -159,11 +169,13 @@ impl PyLog {
     /// UTC midnight of the flight's date, in the zone the track starts in, as RFC 9557 —
     /// `2022-08-05T01:00:00+01:00[Europe/London]`. That is what a `Zoned` prints, offset and zone
     /// name together, so the other side can rebuild the zone itself rather than be handed pieces.
+    #[pyo3(text_signature = "($self)")]
     fn datetime(&self) -> Option<String> {
         self.inner.datetime().map(|origin| origin.to_string())
     }
 
-    /// Detect the flight sections, one handle each
+    /// Detect the flight sections, one handle each, empty when none was detected.
+    #[pyo3(text_signature = "($self)")]
     fn flights(&self, py: Python<'_>) -> Vec<PyFlight> {
         let flights = py.allow_threads(|| self.inner.track.flights());
 
@@ -173,7 +185,10 @@ impl PyLog {
             .collect()
     }
 
-    /// Score the fixes in `[start, stop]` against `league`
+    /// Score the fixes in `[start, stop]` against every rule of `league`, reporting the best.
+    ///
+    /// `None` when the league is unknown, the window unusable, or nothing could be scored.
+    #[pyo3(text_signature = "($self, league, start, stop)")]
     fn score(
         &self,
         py: Python<'_>,
@@ -188,7 +203,10 @@ impl PyLog {
         result.map(|inner| PyScore { inner })
     }
 
-    /// Everything the log describes about itself, as one GeoJSON string
+    /// Everything the log describes about itself under `league`, as one GeoJSON string.
+    ///
+    /// Detects the longest flight and scores it.
+    #[pyo3(text_signature = "($self, league)")]
     fn describe(&self, py: Python<'_>, league: &str) -> PyResult<String> {
         py.allow_threads(|| serde_json::to_string(&self.inner.describe(league)))
             .map_err(|e| {
@@ -200,7 +218,7 @@ impl PyLog {
     ///
     /// `track` draws the flown line. Fix indices are taken on trust: nothing checks that a layer was
     /// detected or scored in the track this log holds now, which `set_track_bytes` can replace.
-    #[pyo3(signature = (layers, track = true))]
+    #[pyo3(signature = (layers, track = true), text_signature = "($self, layers, track=True)")]
     fn export(
         &self,
         py: Python<'_>,
@@ -230,13 +248,18 @@ impl PyLog {
     }
 }
 
-/// Every league `score` accepts
+/// Every league name `score` and `describe` accept.
 #[pyfunction]
+#[pyo3(text_signature = "()")]
 fn league_names() -> Vec<&'static str> {
     rustigc::league_names().collect()
 }
 
-/// Python minimal bindings for rustigc parsing library
+/// Raw bindings to the rustigc library.
+///
+/// Not the interface to use: `rustigcpy` wraps this with numpy tracks, caching and Python
+/// objects. It holds `RustLog`, the opaque `RustFlight`/`RustScore` layer handles, `league_names`
+/// and `FIX_DTYPE`.
 #[pymodule]
 #[pyo3(name = "_bindings")]
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {

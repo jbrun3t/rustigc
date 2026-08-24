@@ -1,9 +1,27 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""High-level Python API for rustigcpy IGC parser
+"""Parsing and cross-country scoring of IGC flight recorder files.
 
-This package provides a convenient interface to the fast rustigcpy
-parser with automatic numpy conversion and caching.
+`Log` is the entry point. It parses an IGC file, exposes its metadata and its `Track`, detects
+the flights in it, scores them against a league, and draws the result as GeoJSON:
+
+    from rustigcpy import Log
+
+    log = Log.from_file("flight.igc")
+    print(log.pilot_name, len(log.track))
+
+    flight = log.flights().longest
+    score = log.score("xcontest")
+    if score:
+        print(score.description, score.score, score.distance)
+
+    open("flight.geojson", "w").write(log.export([flight, score]))
+
+The track is a numpy structured array underneath, copied once from Rust and then read entirely in
+Python. Parsing, detection and scoring release the GIL.
+
+`rustigcpy._bindings` is the raw extension module this package is built on, not an interface to use
+directly.
 """
 
 from rustigcpy._bindings import league_names

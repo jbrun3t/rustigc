@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""Track wrapper - copies data on creation, all access is local Python"""
+"""The position fixes of a log."""
 import numpy
 
 from rustigcpy._bindings import FIX_DTYPE
@@ -9,20 +9,26 @@ from .fix import Fix
 
 
 class Track:
-    """Track with numpy array (copied once on init, all access local)
+    """A track of position fixes, as a read-only sequence of `Fix`.
 
-    The track data is copied from Rust into a Python numpy array on creation.
-    All subsequent operations are local Python (no FFI calls).
+    Indexing and iteration yield `Fix` objects. The underlying numpy structured array is exposed
+    through the underscore properties, for vectorized work:
+
+        track._latitude.mean()
+        track._data[0:100]
+
+    They expose the fix layout directly, hence the underscores. The array is read-only, so it
+    always matches what Rust holds; `Log.push` is the way to change a track.
     """
 
     def __init__(self, track_bytes: bytes):
-        """Copy track data from Rust bytes into Python numpy array"""
-        # Single copy happens HERE - everything after is local Python
+        """Wrap raw `FIX_DTYPE` bytes, copying them into a numpy array once."""
+        # The one copy: everything after this is local Python
         self._npdata = numpy.frombuffer(track_bytes, dtype=FIX_DTYPE)
 
     @property
     def _data(self) -> numpy.ndarray:
-        """Full structured array"""
+        """The whole track, as a `FIX_DTYPE` structured array."""
         return self._npdata
 
     @property
@@ -47,21 +53,21 @@ class Track:
 
     @property
     def _timestamp(self) -> numpy.ndarray:
-        """Timestamps in seconds since midnight"""
+        """Timestamps, in seconds from the instant `Log.datetime` reports."""
         return self._npdata['timestamp']
 
     def __len__(self) -> int:
         return len(self._npdata)
 
     def __getitem__(self, idx: int) -> Fix:
-        """Get a single fix as Fix object"""
+        """The fix at `idx`, negative indices counted from the end."""
         fix = self._npdata[idx]
 
         # Do not let a negative index slip through
         return Fix(fix, idx if idx >= 0 else idx + len(self._npdata))
 
     def __iter__(self):
-        """Iterate over fixes"""
+        """Every fix in order, each knowing its own index."""
         for i in range(len(self._npdata)):
             yield Fix(self._npdata[i], i)
 

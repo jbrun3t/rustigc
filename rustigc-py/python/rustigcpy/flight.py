@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""Flight wrapper"""
+"""Flight sections detected in a track."""
 import json
 from typing import TYPE_CHECKING
 
@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 
 class Flight:
-    """One flight section detected in a track"""
+    """One flight section detected in a track.
+
+    Obtained from `Log.flights()`, and drawable by `Log.export`. `start` and `stop` are indices
+    into the track it was detected in; `takeoff` and `landing` are the fixes they point at.
+    """
 
     def __init__(self, track: Track, handle):
         # The handle is the section as Rust still holds it, so `Log.export` can draw it without
@@ -21,7 +25,7 @@ class Flight:
         self._data = json.loads(handle.json())
 
     def __getattr__(self, name):
-        """Scalars of the section, as detection reports them"""
+        """Scalars of the section as detection reports them: `start`, `stop`."""
         try:
             return self._data[name]
         except KeyError:
@@ -29,12 +33,12 @@ class Flight:
 
     @property
     def takeoff(self) -> 'Fix':
-        """First fix of the section"""
+        """First fix of the section."""
         return self._track[self._data["start"]]
 
     @property
     def landing(self) -> 'Fix':
-        """Last fix of the section"""
+        """Last fix of the section."""
         return self._track[self._data["stop"]]
 
     def __repr__(self) -> str:
@@ -42,9 +46,9 @@ class Flight:
 
 
 class Flights(list):
-    """Sections of one detection pass, empty when none was detected"""
+    """The sections of one detection pass, as a list, empty when none was detected."""
 
     @property
     def longest(self) -> Flight | None:
-        """Longest section by fix span"""
+        """The longest section by fix span, None when the list is empty."""
         return max(self, key=lambda f: f.stop - f.start, default=None)

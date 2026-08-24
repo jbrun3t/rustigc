@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""Score wrapper"""
+"""What a league's rules made of a flight."""
 import json
 from typing import TYPE_CHECKING
 
@@ -11,7 +11,10 @@ if TYPE_CHECKING:
 
 
 class Score:
-    """Scoring result of one league over one window"""
+    """Result over a `Log` from a league scored over one window.
+
+    Obtained from `Log.score`, and drawable by `Log.export`.
+    """
 
     def __init__(self, track: Track, handle):
         # The handle is the result as Rust still holds it, so `Log.export` can draw it without
@@ -21,7 +24,13 @@ class Score:
         self._data = json.loads(handle.json())
 
     def __getattr__(self, name):
-        """Scalars of the result: description, distance, score, gap, penalty, multiplier, circuit"""
+        """Scalars of the result.
+
+        `description` names the winning rule, `score` is the league points, `distance` the
+        scored distance as the rule presents it and `raw_distance` the same in meters. `gap` is
+        a circuit's closing leg, `penalty` what the rule charged for it, `multiplier` the rate
+        it scored at, and `circuit` whether the task closes on itself.
+        """
         try:
             return self._data[name]
         except KeyError:
@@ -29,27 +38,27 @@ class Score:
 
     @property
     def takeoff(self) -> 'Fix':
-        """Start of the scoring window"""
+        """First fix of the scored window."""
         return self._track[self._data["takeoff"]]
 
     @property
     def entry(self) -> 'Fix':
-        """Start fix of the task scored"""
+        """First fix of the scored task."""
         return self._track[self._data["entry"]]
 
     @property
     def turnpoints(self) -> list['Fix']:
-        """Turnpoints of the task"""
+        """Turnpoints of the task, in order."""
         return [self._track[i] for i in self._data["turnpoints"]]
 
     @property
     def exit(self) -> 'Fix':
-        """Stop fix of the task scored"""
+        """Last fix of the scored task."""
         return self._track[self._data["exit"]]
 
     @property
     def landing(self) -> 'Fix':
-        """End of the scoring window"""
+        """Last fix of the scored window."""
         return self._track[self._data["landing"]]
 
     def __repr__(self) -> str:

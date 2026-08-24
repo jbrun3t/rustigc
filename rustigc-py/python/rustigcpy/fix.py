@@ -1,20 +1,24 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""Fix - single position fix"""
+"""One position fix of a track."""
 import numpy
 
 
 class Fix:
-    """Single position fix from IGC track"""
+    """One position fix.
+
+    A fix is a view over one element of the track's numpy array, so it stays valid
+    only as long as that track does.
+    """
 
     def __init__(self, data, index: int | None = None):
-        """Wrap a single numpy structured array element"""
+        """Wrap one element of a `FIX_DTYPE` array, `index` its position in the track."""
         self._data = data
         self._index = index
 
     @property
     def index(self) -> int | None:
-        """Position in the track it was read from if any"""
+        """Position in the track it was read from, None when it came from nowhere."""
         return self._index
 
     @property
@@ -39,7 +43,7 @@ class Fix:
 
     @property
     def timestamp(self) -> int:
-        """Timestamp in seconds since midnight"""
+        """Seconds from the instant `Log.datetime` reports."""
         return int(self._data['timestamp'])
 
     def __eq__(self, other) -> bool:
