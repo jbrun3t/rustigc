@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -72,4 +72,31 @@ jobs:
           cd rustigc-py
           python -m pytest -v
 
+  wasm:
+    name: WASM Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Build wasm bindings
+        run: wasm-pack build rustigc-wasm --target nodejs --dev
+
+      - name: Smoke test JS CLI against a blessed fixture
+        run: |
+          cd rustigc-wasm
+          node js/rustigc-js-score.js --league xcontest \
+            < ../test_data/real/fai-01.igc | grep -q '996.56 points, 622.85 km'
 
