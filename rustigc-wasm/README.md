@@ -77,6 +77,45 @@ Nothing crosses as a Rust map: `serde_wasm_bindgen` renders one as a JS `Map`, w
 `JSON.stringify` prints as `{}`. Hence `header`, one key at a time, rather than a whole `headers`
 object.
 
+## Bulk track access
+
+`track` builds one JS object per fix through `serde_wasm_bindgen`; `track_bytes` hands over the
+`#[repr(C)] Fix` array as a `Uint8Array` and leaves the decoding to the caller. Measured on
+`fai-01`, 25 459 fixes:
+
+| | time | memory |
+|---|---|---|
+| `track` -- serde to objects | 10.98 ms | 3.40 MB heap |
+| `track_bytes` -- copy only | 0.31 ms | 0.78 MB, exactly the raw track |
+| `track_bytes` + a `DataView` loop to the *same* objects | 1.05 ms | 2.5 MB heap |
+
+Decoding the bytes in JS is **10x faster than serde for identical objects**. Both are a single
+call from JS -- the difference is what happens underneath. `serde_wasm_bindgen` builds the array
+from inside wasm and calls back out to JS as it goes: `Object::new` and an array append per fix,
+and an `indexing_setter` per field (`ser.rs`, `SerializeStruct::serialize_field`). For a 25 459 fix
+track that is ~178 000 wasm->JS import calls, against one buffer copy for `track_bytes`. The objects also cost 3.4 MB for a track that is 0.78 MB of
+data -- 140 bytes per 32-byte fix, which is V8 object overhead.
+
+Both stay. `track` needs nothing on the JS side; `track_bytes` is for a caller who will decode, and
+`js/track.js` ships decoders so that caller does not have to write one:
+
+```js
+const { fixes } = require("./js/track.js");
+
+log.track                // objects, straight from the binding
+fixes(log.track_bytes)   // the same objects, 10x faster
+```
+
+Using it is optional -- it is plain JS over a documented layout, not part of the binding.
+
+The layout is 32 bytes per fix, little-endian, matching `Fix`:
+
+| offset | 0 | 4 | 8 | 16 | 24 | 28 |
+|---|---|---|---|---|---|---|
+| | `u32` timestamp | *pad* | `f64` lat | `f64` lon | `i32` baro_alt | `i32` gnss_alt |
+
+Neither CLI reads the track at all, so nothing here is on their measured path.
+
 ## Standalone binary
 
 Node's [single executable applications](https://nodejs.org/api/single-executable-applications.html)

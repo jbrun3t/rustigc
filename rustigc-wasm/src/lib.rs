@@ -78,6 +78,25 @@ impl Log {
         Ok(serde_wasm_bindgen::to_value(&self.inner.track)?)
     }
 
+    /// The same track as raw `#[repr(C)] Fix` bytes, 32 per fix, little-endian.
+    ///
+    /// For a caller willing to decode: (which `js/track.js` does), it is about 10x faster than
+    /// `track`. Both are one call from JS; the difference is that `serde_wasm_bindgen` will
+    /// trigger one call over the FFI per fix, while this requires just one.
+    #[wasm_bindgen(getter)]
+    pub fn track_bytes(&self) -> Vec<u8> {
+        let track = &self.inner.track;
+        // SAFETY: Fix is repr(C), the slice is valid for this borrow, and to_vec copies out
+        // before anything can realloc it.
+        unsafe {
+            std::slice::from_raw_parts(
+                track.as_ptr() as *const u8,
+                std::mem::size_of_val(&track[..]),
+            )
+        }
+        .to_vec()
+    }
+
     /// Instant this log's fix timestamps count from, or `undefined` without a usable `HFDTE`
     /// header.
     ///
