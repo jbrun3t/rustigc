@@ -11,6 +11,10 @@
 //! offsets against tzdb. They are versioned apart, so a name one knows the other may not — hence
 //! every step below falls back to UTC and warns rather than failing. `HFTZN` is not read; a
 //! recorder's declared offset is not a zone, and it cannot say what the rules were that day.
+//!
+//! The boundary asset is vendored rather than a `utz` preset: every preset but `accurate` merges
+//! zones whose rules agree from its build forward, which reads a neighbour's name and dates old
+//! logs wrong. `data/README.md` has the recipe. Only the first fix is sampled.
 
 use std::sync::OnceLock;
 
@@ -23,6 +27,12 @@ use super::utils::date_to_ymd;
 use super::Fix;
 use crate::Log;
 
+/// Zone boundaries, uncompressed so `from_static` can borrow them in place.
+static TIMEZONES: &[u8] = include_bytes!("../../data/timezones.utz");
+
+// The asset is vendored, so nothing generates utz's guard file for it: assert its decoder here.
+const _: () = assert!(utz::caps::GEOM_VARINT_ARCS);
+
 /// Zone the track starts in, UTC when the lookup finds nothing.
 ///
 /// Create the zone finder lazily but pay for it only once.
@@ -30,7 +40,7 @@ fn zone(first: &Fix) -> TimeZone {
     static FINDER: OnceLock<Option<utz::Finder>> = OnceLock::new();
 
     let finder = FINDER.get_or_init(|| {
-        utz::Finder::from_static(utz::data::TINY_STATIC)
+        utz::Finder::from_static(TIMEZONES)
             .inspect_err(|e| warn!("No timezone finder, reading times as UTC: {e}"))
             .ok()
     });
