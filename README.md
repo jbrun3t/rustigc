@@ -10,8 +10,13 @@ Fast IGC toolbox for aviation sports written in Rust.
 rustigc/
 ├── rustigc/             - Core Rust library
 ├── rustigc-py/          - Python bindings
+├── rustigc-wasm/        - WASM bindings
 └── rustigc-tools/       - CLI tools
 ```
+
+Each has its API documented in its own language's format: rustdoc for the core
+([docs.rs](https://docs.rs/rustigc)), docstrings for Python (`help(rustigcpy.Log)`), and
+`pkg/rustigcjs.d.ts` for JavaScript. The READMEs below cover installing and building.
 
 ## Features
 
@@ -25,14 +30,14 @@ rustigc/
 - ✅ Flight scoring: see [dedicated documentation](documentation/scoring-overview.md)
   - Generic scoring over a configurable number of turnpoints
   - Optimized for fast searches
-  - Supports Xcontest, FFVL's CFD, and more ...
+  - Supports XContest, FFVL's CFD, and more
 - ✅ Python bindings with numpy support
-- ⏳ WASM bindings
+- ✅ WASM bindings
+- ✅ GeoJSON export
 - 🏗️ Takeoff/landing detection (currently basic - average speed ~15km/h)
-- ✅ GeoJSON export: see [the crate README](rustigc/README.md#geojson-export)
 - 🏗️ CLI tools
 - ⏳ Flight dynamics smoothing
-- ⏳ Flights phases identification
+- ⏳ Flight phases identification
 
 ## Quick Start
 
@@ -53,7 +58,7 @@ See [rustigc/README.md](rustigc/README.md)
 ### Python
 
 ```python
-from rustigcpy import Log
+from rustigcpy import Logs
 
 log = Log.from_file("flight.igc")
 
@@ -68,6 +73,19 @@ print(f"Landing: {flight.landing}")
 ```
 
 See [rustigc-py/README.md](rustigc-py/README.md)
+
+### JavaScript
+
+```js
+const { Log } = require("./pkg/rustigcjs.js");
+
+const log = new Log(readFileSync("flight.igc"));
+
+console.log(log.header("PLT"), log.fix_count);
+console.log(log.score("xcontest"));
+```
+
+See [rustigc-wasm/README.md](rustigc-wasm/README.md)
 
 ### CLI tool
 
@@ -92,11 +110,11 @@ pip install maturin
 maturin develop
 ```
 
-## Status : Pre-alpha
+## Status: Pre-alpha
 
 `rustigc` is still very early in its development cycle. It is a pet project I'm using to learn Rust.
 I'm still exploring everything Rust has to offer, so there is a good chance some things in there are
-not done correctly or could be improved. Public APIs are likely to be reworked and change.
+not done correctly or could be improved. Public APIs are likely to change.
 
 However, `rustigc` is tested on thousands of tracklogs, [accounting for many oddities found in the
 real world](documentation/igc-spec-errors.md).
@@ -106,9 +124,9 @@ tracklog.
 
 ## Credit
 
-The following sources of information have been extremely helpful to build `rustigc` so far:
+The following sources have been extremely helpful in building `rustigc` so far:
 
-* [FAI IGC Specificication](https://www.fai.org/page/igc-approved-flight-recorders)
+* [FAI IGC Specification](https://www.fai.org/page/igc-approved-flight-recorders)
 * [Ondřej Palkovský's Paper on Paragliding Competition Tracklog Optimization](https://web.archive.org/web/20230320111732/http://www.penguin.cz/~ondrap/algorithm.pdf)
 * [igc-xc-score](https://github.com/mmomtchev/igc-xc-score) (differences between `igc-xc-score` and `rustigc` scoring are documented [here](documentation/igc-xc-score-diff.md))
 * [Python libigc](https://github.com/surajmandalcell/libigc)
@@ -117,10 +135,10 @@ The following sources of information have been extremely helpful to build `rusti
 
 ## License
 
-* `GPL-2.0-or-later WITH Classpath-exception-2.0` for `rustigc` and `rustigc-py`
-* `GPL-2.0-or-later` for `rustigc-tools`.
+* `GPL-2.0-or-later WITH Classpath-exception-2.0` for the library and its bindings
+* `GPL-2.0-or-later` for `rustigc-tools`
 
-The Classpath exception means linking against `rustigc` or `rustigc-py` — statically or
-dynamically, from Rust, Python, or any other language — does not require your own code to be
-GPL-licensed. Only modifications to `rustigc`/`rustigc-py` themselves stay under the GPL. See
+The Classpath exception means linking against the library or its bindings — statically or
+dynamically, from Rust, Python, JavaScript, or any other language — does not require your own code
+to be GPL-licensed. Only modifications to `rustigc` itself stay under the GPL. See
 [LICENSE](LICENSE) for the full text.
