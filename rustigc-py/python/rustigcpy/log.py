@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """The parsed IGC log and everything derived from it."""
+from __future__ import annotations
+
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
