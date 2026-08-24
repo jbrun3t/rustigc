@@ -14,6 +14,87 @@ use rustigc::{FlightDetection, FlightSelection, TrackLine, Zoned};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
+/// Shapes that cross as plain data, declared for the generated `.d.ts`.
+///
+/// They mirror the core's serde derives field for field: keep them in step.
+#[wasm_bindgen(typescript_custom_section)]
+const TYPES: &'static str = r#"
+/** One position fix. */
+export interface Fix {
+    /** Seconds from the instant `Log.datetime` reports. */
+    timestamp: number;
+    /** Latitude in decimal degrees, north positive. */
+    lat: number;
+    /** Longitude in decimal degrees, east positive. */
+    lon: number;
+    /** Pressure altitude in meters. */
+    baro_alt: number;
+    /** GNSS altitude in meters. */
+    gnss_alt: number;
+}
+
+/** One flight section, as fix indices into the track it was detected in. */
+export interface Flight {
+    /** Takeoff. */
+    start: number;
+    /** Landing. */
+    stop: number;
+}
+
+/** One header value and who entered it. */
+export interface Header {
+    /** The value as written, trimmed of its key. */
+    text: string;
+    origin: "flightrecorder" | "observer" | "pilot" | "unknown";
+}
+
+/** A zoned instant, handed over already split so callers never parse one. */
+export interface DateTime {
+    /** Local calendar day, `2022-08-05`. */
+    date: string;
+    /** Local wall clock, `10:09:32`. */
+    time: string;
+    /** The instant, `2022-08-05T10:09:32+01:00`. This is what `new Date()` accepts. */
+    iso: string;
+    /** IANA name, `Europe/London`, or an offset as fallback. */
+    zone: string;
+}
+
+/**
+ * What the winning rule of a league scored.
+ *
+ * Every fix is an index into the track that was scored.
+ */
+export interface Score {
+    /** The rule that won, `"Closed FAI Triangle"`. */
+    description: string;
+    /** Scored distance, as the rule presents it. */
+    distance: number;
+    /** The same distance in meters, to the nearest millimeter. */
+    raw_distance: number;
+    /** Closing leg of a circuit, 0 for an open task. */
+    gap: number;
+    /** What the rule charged for that gap. */
+    penalty: number;
+    /** Final score, in league points. */
+    score: number;
+    /** Multiplier the rule scored at. */
+    multiplier: number;
+    /** Start of the scored window. */
+    takeoff: number;
+    /** First fix of the task. */
+    entry: number;
+    /** Turnpoints of the task, in order. */
+    turnpoints: number[];
+    /** Last fix of the task. */
+    exit: number;
+    /** End of the scored window. */
+    landing: number;
+    /** Whether the task closes on itself. */
+    circuit: boolean;
+}
+"#;
+
 /// A zoned instant, handed over already split so callers never parse one.
 #[derive(Serialize)]
 struct DateTime {
@@ -21,9 +102,9 @@ struct DateTime {
     date: String,
     /// Local wall clock, `10:09:32`.
     time: String,
-    /// The instant, `2022-08-05T10:09:32+01:00`
+    /// The instant, `2022-08-05T10:09:32+01:00`.
     iso: String,
-    /// IANA name, `Europe/London`, or offset as fallback.
+    /// IANA name, `Europe/London`, or the offset as a fallback.
     zone: String,
 }
 
@@ -46,7 +127,7 @@ pub struct Log {
 
 #[wasm_bindgen]
 impl Log {
-    /// Parse IGC file content.
+    /// Parse IGC file content. Throws when the bytes are not usable IGC.
     #[wasm_bindgen(constructor)]
     pub fn new(content: &[u8]) -> Result<Log, JsError> {
         let inner = rustigc::Log::new(content)
@@ -67,22 +148,25 @@ impl Log {
         self.inner.headers.keys().cloned().collect()
     }
 
-    /// One header as `{text, origin}`, or `undefined` when the log has no such key.
+    /// One header, or `undefined` when the log has no such key.
+    ///
+    /// `key` is a 3-letter code: `"PLT"` for the pilot, `"GTY"` for the glider, `"DTE"` for the
+    /// date, ... `header_keys` lists the ones this log carries.
+    #[wasm_bindgen(unchecked_return_type = "Header | undefined")]
     pub fn header(&self, key: &str) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(&self.inner.headers.get(key))?)
     }
 
     /// The whole track, one object per fix.
-    #[wasm_bindgen(getter)]
+    #[wasm_bindgen(getter, unchecked_return_type = "Fix[]")]
     pub fn track(&self) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(&self.inner.track)?)
     }
 
     /// The same track as raw `#[repr(C)] Fix` bytes, 32 per fix, little-endian.
     ///
-    /// For a caller willing to decode: (which `js/track.js` does), it is about 10x faster than
-    /// `track`. Both are one call from JS; the difference is that `serde_wasm_bindgen` will
-    /// trigger one call over the FFI per fix, while this requires just one.
+    /// About 10x faster than `track`, if you decode it yourself. `js/track.js` ships a decoder;
+    /// the crate README has the layout.
     #[wasm_bindgen(getter)]
     pub fn track_bytes(&self) -> Vec<u8> {
         let track = &self.inner.track;
@@ -100,7 +184,9 @@ impl Log {
     /// Instant this log's fix timestamps count from, or `undefined` without a usable `HFDTE`
     /// header.
     ///
-    /// UTC midnight of the flight's date, in the zone the track starts in.
+    /// UTC midnight of the flight's date, in the zone the track starts in. Add a fix's
+    /// `timestamp` seconds to it to get when that fix was recorded.
+    #[wasm_bindgen(unchecked_return_type = "DateTime | undefined")]
     pub fn datetime(&self) -> Result<JsValue, JsError> {
         let origin = self.inner.datetime();
 
@@ -109,25 +195,37 @@ impl Log {
         )?)
     }
 
-    /// One fix: `{timestamp, lat, lon, baro_alt, gnss_alt}`.
+    /// One fix. Throws when `index` is past the end of the track.
+    #[wasm_bindgen(unchecked_return_type = "Fix")]
     pub fn fix(&self, index: usize) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(self.get(index)?)?)
     }
 
     /// Flight sections detected in the track, empty when none was.
+    #[wasm_bindgen(unchecked_return_type = "Flight[]")]
     pub fn flights(&self) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(&self.inner.track.flights())?)
     }
 
-    /// The longest detected flight, or `undefined` when there is none.
+    /// The longest detected flight by fix span, or `undefined` when there is none.
+    #[wasm_bindgen(unchecked_return_type = "Flight | undefined")]
     pub fn longest_flight(&self) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(
             &self.inner.track.flights().longest(),
         )?)
     }
 
-    /// Score `window` against `league`, the longest detected flight when it is left out.
-    pub fn score(&self, league: &str, window: JsValue) -> Result<JsValue, JsError> {
+    /// Score `window` against every rule of `league` and report the best.
+    ///
+    /// `window` defaults to the longest detected flight, whether left out or passed `undefined`.
+    /// `undefined` when nothing could be scored; throws when `league` is not one of
+    /// `league_names()`.
+    #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
+    pub fn score(
+        &self,
+        league: &str,
+        #[wasm_bindgen(unchecked_param_type = "Flight | undefined")] window: JsValue,
+    ) -> Result<JsValue, JsError> {
         Self::known_league(league)?;
 
         let given: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
@@ -139,11 +237,15 @@ impl Log {
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
 
-    /// The log and the layers handed back to it, as one GeoJSON string.
+    /// The log and the layers handed to it, as one GeoJSON string.
+    ///
+    /// `window` and `scored` may each be left out; `track` draws the flown line. Every feature
+    /// declares a `role` — `track`, `marker`, `leg`, `closing`, `score` or `metadata`.
+    /// `JSON.parse` it for objects.
     pub fn export(
         &self,
-        window: JsValue,
-        scored: JsValue,
+        #[wasm_bindgen(unchecked_param_type = "Flight | undefined")] window: JsValue,
+        #[wasm_bindgen(unchecked_param_type = "Score | undefined")] scored: JsValue,
         track: Option<bool>,
     ) -> Result<String, JsError> {
         let window: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
@@ -162,15 +264,16 @@ impl Log {
 
     /// Everything the log describes about itself under `league`, as one GeoJSON string.
     ///
-    /// Detects the longest flight and scores it. The other path when the caller wants nothing but
-    /// the drawing and has nothing to hand over.
+    /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
+    /// score are already at hand.
     pub fn describe(&self, league: &str) -> Result<String, JsError> {
         Self::known_league(league)?;
 
         Ok(serde_json::to_string(&self.inner.describe(league))?)
     }
 
-    /// When `index` was recorded, or `undefined` when the log has no date.
+    /// When fix `index` was recorded, or `undefined` when the log has no date.
+    #[wasm_bindgen(unchecked_return_type = "DateTime | undefined")]
     pub fn fix_datetime(&self, index: usize) -> Result<JsValue, JsError> {
         let fix = self.get(index)?;
         let stamp = self.inner.datetime().map(|origin| fix.datetime(&origin));
@@ -201,7 +304,7 @@ impl Log {
     }
 }
 
-/// Every league `score` accepts.
+/// Every league name `score` and `describe` accept.
 #[wasm_bindgen]
 pub fn league_names() -> Vec<String> {
     rustigc::league_names().map(String::from).collect()
