@@ -5,12 +5,19 @@
 //! A `Fix` timestamp counts seconds from UTC midnight of the flight's first day and carries no
 //! date, so rendering one needs an origin: [`Log::datetime`] builds it from the `HFDTE` header and
 //! the zone the track starts in, and [`Fix::datetime`] offsets it.
+//!
+//! The zone comes from the track, not from a header. Two datasets with two jobs get it: `utz`
+//! maps a position to an IANA name against timezone-boundary polygons, `jiff` turns that name into
+//! offsets against tzdb. They are versioned apart, so a name one knows the other may not — hence
+//! every step below falls back to UTC and warns rather than failing. `HFTZN` is not read; a
+//! recorder's declared offset is not a zone, and it cannot say what the rules were that day.
 
 use std::sync::OnceLock;
 
 use jiff::civil;
 use jiff::tz::TimeZone;
 use jiff::{SignedDuration, Zoned};
+use log::warn;
 
 use super::utils::date_to_ymd;
 use super::Fix;
@@ -22,19 +29,41 @@ use crate::Log;
 fn zone(first: &Fix) -> TimeZone {
     static FINDER: OnceLock<Option<utz::Finder>> = OnceLock::new();
 
-    FINDER
-        .get_or_init(|| utz::Finder::from_static(utz::data::TINY_STATIC).ok())
-        .as_ref()
-        .and_then(|f| {
-            f.lookup(utz::Position {
-                lon: first.lon,
-                lat: first.lat,
-            })
+    let finder = FINDER.get_or_init(|| {
+        utz::Finder::from_static(utz::data::TINY_STATIC)
+            .inspect_err(|e| warn!("No timezone finder, reading times as UTC: {e}"))
             .ok()
-            .flatten()
-        })
-        .and_then(|name| TimeZone::get(name).ok())
-        .unwrap_or(TimeZone::UTC)
+    });
+
+    let Some(finder) = finder.as_ref() else {
+        return TimeZone::UTC;
+    };
+
+    let position = utz::Position {
+        lon: first.lon,
+        lat: first.lat,
+    };
+
+    let name = match finder.lookup(position) {
+        Ok(Some(name)) => name,
+        Ok(None) => {
+            warn!(
+                "No timezone covers {},{}, reading times as UTC",
+                first.lat, first.lon
+            );
+            return TimeZone::UTC;
+        }
+        Err(e) => {
+            warn!("First fix is not a position, reading times as UTC: {e}");
+            return TimeZone::UTC;
+        }
+    };
+
+    TimeZone::get(name).unwrap_or_else(|_| {
+        // The boundary data and the tzdb are versioned apart, so this is the skew showing.
+        warn!("Timezone {name} is not in the tzdb, reading times as UTC");
+        TimeZone::UTC
+    })
 }
 
 impl Log {
