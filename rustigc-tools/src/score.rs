@@ -64,7 +64,7 @@ fn human_output(log: &Log, result: &ScoringResult) {
     // Display the flight date, locally.
     if let Some(o) = &origin {
         let entry = log.track[result.entry].datetime(o);
-        println!("{}", entry.strftime("Flight on %Y-%m-%d %Z"));
+        println!("{}", entry.strftime("Flight on %Y-%m-%d %:Q"));
     } else {
         println!("Flight has no date !");
     }
