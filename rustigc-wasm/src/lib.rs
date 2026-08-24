@@ -14,10 +14,6 @@ use rustigc::{FlightDetection, FlightSelection, Zoned};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-fn js_err(e: impl std::fmt::Display) -> JsError {
-    JsError::new(&e.to_string())
-}
-
 /// A zoned instant, handed over already split so callers never parse one.
 #[derive(Serialize)]
 struct DateTime {
@@ -54,7 +50,7 @@ impl Log {
     #[wasm_bindgen(constructor)]
     pub fn new(content: &[u8]) -> Result<Log, JsError> {
         let inner = rustigc::Log::new(content)
-            .map_err(|e| js_err(format!("Failed to parse IGC file: {e}")))?;
+            .map_err(|e| JsError::new(&format!("Failed to parse IGC file: {e}")))?;
 
         Ok(Log { inner })
     }
@@ -73,16 +69,13 @@ impl Log {
 
     /// One header as `{text, origin}`, or `undefined` when the log has no such key.
     pub fn header(&self, key: &str) -> Result<JsValue, JsError> {
-        match self.inner.headers.get(key) {
-            Some(data) => serde_wasm_bindgen::to_value(data).map_err(js_err),
-            None => Ok(JsValue::UNDEFINED),
-        }
+        Ok(serde_wasm_bindgen::to_value(&self.inner.headers.get(key))?)
     }
 
     /// The whole track, one object per fix.
     #[wasm_bindgen(getter)]
     pub fn track(&self) -> Result<JsValue, JsError> {
-        serde_wasm_bindgen::to_value(&self.inner.track).map_err(js_err)
+        Ok(serde_wasm_bindgen::to_value(&self.inner.track)?)
     }
 
     /// Instant this log's fix timestamps count from, or `undefined` without a usable `HFDTE`
@@ -90,82 +83,71 @@ impl Log {
     ///
     /// UTC midnight of the flight's date, in the zone the track starts in.
     pub fn datetime(&self) -> Result<JsValue, JsError> {
-        Self::zoned(self.inner.datetime().as_ref())
+        let origin = self.inner.datetime();
+
+        Ok(serde_wasm_bindgen::to_value(
+            &origin.as_ref().map(DateTime::new),
+        )?)
     }
 
     /// One fix: `{timestamp, lat, lon, baro_alt, gnss_alt}`.
     pub fn fix(&self, index: usize) -> Result<JsValue, JsError> {
-        serde_wasm_bindgen::to_value(self.get(index)?).map_err(js_err)
+        Ok(serde_wasm_bindgen::to_value(self.get(index)?)?)
     }
 
     /// Flight sections detected in the track, empty when none was.
     pub fn flights(&self) -> Result<JsValue, JsError> {
-        serde_wasm_bindgen::to_value(&self.inner.track.flights()).map_err(js_err)
+        Ok(serde_wasm_bindgen::to_value(&self.inner.track.flights())?)
     }
 
     /// The longest detected flight, or `undefined` when there is none.
     pub fn longest_flight(&self) -> Result<JsValue, JsError> {
-        match self.inner.track.flights().longest() {
-            Some(flight) => serde_wasm_bindgen::to_value(flight).map_err(js_err),
-            None => Ok(JsValue::UNDEFINED),
-        }
+        Ok(serde_wasm_bindgen::to_value(
+            &self.inner.track.flights().longest(),
+        )?)
     }
 
-    /// Score `window` against `league`
+    /// Score `window` against `league`, the longest detected flight when it is left out.
     pub fn score(&self, league: &str, window: JsValue) -> Result<JsValue, JsError> {
         Self::known_league(league)?;
 
-        let Some(window) = self.window(window)? else {
-            return Ok(JsValue::UNDEFINED);
+        let given: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
+
+        let scored = given
+            .or_else(|| self.inner.track.flights().longest().copied())
+            .and_then(|w| self.inner.score(league, w.start, w.stop));
+
+        Ok(serde_wasm_bindgen::to_value(&scored)?)
+    }
+
         };
 
-        match self.inner.score(league, window.start, window.stop) {
-            Some(result) => serde_wasm_bindgen::to_value(&result).map_err(js_err),
-            None => Ok(JsValue::UNDEFINED),
-        }
     }
 
     /// When `index` was recorded, or `undefined` when the log has no date.
     pub fn fix_datetime(&self, index: usize) -> Result<JsValue, JsError> {
         let fix = self.get(index)?;
+        let stamp = self.inner.datetime().map(|origin| fix.datetime(&origin));
 
-        Self::zoned(self.inner.datetime().map(|o| fix.datetime(&o)).as_ref())
+        Ok(serde_wasm_bindgen::to_value(
+            &stamp.as_ref().map(DateTime::new),
+        )?)
     }
 }
 
 impl Log {
-    /// `window` as given, or the longest detected flight when it is left out.
-    fn window(&self, window: JsValue) -> Result<Option<rustigc::Flight>, JsError> {
-        if window.is_undefined() || window.is_null() {
-            return Ok(self.inner.track.flights().longest().copied());
-        }
-
-        serde_wasm_bindgen::from_value(window)
-            .map(Some)
-            .map_err(|e| js_err(format!("not a {{start, stop}} window: {e}")))
-    }
-
     /// Reject a league the registry does not hold.
     fn known_league(league: &str) -> Result<(), JsError> {
         rustigc::league_names()
             .any(|name| name == league)
             .then_some(())
-            .ok_or_else(|| js_err(format!("unknown league {league:?}")))
-    }
-
-    fn zoned(stamp: Option<&Zoned>) -> Result<JsValue, JsError> {
-        match stamp {
-            Some(zoned) => {
-                serde_wasm_bindgen::to_value(&DateTime::new(zoned)).map_err(js_err)
-            }
-            None => Ok(JsValue::UNDEFINED),
-        }
+            .ok_or_else(|| JsError::new(&format!("unknown league {league:?}")))
     }
 
     /// Fix `index`, as an error rather than the panic indexing would raise.
     fn get(&self, index: usize) -> Result<&rustigc::Fix, JsError> {
         self.inner.track.get(index).ok_or_else(|| {
-            js_err(format!(
+            JsError::new(&format!(
                 "fix {index} is out of range, the track holds {}",
                 self.inner.track.len()
             ))
