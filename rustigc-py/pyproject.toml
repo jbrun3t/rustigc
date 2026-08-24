@@ -7,13 +7,13 @@ name = "rustigc-py"
 version = "0.1.0"
 description = "Python bindings for the rustigc library"
 requires-python = ">=3.11"
-license = { text = "LGPL-2.1-or-later" }
+license = { text = "GPL-2.0-or-later WITH Classpath-exception-2.0" }
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20", "tzdata; sys_platform == 'win32'"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
