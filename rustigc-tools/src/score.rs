@@ -119,14 +119,9 @@ fn main() -> io::Result<()> {
     match args.format {
         Format::Geojson => {
             let flight = window.map(|(start, stop)| Flight { start, stop });
-            let mut layers: Vec<&dyn GeoJson> = Vec::new();
-            if let Some(flight) = &flight {
-                layers.push(flight);
-            }
-            if let Some(result) = &scored {
-                layers.push(result);
-            }
-            println!("{}", serde_json::to_string(&log.export(&layers))?);
+            let collection = log.export_flight(flight, scored.as_ref(), TrackLine::Draw);
+
+            println!("{}", serde_json::to_string(&collection)?);
         }
         Format::Json => match &scored {
             Some(result) => println!("{}", serde_json::to_string_pretty(result)?),

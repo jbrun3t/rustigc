@@ -255,11 +255,6 @@ impl Log {
         }
     }
 
-    /// Export Log as GeoJson with the trackline and some features
-    pub fn export(&self, layers: &[&dyn GeoJson]) -> FeatureCollection {
-        self.export_with(layers, TrackLine::Draw)
-    }
-
     /// Export Log as GeoJson with the timereference, possibly with the trackline and some features
     pub fn export_with(
         &self,
@@ -297,24 +292,38 @@ impl Log {
         }
     }
 
-    /// Everything this log describes about itself: the longest flight detected in it, and what that
-    /// flight scored under `league`.
-    pub fn describe(&self, league: &str) -> FeatureCollection {
+    /// Export Log as GeoJson with the trackline and some features
+    pub fn export(&self, layers: &[&dyn GeoJson]) -> FeatureCollection {
+        self.export_with(layers, TrackLine::Draw)
+    }
+
+    // Factoring common code
+    /// Draw `window` and the task `scored` found in it, each when there is one.
+    pub fn export_flight(
+        &self,
+        window: Option<Flight>,
+        scored: Option<&ScoringResult>,
+        line: TrackLine,
+    ) -> FeatureCollection {
         let mut layers: Vec<&dyn GeoJson> = Vec::new();
 
-        let flight = self.track.flights().longest().cloned();
-        let scored = flight
-            .as_ref()
-            .and_then(|f| self.score(league, f.start, f.stop));
-
-        if let Some(window) = &flight {
+        if let Some(window) = &window {
             layers.push(window);
         }
 
-        if let Some(result) = &scored {
+        if let Some(result) = scored {
             layers.push(result);
         }
 
-        self.export(&layers)
+        self.export_with(&layers, line)
+    }
+
+    /// Everything this log describes about itself: the longest flight detected in it, and what that
+    /// flight scored under `league`.
+    pub fn describe(&self, league: &str) -> FeatureCollection {
+        let window = self.track.flights().longest().copied();
+        let scored = window.and_then(|w| self.score(league, w.start, w.stop));
+
+        self.export_flight(window, scored.as_ref(), TrackLine::Draw)
     }
 }
