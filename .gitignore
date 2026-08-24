@@ -33,3 +33,5 @@ coverage.xml
 .hypothesis/
 htmlcov/
 
+# WASM bindings - `wasm-bindgen` output, rebuilt by rustigc-wasm/build.sh
+/rustigc-wasm/pkg/

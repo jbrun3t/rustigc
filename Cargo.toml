@@ -1,7 +1,8 @@
 [workspace]
 members = ["rustigc",
 	   "rustigc-tools",
-	   "rustigc-py"]
+	   "rustigc-py",
+	   "rustigc-wasm"]
 resolver = "2"
 
 [workspace.package]
