@@ -8,57 +8,62 @@ Command-line toolbox for IGC files
 cargo install --path .
 ```
 
-## 🏗️ `rustigc-xc-score`: scoring cli
+## `rustigc-xc-score`: scoring CLI
 
-The scoring tool reads the IGC content from stdin and outputs the result on stdout
+Reads IGC content on stdin and writes the result to stdout.
 
 ```bash
 > rustigc-xc-score < flight.igc
-Entry @36
-Exit  @12702
-  - TP0 @372
-  - TP1 @7852
-  - TP2 @10462
-Closed FAI Triangle 104.31 points, 65.2 km (×1.6) [ closing distance: 0.93 km ]
+Flight on 2025-04-30 Europe/Paris
+Takeoff: 12:12:16 - [45.3101,5.8907] - @0
+ Entry : 12:27:10 - [45.2784,5.8467] - @894
+  TP0  : 13:02:11 - [45.2290,5.7477] - @2995
+  TP1  : 15:26:16 - [45.6716,5.8279] - @11639
+  TP2  : 17:32:09 - [45.2574,6.0143] - @19192
+ Exit  : 17:54:09 - [45.2678,5.8488] - @20512
+Landing: 17:54:09 - [45.2678,5.8488] - @20512
+Closed Free Triangle 165.03 points, 117.88 km (×1.4) [ closing distance: 1.19 km ]
 ```
 
-Or with a json output, specifying the league:
+Or as JSON, for a chosen league:
+
 ```bash
 > rustigc-xc-score --league xcontest --format json < flight.igc
 {
-  "description": "Closed FAI Triangle",
-  "distance": 65.2,
-  "raw_distance": 65196.626,
-  "gap": 0.93,
-  "penalty": 0.93,
-  "score": 104.31,
-  "multiplier": 1.6,
+  "description": "Closed Free Triangle",
+  "distance": 117.88,
+  "raw_distance": 117876.93,
+  "gap": 1.19,
+  "penalty": 1.19,
+  "score": 165.03,
+  "multiplier": 1.4,
   "takeoff": 0,
-  "entry": 36,
+  "entry": 894,
   "turnpoints": [
-    372,
-    7852,
-    10462
+    2995,
+    11639,
+    19192
   ],
-  "exit": 12702,
-  "landing": 12911,
+  "exit": 20512,
+  "landing": 20512,
   "circuit": true
 }
 ```
 
 ### Options
 
-- `--league <name>` — ruleset to score against, `xcontest` by default.
-- `--format <human|json>` — output format, `human` by default.
+- `--league <name>` — ruleset to score against, `xcontest` by default. `--help` lists them.
+- `--format <human|json|geojson>` — output format, `human` by default. `geojson` draws the track,
+  the flight and the task.
 - `--window <start,stop>` — score this fix range instead of the auto-detected flight. The detected
-  flight is still what the report calls takeoff/landing.
+  flight is still what the report calls takeoff and landing.
 
-## `rustigc-parse`: Parser test tool
+## `rustigc-parse`: parser test tool
 
 ### Usage
 
-The parsing testtool reads the IGC content from stdin and outputs JSON to stdout.
-It is not terribly useful and mostly there to test and profile the parser
+Reads IGC content on stdin and writes JSON to stdout. It is not terribly useful and mostly there
+to test and profile of the parser.
 
 ```bash
 # Parse a file
@@ -74,25 +79,27 @@ rustigc-parse < flight.igc > flight.json
 rustigc-parse --quiet < flight.igc
 ```
 
-### Output Format
+### Output format
 
-JSON structure with:
-- `headers`: Flight metadata (pilot, glider, date, etc.)
-- `recorder`: Flight recorder information
-- `track`: Array of GPS fixes with coordinates and altitudes
+A JSON object with:
+- `recorder`: the flight recorder that wrote the file
+- `headers`: flight metadata, keyed by 3-letter code
+- `track`: the position fixes
+- `task`: the declared task, `null` when the file declares none
 
-Example output:
+Example output, abridged:
+
 ```json
 {
+  "recorder": {
+    "manufacturer": "XTR",
+    "uid": "499BE7D1C91C",
+    "data": null
+  },
   "headers": {
     "PLT": { "text": "John Smith", "origin": "flightrecorder" },
     "GTY": { "text": "Ozone Delta 4", "origin": "flightrecorder" },
     "DTE": { "text": "201024", "origin": "flightrecorder" }
-  },
-  "recorder": {
-    "manufacturer": "XTR",
-    "uid": "12345",
-    "data": null
   },
   "track": [
     {
@@ -102,7 +109,8 @@ Example output:
       "baro_alt": 587,
       "gnss_alt": 558
     }
-  ]
+  ],
+  "task": null
 }
 ```
 

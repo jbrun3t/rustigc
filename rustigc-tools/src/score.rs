@@ -5,20 +5,48 @@ use clap::{Parser, ValueEnum};
 use rustigc::*;
 use std::io::{self, Read};
 
+const EXAMPLES: &str = "\
+EXAMPLES:
+    Score against the default league:
+        rustigc-xc-score < flight.igc
+
+    Machine-readable output for another league:
+        rustigc-xc-score --league cfd --format json < flight.igc
+
+    Draw the result on a map:
+        rustigc-xc-score --format geojson < flight.igc > flight.geojson
+
+    Score an explicit range of fixes:
+        rustigc-xc-score --window 125,25425 < flight.igc";
+
+/// How a result is printed.
 #[derive(Clone, ValueEnum, Debug, PartialEq)]
 enum Format {
+    /// One line per fix of the task, then the score.
     Human,
+    /// The scoring report as JSON, `null` when nothing scored.
     Json,
+    /// The track, the flight and the task, drawn as GeoJSON.
     Geojson,
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "rustigc-xc-score")]
-#[command(about = "Score IGC Files", long_about = None)]
+#[command(name = "rustigc-xc-score", version)]
+#[command(about = "Score IGC files")]
+#[command(
+    long_about = "Score an IGC file read on stdin and report the best task found.\n\n\
+                  Every rule of the league is searched at once and the highest scoring one is \
+                  reported. Unless --window says otherwise, the flight is detected first and only \
+                  its fixes are scored."
+)]
+#[command(after_long_help = EXAMPLES)]
 struct Args {
     /// Scoring league
     #[arg(long, default_value = "xcontest",
-          value_parser = clap::builder::PossibleValuesParser::new(rustigc::league_names()))]
+          value_parser = clap::builder::PossibleValuesParser::new(rustigc::league_names()),
+          long_help = "Ruleset to score against. Each league defines its own rules, \
+                       multipliers and penalties, so the same track scores differently under \
+                       each.")]
     league: String,
 
     /// Output format
@@ -26,7 +54,10 @@ struct Args {
     format: Format,
 
     /// Explicit `start,stop` fix window to score, bypassing flight auto-detection.
-    #[arg(long, value_parser = parse_window)]
+    #[arg(long, value_parser = parse_window,
+          long_help = "Score this range of fix indices instead of the auto-detected flight. \
+                       Both bounds are indices into the track, the first fix being 0. The \
+                       detected flight is still what the human report calls takeoff and landing.")]
     window: Option<(usize, usize)>,
 }
 
