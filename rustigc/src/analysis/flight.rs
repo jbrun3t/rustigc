@@ -76,6 +76,10 @@ impl FlightSelection for [Flight] {
 /// Detect the flight sections of a track, one per stretch free of a gap longer than `max_gap`.
 /// Empty when no flight is detected.
 fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
+    if track.is_empty() {
+        return Vec::new();
+    }
+
     // Avoid using a BBox here so we don't to unwrap the coordinates first.
     // The projections only care for the latitude. longitude is just an offset carried around
     // This saves a bit of runtime while handling the antimeridian correctly
