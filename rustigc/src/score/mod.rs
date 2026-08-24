@@ -12,7 +12,7 @@ pub use rules::league_names;
 pub use engine::Scorer;
 
 #[cfg(feature = "serde")]
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 fn round_mm(meters: f64) -> f64 {
     (meters * 1000.0).round() / 1000.0
@@ -20,10 +20,10 @@ fn round_mm(meters: f64) -> f64 {
 
 /// What the best rule scored, as that rule presents it.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
     /// Identity of the rule, e.g. `"Triangle plat"`.
-    pub description: &'static str,
+    pub description: String,
     /// Scored distance. Presentation defined by the rule.
     pub distance: f64,
     /// The same distance in meters, rounded to the nearest millimeter.

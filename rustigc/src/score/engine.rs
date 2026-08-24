@@ -343,7 +343,7 @@ impl Scorer {
         }
 
         Some(ScoringResult {
-            description: scored.description,
+            description: scored.description.to_string(),
             distance,
             raw_distance: round_mm(scored.distance),
             gap: round_km(task.gap),

@@ -7,7 +7,7 @@
 
 use log::{debug, warn};
 #[cfg(feature = "serde")]
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::utils::geometry::{Flat, PointDistance};
 use crate::utils::projector::CheapProjection;
@@ -25,7 +25,7 @@ const MAX_GAP: f64 = 300.0;
 
 /// One flight section, as fix indices into the track it was detected in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Flight {
     pub start: usize,
     pub stop: usize,

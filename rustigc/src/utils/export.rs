@@ -88,7 +88,7 @@ impl GeoJson for Flight {
 /// Everything the rules made of the task.
 fn score(result: &ScoringResult) -> Feature {
     let mut props = props("score");
-    props.insert("rule".into(), result.description.into());
+    props.insert("rule".into(), result.description.clone().into());
     props.insert("score".into(), result.score.into());
     props.insert("distance".into(), result.distance.into());
     props.insert("raw_distance".into(), result.raw_distance.into());
