@@ -111,6 +111,20 @@ impl Log {
         }
     }
 
+    /// Score `window` against `league`
+    pub fn score(&self, league: &str, window: JsValue) -> Result<JsValue, JsError> {
+        Self::known_league(league)?;
+
+        let Some(window) = self.window(window)? else {
+            return Ok(JsValue::UNDEFINED);
+        };
+
+        match self.inner.score(league, window.start, window.stop) {
+            Some(result) => serde_wasm_bindgen::to_value(&result).map_err(js_err),
+            None => Ok(JsValue::UNDEFINED),
+        }
+    }
+
     /// When `index` was recorded, or `undefined` when the log has no date.
     pub fn fix_datetime(&self, index: usize) -> Result<JsValue, JsError> {
         let fix = self.get(index)?;
@@ -120,6 +134,25 @@ impl Log {
 }
 
 impl Log {
+    /// `window` as given, or the longest detected flight when it is left out.
+    fn window(&self, window: JsValue) -> Result<Option<rustigc::Flight>, JsError> {
+        if window.is_undefined() || window.is_null() {
+            return Ok(self.inner.track.flights().longest().copied());
+        }
+
+        serde_wasm_bindgen::from_value(window)
+            .map(Some)
+            .map_err(|e| js_err(format!("not a {{start, stop}} window: {e}")))
+    }
+
+    /// Reject a league the registry does not hold.
+    fn known_league(league: &str) -> Result<(), JsError> {
+        rustigc::league_names()
+            .any(|name| name == league)
+            .then_some(())
+            .ok_or_else(|| js_err(format!("unknown league {league:?}")))
+    }
+
     fn zoned(stamp: Option<&Zoned>) -> Result<JsValue, JsError> {
         match stamp {
             Some(zoned) => {
