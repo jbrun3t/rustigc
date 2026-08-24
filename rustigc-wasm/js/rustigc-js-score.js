@@ -10,8 +10,11 @@ const { parseArgs } = require("node:util");
 
 const { Log, league_names } = require("../pkg/rustigcjs.js");
 
+const FORMATS = ["human", "geojson"];
+
 const OPTIONS = {
 	league: { type: "string", default: "xcontest" },
+	format: { type: "string", default: "human" },
 	window: { type: "string" },
 	help: { type: "boolean", short: "h" },
 };
@@ -25,6 +28,7 @@ function usage() {
 			"",
 			"Options:",
 			`      --league <LEAGUE>  Scoring league [default: xcontest] [possible values: ${league_names().join(", ")}]`,
+			`      --format <FORMAT>  Output format [default: human] [possible values: ${FORMATS.join(", ")}]`,
 			"      --window <WINDOW>  Explicit `start,stop` fix range to score, bypassing flight detection",
 			"  -h, --help             Print help",
 		].join("\n"),
@@ -86,6 +90,9 @@ function main() {
 	try {
 		({ values: args } = parseArgs({ options: OPTIONS }));
 		args.window = args.window === undefined ? undefined : parseWindow(args.window);
+		if (!FORMATS.includes(args.format)) {
+			throw new Error(`invalid format: ${args.format}`);
+		}
 	} catch (e) {
 		console.error(e.message);
 		usage();
@@ -105,14 +112,18 @@ function main() {
 	}
 
 	const log = new Log(content);
-	const scored = log.score(args.league, args.window);
+	const window = args.window ?? log.longest_flight();
+	const scored = log.score(args.league, window);
 
 	if (!scored) {
 		console.error("Could not score");
-		return;
 	}
 
-	humanOutput(log, scored);
+	if (args.format === "geojson") {
+		console.log(log.export(window, scored));
+	} else if (scored) {
+		humanOutput(log, scored);
+	}
 }
 
 main()

@@ -10,7 +10,7 @@
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
 //! `headers` map.
 
-use rustigc::{FlightDetection, FlightSelection, Zoned};
+use rustigc::{FlightDetection, FlightSelection, TrackLine, Zoned};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -120,8 +120,35 @@ impl Log {
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
 
+    /// The log and the layers handed back to it, as one GeoJSON string.
+    pub fn export(
+        &self,
+        window: JsValue,
+        scored: JsValue,
+        track: Option<bool>,
+    ) -> Result<String, JsError> {
+        let window: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
+        let scored: Option<rustigc::ScoringResult> =
+            serde_wasm_bindgen::from_value(scored)?;
+
+        let line = match track.unwrap_or(true) {
+            true => TrackLine::Draw,
+            false => TrackLine::Skip,
         };
 
+        let collection = self.inner.export_flight(window, scored.as_ref(), line);
+
+        Ok(serde_json::to_string(&collection)?)
+    }
+
+    /// Everything the log describes about itself under `league`, as one GeoJSON string.
+    ///
+    /// Detects the longest flight and scores it. The other path when the caller wants nothing but
+    /// the drawing and has nothing to hand over.
+    pub fn describe(&self, league: &str) -> Result<String, JsError> {
+        Self::known_league(league)?;
+
+        Ok(serde_json::to_string(&self.inner.describe(league))?)
     }
 
     /// When `index` was recorded, or `undefined` when the log has no date.

@@ -46,6 +46,13 @@ log.datetime()           // origin of the fix timestamps, see below
 log.fix_datetime(288)    // { date: "2022-08-05", time: "10:14:20",
                          //   iso: "2022-08-05T10:14:20+01:00", zone: "Europe/London" }
 
+log.score("xcontest")                    // longest detected flight
+log.score("xcontest", { start, stop })   // an explicit window
+
+log.describe("xcontest")                 // GeoJSON: detects, scores and draws
+log.export(window, scored)               // GeoJSON: draws what you hand it
+log.export(window, scored, false)        // ... without the flown line
+
 league_names()           // ["cfd", "xcontest", "1tp", "2tp", "line", "oar"]
 ```
 
@@ -58,6 +65,14 @@ mean `Date` — which rejects RFC 9557's `[Europe/London]` suffix outright — a
 resolving the zone a second time against ICU's timezone database instead of the one that produced
 the value. `iso` is the field `new Date()` accepts.
 
+GeoJSON has two paths, mirroring the core's. `describe` is for a caller that wants nothing but the
+drawing and has nothing to hand over. `export` draws the `flights`/`score` results given back to it
+and searches for nothing itself, so a caller that already scored is not charged twice — over a
+25 000 fix track that is 5.8 ms of drawing against 14.1 ms of scoring. Either layer may be left out.
+
+It crosses as a string rather than an object: that track would otherwise become as many JS arrays,
+and a caller either prints it or hands it to a map. `JSON.parse` it for objects.
+
 Nothing crosses as a Rust map: `serde_wasm_bindgen` renders one as a JS `Map`, which
 `JSON.stringify` prints as `{}`. Hence `header`, one key at a time, rather than a whole `headers`
 object.
@@ -68,8 +83,11 @@ object.
 smoke test for these bindings, not a supported tool.
 
 ```sh
-node rustigc-wasm/js/rustigc-js-score.js < flight.igc
+node rustigc-wasm/js/rustigc-js-score.js --league xcontest --format human < flight.igc
 ```
+
+Its `human` and `geojson` output is diffed against `rustigc-xc-score` over the whole of
+`test_data/real/` — 104 comparisons, byte for byte.
 
 ## License
 
