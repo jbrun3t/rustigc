@@ -1,0 +1,2 @@
+# Deliberately empty: `files` in package.json is the allowlist. Without this, npm falls back
+# to the repo .gitignore, which excludes the generated pkg/ the CLI loads its wasm from.

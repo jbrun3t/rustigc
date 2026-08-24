@@ -1,0 +1,24 @@
+{
+  "name": "rustigc-js-score",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example CLI over the rustigc wasm bindings",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jbrun3t/rustigc"
+  },
+  "bin": {
+    "rustigc-js-score": "js/rustigc-js-score.js"
+  },
+  "files": [
+    "js/",
+    "pkg/rustigcjs.js",
+    "pkg/rustigcjs.d.ts",
+    "pkg/rustigcjs_bg.wasm",
+    "pkg/LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
