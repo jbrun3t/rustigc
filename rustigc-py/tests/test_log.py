@@ -50,6 +50,15 @@ def test_date_parsing(igc_content):
     assert origin.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S") == "2022-08-05 00:00:00"
 
 
+def test_datetime_at_without_date():
+    """No date header, nothing to date a fix against"""
+    log = Log.from_bytes(b"AFLA1BX\n"
+                         b"B0000004449144N00643725EA0058700558\n"
+                         b"B1000004449144N00643725EA0058700558\n")
+    assert log.datetime is None
+    assert log.datetime_at(3600) is None
+
+
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_flights_bounds_as_fixes(igc_content):
     """Section bounds come back as Fix objects, not indices"""

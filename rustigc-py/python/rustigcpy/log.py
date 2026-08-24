@@ -2,8 +2,8 @@
 
 """The parsed IGC log and everything derived from it."""
 from collections.abc import Iterable
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import numpy
 
@@ -132,9 +132,8 @@ class Log:
         """Instant this log's fix timestamps count from, as an aware datetime.
 
         UTC midnight of the flight's date, read in the zone the track starts in. West of
-        Greenwich that puts its own local date on the day before the flight's. Add a fix's
-        `timestamp` seconds to it to get when that fix was recorded. None without a usable
-        `HFDTE` header.
+        Greenwich that puts its own local date on the day before the flight's. `datetime_at`
+        dates a fix from it. None without a usable `HFDTE` header.
         """
         origin = self._log.datetime()
         if origin is None:
@@ -143,8 +142,24 @@ class Log:
         # RFC 9557: the offset pins the instant, the bracket names the zone. `astimezone`, not
         # `replace`, so this attaches the zone rather than reinterpreting the wall clock against it.
         stamp, _, zone = origin.partition("[")
+        stamped = datetime.fromisoformat(stamp)
 
-        return datetime.fromisoformat(stamp).astimezone(ZoneInfo(zone.rstrip("]")))
+        try:
+            return stamped.astimezone(ZoneInfo(zone.rstrip("]")))
+        except (ZoneInfoNotFoundError, ValueError):
+            return stamped
+
+    def datetime_at(self, timestamp: int) -> datetime | None:
+        """When the fix carrying `timestamp` was recorded, as an aware datetime.
+
+        Args:
+            timestamp: A `Fix.timestamp`, in seconds.
+        """
+        origin = self.datetime
+        if origin is None:
+            return None
+
+        return (origin.astimezone(UTC) + timedelta(seconds=timestamp)).astimezone(origin.tzinfo)
 
     def flights(self) -> Flights:
         """Flight sections detected in the track, cached until `reset()` or `push()`.
