@@ -31,7 +31,7 @@ Each has its API documented in its own language's format: rustdoc for the core
   - Generic scoring over a configurable number of turnpoints
   - Optimized for fast searches
   - Supports XContest, FFVL's CFD, and more
-- ✅ Python bindings with numpy support
+- 🏗️ Python bindings with numpy support
 - ✅ WASM bindings
 - ✅ GeoJSON export
 - 🏗️ Takeoff/landing detection (currently basic - average speed ~15km/h)
