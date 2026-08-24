@@ -16,6 +16,7 @@ mod utils;
 pub use analysis::flight::{Flight, FlightDetection, FlightSelection};
 pub use decode::Fix;
 pub use error::{LError, LResult};
+pub use jiff::Zoned;
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};

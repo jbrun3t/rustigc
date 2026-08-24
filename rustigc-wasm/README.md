@@ -36,10 +36,15 @@ const log = new Log(readFileSync("flight.igc"));   // Uint8Array
 log.fix_count            // 25459
 log.header_keys          // ["PLT", "GTY", "DTE", ...]
 log.header("PLT")        // { text: "Mike Young", origin: "flightrecorder" }
-log.datetime()           // "2022-08-05T01:00:00+01:00[Europe/London]"
 log.fix(288)             // { timestamp, lat, lon, baro_alt, gnss_alt }
-log.fix_datetime(288)    // "2022-08-05T10:14:20+01:00[Europe/London]"
 log.track                // one object per fix
+
+log.flights()            // [ { start: 125, stop: 25425 } ]
+log.longest_flight()     // { start: 125, stop: 25425 } | undefined
+
+log.datetime()           // origin of the fix timestamps, see below
+log.fix_datetime(288)    // { date: "2022-08-05", time: "10:14:20",
+                         //   iso: "2022-08-05T10:14:20+01:00", zone: "Europe/London" }
 
 league_names()           // ["cfd", "xcontest", "1tp", "2tp", "line", "oar"]
 ```
@@ -47,6 +52,11 @@ league_names()           // ["cfd", "xcontest", "1tp", "2tp", "line", "oar"]
 Values cross as plain JS data — there is no handle to keep alive and nothing to free. Field names
 come from the core's serde derives, so they are `snake_case` (`baro_alt`, `raw_distance`) and the
 method names follow them.
+
+Instants cross already split. `jiff` has resolved the zone, and re-deriving the parts in JS would
+mean `Date` — which rejects RFC 9557's `[Europe/London]` suffix outright — and then `Intl`,
+resolving the zone a second time against ICU's timezone database instead of the one that produced
+the value. `iso` is the field `new Date()` accepts.
 
 Nothing crosses as a Rust map: `serde_wasm_bindgen` renders one as a JS `Map`, which
 `JSON.stringify` prints as `{}`. Hence `header`, one key at a time, rather than a whole `headers`

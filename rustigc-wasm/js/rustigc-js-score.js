@@ -10,6 +10,15 @@ const { parseArgs } = require("node:util");
 
 const { Log } = require("../pkg/rustigcjs.js");
 
+/// One fix as `HH:MM:SS - [lat,lon] - @index`, dropping the time when the log has no date.
+function disp(log, index) {
+	const { lat, lon } = log.fix(index);
+	const place = `[${lat.toFixed(4)},${lon.toFixed(4)}] - @${index}`;
+	const when = log.fix_datetime(index);
+
+	return when ? `${when.time} - ${place}` : place;
+}
+
 function usage() {
 	console.error(
 		[
@@ -46,11 +55,17 @@ function main() {
 	}
 
 	const log = new Log(content);
+	const flight = log.longest_flight();
 
-	console.log(`Fixes: ${log.fix_count}`);
-	for (const key of log.header_keys.sort()) {
-		console.log(`${key}: ${log.header(key).text}`);
+	if (!flight) {
+		console.error("No flight detected");
+		return;
 	}
+
+	const when = log.fix_datetime(flight.start);
+	console.log(when ? `Flight on ${when.date} ${when.zone}` : "Flight has no date !");
+	console.log(`Takeoff: ${disp(log, flight.start)}`);
+	console.log(`Landing: ${disp(log, flight.stop)}`);
 }
 
 main()

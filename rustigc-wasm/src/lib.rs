@@ -10,10 +10,36 @@
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
 //! `headers` map.
 
+use rustigc::{FlightDetection, FlightSelection, Zoned};
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 fn js_err(e: impl std::fmt::Display) -> JsError {
     JsError::new(&e.to_string())
+}
+
+/// A zoned instant, handed over already split so callers never parse one.
+#[derive(Serialize)]
+struct DateTime {
+    /// Local calendar day, `2022-08-05`.
+    date: String,
+    /// Local wall clock, `10:09:32`.
+    time: String,
+    /// The instant, `2022-08-05T10:09:32+01:00`
+    iso: String,
+    /// IANA name, `Europe/London`, or offset as fallback.
+    zone: String,
+}
+
+impl DateTime {
+    fn new(zoned: &Zoned) -> Self {
+        DateTime {
+            date: zoned.strftime("%Y-%m-%d").to_string(),
+            time: zoned.strftime("%H:%M:%S").to_string(),
+            iso: zoned.strftime("%Y-%m-%dT%H:%M:%S%:z").to_string(),
+            zone: zoned.strftime("%:Q").to_string(),
+        }
+    }
 }
 
 /// A parsed IGC log.
@@ -62,11 +88,9 @@ impl Log {
     /// Instant this log's fix timestamps count from, or `undefined` without a usable `HFDTE`
     /// header.
     ///
-    /// UTC midnight of the flight's date, in the zone the track starts in, as RFC 9557 —
-    /// `2022-08-05T01:00:00+01:00[Europe/London]`. That is what a `Zoned` prints, offset and zone
-    /// name together, so the other side can rebuild the zone itself rather than be handed pieces.
-    pub fn datetime(&self) -> Option<String> {
-        self.inner.datetime().map(|origin| origin.to_string())
+    /// UTC midnight of the flight's date, in the zone the track starts in.
+    pub fn datetime(&self) -> Result<JsValue, JsError> {
+        Self::zoned(self.inner.datetime().as_ref())
     }
 
     /// One fix: `{timestamp, lat, lon, baro_alt, gnss_alt}`.
@@ -74,21 +98,37 @@ impl Log {
         serde_wasm_bindgen::to_value(self.get(index)?).map_err(js_err)
     }
 
-    /// When `index` was recorded, as RFC 9557, or `undefined` when the log has no date.
-    ///
-    /// Here rather than in JS so the zone maths stays in `jiff`: callers only ever slice the
-    /// result.
-    pub fn fix_datetime(&self, index: usize) -> Result<Option<String>, JsError> {
+    /// Flight sections detected in the track, empty when none was.
+    pub fn flights(&self) -> Result<JsValue, JsError> {
+        serde_wasm_bindgen::to_value(&self.inner.track.flights()).map_err(js_err)
+    }
+
+    /// The longest detected flight, or `undefined` when there is none.
+    pub fn longest_flight(&self) -> Result<JsValue, JsError> {
+        match self.inner.track.flights().longest() {
+            Some(flight) => serde_wasm_bindgen::to_value(flight).map_err(js_err),
+            None => Ok(JsValue::UNDEFINED),
+        }
+    }
+
+    /// When `index` was recorded, or `undefined` when the log has no date.
+    pub fn fix_datetime(&self, index: usize) -> Result<JsValue, JsError> {
         let fix = self.get(index)?;
 
-        Ok(self
-            .inner
-            .datetime()
-            .map(|origin| fix.datetime(&origin).to_string()))
+        Self::zoned(self.inner.datetime().map(|o| fix.datetime(&o)).as_ref())
     }
 }
 
 impl Log {
+    fn zoned(stamp: Option<&Zoned>) -> Result<JsValue, JsError> {
+        match stamp {
+            Some(zoned) => {
+                serde_wasm_bindgen::to_value(&DateTime::new(zoned)).map_err(js_err)
+            }
+            None => Ok(JsValue::UNDEFINED),
+        }
+    }
+
     /// Fix `index`, as an error rather than the panic indexing would raise.
     fn get(&self, index: usize) -> Result<&rustigc::Fix, JsError> {
         self.inner.track.get(index).ok_or_else(|| {
