@@ -14,10 +14,6 @@ this, and nothing else in the tree does either.
 | `wasm-bindgen` | `wasm-bindgen` |
 | `wasm-opt` | `binaryen` |
 
-`wasm-pack` drives the other three. It falls back to downloading its own `wasm-bindgen` when the
-one on `PATH` does not match this crate's `wasm-bindgen` dependency — which is why that dependency
-is pinned to an exact version in `Cargo.toml`. Bump the pin when the distro package moves [FIXME].
-
 ## Build
 
 ```sh
