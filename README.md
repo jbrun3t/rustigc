@@ -34,8 +34,8 @@ Each has its API documented in its own language's format: rustdoc for the core
 - 🏗️ Python bindings with numpy support
 - ✅ WASM bindings
 - ✅ GeoJSON export
+- ✅ CLI tools
 - 🏗️ Takeoff/landing detection (currently basic - average speed ~15km/h)
-- 🏗️ CLI tools
 - ⏳ Flight dynamics smoothing
 - ⏳ Flight phases identification
 
@@ -112,7 +112,7 @@ pip install maturin
 maturin develop
 ```
 
-## Status: Pre-alpha
+## Status: Alpha
 
 `rustigc` is still very early in its development cycle. It is a pet project I'm using to learn Rust.
 I'm still exploring everything Rust has to offer, so there is a good chance some things in there are
