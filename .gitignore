@@ -33,5 +33,8 @@ coverage.xml
 .hypothesis/
 htmlcov/
 
-# WASM bindings - `wasm-bindgen` output, rebuilt by rustigc-wasm/build.sh
+# WASM bindings - `wasm-pack` output, and the npm packages built beside it
 /rustigc-wasm/pkg/
+/rustigc-wasm/*/dist/
+node_modules/
+package-lock.json

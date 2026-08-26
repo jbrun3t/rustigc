@@ -1,14 +1,11 @@
-#!/usr/bin/env node
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
 // Example CLI over the wasm bindings, mirroring `rustigc-xc-score`. Reads IGC on stdin.
 
-"use strict";
+import { readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 
-const { readFileSync } = require("node:fs");
-const { parseArgs } = require("node:util");
-
-const { Log, league_names } = require("../pkg/rustigcjs.js");
+import { initSync, league_names, Log, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
 
 const FORMATS = ["human", "geojson"];
 
@@ -17,14 +14,14 @@ const OPTIONS = {
 	format: { type: "string", default: "human" },
 	window: { type: "string" },
 	help: { type: "boolean", short: "h" },
-};
+} as const;
 
-function usage() {
+function usage(): void {
 	console.error(
 		[
 			"Score IGC Files",
 			"",
-			"Usage: rustigc-js-score [OPTIONS]",
+			"Usage: rustigc-wasm-score [OPTIONS]",
 			"",
 			"Options:",
 			`      --league <LEAGUE>  Scoring league [default: xcontest] [possible values: ${league_names().join(", ")}]`,
@@ -36,13 +33,13 @@ function usage() {
 }
 
 /// `start,stop` as the `{start, stop}` window the binding takes.
-function parseWindow(text) {
+function parseWindow(text: string): Flight {
 	const cut = text.indexOf(",");
 	if (cut < 0) {
 		throw new Error('expected "start,stop"');
 	}
 
-	const parse = (raw, what) => {
+	const parse = (raw: string, what: string): number => {
 		const value = Number(raw.trim());
 		if (!Number.isInteger(value) || value < 0) {
 			throw new Error(`invalid ${what}: ${raw}`);
@@ -57,7 +54,7 @@ function parseWindow(text) {
 }
 
 /// One fix as `HH:MM:SS - [lat,lon] - @index`, dropping the time when the log has no date.
-function disp(log, index) {
+function disp(log: Log, index: number): string {
 	const { lat, lon } = log.fix(index);
 	const place = `[${lat.toFixed(4)},${lon.toFixed(4)}] - @${index}`;
 	const when = log.fix_datetime(index);
@@ -65,7 +62,7 @@ function disp(log, index) {
 	return when ? `${when.time} - ${place}` : place;
 }
 
-function humanOutput(log, result) {
+function humanOutput(log: Log, result: Score): void {
 	const when = log.fix_datetime(result.entry);
 	console.log(when ? `Flight on ${when.date} ${when.zone}` : "Flight has no date !");
 
@@ -85,21 +82,30 @@ function humanOutput(log, result) {
 	console.log(report);
 }
 
-function main() {
-	let args;
+/// Runs the CLI over `wasm`, the bindings' WebAssembly, which each entry point sources its own way.
+export function main(wasm: SyncInitInput): void {
+	// Before anything else: `usage` reports the leagues, and that is a call into the wasm.
+	initSync({ module: wasm });
+
+	let league: string;
+	let format: string;
+	let requested: Flight | undefined;
+	let help: boolean | undefined;
+
 	try {
-		({ values: args } = parseArgs({ options: OPTIONS }));
-		args.window = args.window === undefined ? undefined : parseWindow(args.window);
-		if (!FORMATS.includes(args.format)) {
-			throw new Error(`invalid format: ${args.format}`);
+		const { values } = parseArgs({ options: OPTIONS });
+		({ league, format, help } = values);
+		requested = values.window === undefined ? undefined : parseWindow(values.window);
+		if (!FORMATS.includes(format)) {
+			throw new Error(`invalid format: ${format}`);
 		}
 	} catch (e) {
-		console.error(e.message);
+		console.error((e as Error).message);
 		usage();
 		process.exit(2);
 	}
 
-	if (args.help) {
+	if (help) {
 		usage();
 		return;
 	}
@@ -112,18 +118,16 @@ function main() {
 	}
 
 	const log = new Log(content);
-	const window = args.window ?? log.longest_flight();
-	const scored = log.score(args.league, window);
+	const window = requested ?? log.longest_flight();
+	const scored = log.score(league, window);
 
 	if (!scored) {
 		console.error("Could not score");
 	}
 
-	if (args.format === "geojson") {
+	if (format === "geojson") {
 		console.log(log.export(window, scored));
 	} else if (scored) {
 		humanOutput(log, scored);
 	}
 }
-
-main()

@@ -1,0 +1,41 @@
+{
+  "name": "rustigc-track",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Decoder for the raw fix array rustigc-wasm hands over as bytes",
+  "license": "GPL-2.0-or-later WITH Classpath-exception-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jbrun3t/rustigc",
+    "directory": "rustigc/rustigc-wasm/track"
+  },
+  "main": "./dist/track.js",
+  "types": "./dist/track.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/track.d.ts",
+      "default": "./dist/track.js"
+    }
+  },
+  "files": [
+    "dist/"
+  ],
+  "peerDependencies": {
+    "rustigc-wasm": "^0.1.0"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "igc",
+    "soaring",
+    "aviation",
+    "gps"
+  ],
+  "devDependencies": {
+    "typescript": "^5.9"
+  }
+}

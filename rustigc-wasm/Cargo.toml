@@ -12,7 +12,7 @@ description = "WASM bindings for rustigc IGC parser"
 readme = "README.md"
 
 [lib]
-name = "rustigcjs"
+name = "rustigc"
 crate-type = ["cdylib"]
 
 [dependencies]

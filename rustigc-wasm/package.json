@@ -1,24 +1,19 @@
 {
-  "name": "rustigc-js-score",
+  "name": "rustigc-wasm-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "Example CLI over the rustigc wasm bindings",
-  "license": "GPL-2.0-or-later",
+  "description": "Workspace root for the rustigc wasm bindings and the packages built beside them",
+  "license": "GPL-2.0-or-later WITH Classpath-exception-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/jbrun3t/rustigc"
   },
-  "bin": {
-    "rustigc-js-score": "js/rustigc-js-score.js"
-  },
-  "files": [
-    "js/",
-    "pkg/rustigcjs.js",
-    "pkg/rustigcjs.d.ts",
-    "pkg/rustigcjs_bg.wasm",
-    "pkg/LICENSE"
+  "workspaces": [
+    "pkg",
+    "track",
+    "score"
   ],
-  "engines": {
-    "node": ">=20"
+  "scripts": {
+    "build": "npm run build --workspaces --if-present"
   }
 }

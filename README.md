@@ -16,7 +16,7 @@ rustigc/
 
 Each has its API documented in its own language's format: rustdoc for the core
 ([docs.rs](https://docs.rs/rustigc)), docstrings for Python (`help(rustigcpy.Log)`), and
-`pkg/rustigcjs.d.ts` for JavaScript. The READMEs below cover installing and building.
+`pkg/rustigc.d.ts` for TypeScript. The READMEs below cover installing and building.
 
 ## Features
 
@@ -74,18 +74,20 @@ print(f"Landing: {flight.landing}")
 
 See [rustigc-py/README.md](rustigc-py/README.md)
 
-### JavaScript
+### TypeScript
 
-```js
-const { Log } = require("./pkg/rustigcjs.js");
+```ts
+import { readFileSync } from "node:fs";
+import { Log } from "rustigc-wasm";
 
-const log = new Log(readFileSync("flight.igc"));
+const igc = readFileSync("flight.igc");
+const log = new Log(igc);
 
 console.log(log.header("PLT"), log.fix_count);
 console.log(log.score("xcontest"));
 ```
 
-See [rustigc-wasm/README.md](rustigc-wasm/README.md)
+See [rustigc-wasm/README.md](rustigc-wasm/README.md), which covers instantiating the wasm first.
 
 ### CLI tool
 

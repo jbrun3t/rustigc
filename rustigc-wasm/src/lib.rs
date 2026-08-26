@@ -2,11 +2,11 @@
 
 //! WASM bindings for rustigc.
 //!
-//! Everything crosses as plain JS data: there is no handle to keep alive and nothing to free.
+//! Everything crosses as plain data: there is no handle to keep alive and nothing to free.
 //! Field names come from the core's serde derives, so they stay `snake_case` — `raw_distance`,
 //! `baro_alt` — and the method names follow them.
 //!
-//! Nothing crosses as a Rust map. `serde_wasm_bindgen` renders one as a JS `Map`, which
+//! Nothing crosses as a Rust map. `serde_wasm_bindgen` renders one as a `Map`, which
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
 //! `headers` map.
 
@@ -17,6 +17,18 @@ use wasm_bindgen::prelude::*;
 /// Shapes that cross as plain data, declared for the generated `.d.ts`.
 ///
 /// They mirror the core's serde derives field for field: keep them in step.
+#[wasm_bindgen]
+extern "C" {
+    /// A `Flight` on its way in. Naming the interface through an extern type rather than
+    /// `unchecked_param_type` keeps the argument optional in the generated `.d.ts`.
+    #[wasm_bindgen(typescript_type = "Flight")]
+    pub type FlightArg;
+
+    /// A `Score` on its way in, for the same reason.
+    #[wasm_bindgen(typescript_type = "Score")]
+    pub type ScoreArg;
+}
+
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &'static str = r#"
 /** One position fix. */
@@ -165,8 +177,8 @@ impl Log {
 
     /// The same track as raw `#[repr(C)] Fix` bytes, 32 per fix, little-endian.
     ///
-    /// About 10x faster than `track`, if you decode it yourself. `js/track.js` ships a decoder;
-    /// the crate README has the layout.
+    /// About 10x faster than `track`, if you decode it yourself. The `rustigc-track`
+    /// package ships a decoder; the crate README has the layout.
     #[wasm_bindgen(getter)]
     pub fn track_bytes(&self) -> Vec<u8> {
         let track = &self.inner.track;
@@ -224,11 +236,14 @@ impl Log {
     pub fn score(
         &self,
         league: &str,
-        #[wasm_bindgen(unchecked_param_type = "Flight | undefined")] window: JsValue,
+        window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
         Self::known_league(league)?;
 
-        let given: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
+        let given: Option<rustigc::Flight> = match window {
+            Some(value) => serde_wasm_bindgen::from_value(value.into())?,
+            None => None,
+        };
 
         let scored = given
             .or_else(|| self.inner.track.flights().longest().copied())
@@ -244,13 +259,18 @@ impl Log {
     /// `JSON.parse` it for objects.
     pub fn export(
         &self,
-        #[wasm_bindgen(unchecked_param_type = "Flight | undefined")] window: JsValue,
-        #[wasm_bindgen(unchecked_param_type = "Score | undefined")] scored: JsValue,
+        window: Option<FlightArg>,
+        scored: Option<ScoreArg>,
         track: Option<bool>,
     ) -> Result<String, JsError> {
-        let window: Option<rustigc::Flight> = serde_wasm_bindgen::from_value(window)?;
-        let scored: Option<rustigc::ScoringResult> =
-            serde_wasm_bindgen::from_value(scored)?;
+        let window: Option<rustigc::Flight> = match window {
+            Some(value) => serde_wasm_bindgen::from_value(value.into())?,
+            None => None,
+        };
+        let scored: Option<rustigc::ScoringResult> = match scored {
+            Some(value) => serde_wasm_bindgen::from_value(value.into())?,
+            None => None,
+        };
 
         let line = match track.unwrap_or(true) {
             true => TrackLine::Draw,

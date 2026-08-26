@@ -1,0 +1,28 @@
+{
+  "name": "rustigc-wasm-score",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Example CLI over the rustigc wasm bindings",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jbrun3t/rustigc"
+  },
+  "bin": {
+    "rustigc-wasm-score": "./dist/rustigc-wasm-score.js"
+  },
+  "dependencies": {
+    "rustigc-wasm": "^0.1.0"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "^5.9"
+  }
+}
