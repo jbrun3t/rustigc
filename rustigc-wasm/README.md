@@ -44,7 +44,7 @@ await init();
 Then the API is fairly similar to the Rust one:
 
 ```ts
-const log = new Log(igc);                       // Uint8Array of IGC
+const log = new Log(igc);                       // Uint8Array or string of IGC
 
 log.fix_count                                   // 25459
 log.header("PLT")                               // { text: "Mike Young", origin: "flightrecorder" }
