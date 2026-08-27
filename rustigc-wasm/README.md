@@ -5,7 +5,7 @@ WASM bindings for [rustigc](../rustigc), as the `rustigc-wasm` npm package.
 | directory | package | |
 |---|---|---|
 | `pkg/` | `rustigc-wasm` | the bindings: wasm, ESM glue and types, all generated |
-| `utils/` | `rustigc-utils` | optional decoder for `track_bytes` |
+| `utils/` | `rustigc-utils` | optional helpers: `track_bytes` decoder, local wall clock |
 | `score/` | — | example CLI, not published |
 
 ## Prerequisites
@@ -56,7 +56,7 @@ league_names()                                  // what score and describe accep
 ```
 
 Documentation is in `pkg/rustigc.d.ts`, generated from the doc comments in
-`src/lib.rs` along with interfaces for `Fix`, `Flight`, `Header`, `DateTime` and `Score`.
+`src/lib.rs` along with interfaces for `Fix`, `Flight`, `Header` and `Score`.
 
 GeoJSON crosses as a string rather than an object: a track would otherwise become as many arrays,
 and a caller either prints it or hands it to a map. `JSON.parse` it for objects.
@@ -91,12 +91,18 @@ log.track                // Fix[], straight from the binding
 fixes(log.track_bytes)   // the same Fix[], 10x faster
 ```
 
-It is a separate package because it is optional and depends on nothing at runtime — install it
-only if you decode. The layout is 32 bytes per fix, little-endian, matching `Fix`:
+The layout is 32 bytes per fix, little-endian, matching `Fix`:
 
 | offset | 0 | 4 | 8 | 16 | 24 | 28 |
 |---|---|---|---|---|---|---|
 | | `u32` timestamp | *pad* | `f64` lat | `f64` lon | `i32` baro_alt | `i32` gnss_alt |
+
+## Local times
+
+`Log.datetime` is UTC and `Log.tzn` is whatever offset the recorder declared.
+
+`TZN` is the pilot's instrument setting and can simply be stale — a caller holding a real tz
+dataset should shift `Log.datetime` itself instead.
 
 ## Example CLI
 

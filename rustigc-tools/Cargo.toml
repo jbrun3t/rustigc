@@ -11,6 +11,10 @@ categories.workspace = true
 description = "CLI tools for IGC file parsing and analysis"
 readme = "README.md"
 
+[lib]
+name = "rustigc_tools"
+path = "src/lib.rs"
+
 [[bin]]
 name = "rustigc-parse"
 path = "src/main.rs"
@@ -25,3 +29,5 @@ env_logger = "0.11"
 rustigc = { path = "../rustigc", features = ["serde", "geojson"] }
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
+jiff = "0.2"
+utz = { version = "0.4", default-features = false, features = ["core", "tiny-static"] }

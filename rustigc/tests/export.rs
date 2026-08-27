@@ -39,6 +39,18 @@ fn describe_fai_01() {
     // takeoff and landing, then the entry, three turnpoints and the exit
     assert_eq!(roles.iter().filter(|r| **r == "marker").count(), 7);
 
+    // the reference every timestamp counts from
+    let metadata = features
+        .iter()
+        .find(|f| f["properties"]["role"] == "metadata")
+        .unwrap();
+    assert_eq!(
+        metadata["properties"]["datetime"],
+        "2022-08-05T00:00:00.000Z"
+    );
+    // what the recorder itself declared, `HFTZNTIMEZONE:1.0`
+    assert_eq!(metadata["properties"]["tzn"], 1.0);
+
     // the same numbers `--format json` pins, over the window detection picks
     let scored = features
         .iter()

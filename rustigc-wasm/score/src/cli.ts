@@ -5,7 +5,15 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { initSync, league_names, Log, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
+import {
+	initSync,
+	league_names,
+	Log,
+	type Flight,
+	type Score,
+	type SyncInitInput,
+} from "rustigc-wasm";
+import { LocalTime } from "rustigc-utils/datetime";
 
 const FORMATS = ["human", "geojson"];
 
@@ -54,30 +62,34 @@ function parseWindow(text: string): Flight {
 }
 
 /// One fix as `HH:MM:SS - [lat,lon] - @index`, dropping the time when the log has no date.
-function disp(log: Log, index: number): string {
-	const { lat, lon } = log.fix(index);
+function disp(log: Log, index: number, local: LocalTime | undefined): string {
+	const { lat, lon, timestamp } = log.fix(index);
 	const place = `[${lat.toFixed(4)},${lon.toFixed(4)}] - @${index}`;
-	const when = log.fix_datetime(index);
 
-	return when ? `${when.time} - ${place}` : place;
+	return local ? `${local.at(timestamp).time} - ${place}` : place;
 }
 
 function humanOutput(log: Log, result: Score): void {
-	const when = log.fix_datetime(result.entry);
-	console.log(when ? `Flight on ${when.date} ${when.zone}` : "Flight has no date !");
+	const local = LocalTime.of(log);
+	console.log(
+		local
+			? `Flight on ${local.at(log.fix(result.entry).timestamp).date} ${local.zone}`
+			: "Flight has no date !",
+	);
 
-	console.log(`Takeoff: ${disp(log, result.takeoff)}`);
-	console.log(` Entry : ${disp(log, result.entry)}`);
-	result.turnpoints.forEach((tp, i) => console.log(`  TP${i}  : ${disp(log, tp)}`));
-	console.log(` Exit  : ${disp(log, result.exit)}`);
-	console.log(`Landing: ${disp(log, result.landing)}`);
+	console.log(`Takeoff: ${disp(log, result.takeoff, local)}`);
+	console.log(` Entry : ${disp(log, result.entry, local)}`);
+	result.turnpoints.forEach((tp, i) => console.log(`  TP${i}  : ${disp(log, tp, local)}`));
+	console.log(` Exit  : ${disp(log, result.exit, local)}`);
+	console.log(`Landing: ${disp(log, result.landing, local)}`);
 
 	let report = `${result.description} ${result.score} points, ${result.distance_km} km`;
 	if (result.multiplier !== 1) {
 		report += ` (×${result.multiplier})`;
 	}
 	if (result.circuit) {
-		report += ` [ closing distance: ${result.gap_km} km ]`;
+		const max = Math.round(result.threshold_m);
+		report += ` [ closing distance: ${result.gap_km} km, max ${max} m ]`;
 	}
 	console.log(report);
 }

@@ -5,6 +5,8 @@ use clap::{Parser, ValueEnum};
 use rustigc::*;
 use std::io::{self, Read};
 
+use rustigc_tools::timezone::LocalTime;
+
 const EXAMPLES: &str = "\
 EXAMPLES:
     Score against the default league:
@@ -78,14 +80,14 @@ fn parse_window(s: &str) -> Result<(usize, usize), String> {
 
 fn human_output(log: &Log, result: &ScoringResult) {
     // Get time origin for the flight and create display helper
-    let origin = log.datetime();
+    let local = LocalTime::new(log);
 
     let coord = |i: usize| format!("{:.04},{:.04}", log.track[i].lat, log.track[i].lon);
-    let disp = |i: usize| match &origin {
-        Some(o) => {
+    let disp = |i: usize| match &local {
+        Some(l) => {
             format!(
                 "{} - [{}] - @{i}",
-                log.track[i].datetime(o).strftime("%H:%M:%S"),
+                l.at(log.track[i].timestamp).strftime("%H:%M:%S"),
                 coord(i)
             )
         }
@@ -93,9 +95,9 @@ fn human_output(log: &Log, result: &ScoringResult) {
     };
 
     // Display the flight date, locally.
-    if let Some(o) = &origin {
-        let entry = log.track[result.entry].datetime(o);
-        println!("{}", entry.strftime("Flight on %Y-%m-%d %:Q"));
+    if let Some(l) = &local {
+        let entry = l.at(log.track[result.entry].timestamp);
+        println!("{}", entry.strftime("Flight on %Y-%m-%d %Z"));
     } else {
         println!("Flight has no date !");
     }

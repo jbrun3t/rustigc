@@ -4,8 +4,22 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+_TIMEZONE_FINDER = None
+
+
+def _finder():
+    """The `timezonefinder` instance, built on first use and kept."""
+    global _TIMEZONE_FINDER
+
+    if _TIMEZONE_FINDER is None:
+        from timezonefinder import TimezoneFinder
+
+        _TIMEZONE_FINDER = TimezoneFinder(in_memory=True)
+
+    return _TIMEZONE_FINDER
 
 import numpy
 
@@ -141,15 +155,30 @@ class Log:
         if origin is None:
             return None
 
-        # RFC 9557: the offset pins the instant, the bracket names the zone. `astimezone`, not
-        # `replace`, so this attaches the zone rather than reinterpreting the wall clock against it.
-        stamp, _, zone = origin.partition("[")
-        stamped = datetime.fromisoformat(stamp)
+        stamped = datetime.fromisoformat(origin)
+        zone = self._zone()
 
-        try:
-            return stamped.astimezone(ZoneInfo(zone.rstrip("]")))
-        except (ZoneInfoNotFoundError, ValueError):
-            return stamped
+        return stamped.astimezone(zone) if zone else stamped
+
+    def _zone(self) -> tzinfo | None:
+        """Zone the track starts in, falling back to the offset the log declares.
+
+        None leaves the origin in UTC.
+        """
+        track = self.track
+        if len(track) > 0:
+            first = track[0]
+            name = _finder().timezone_at(lng=first.longitude, lat=first.latitude)
+
+            if name is not None:
+                try:
+                    return ZoneInfo(name)
+                except (ZoneInfoNotFoundError, ValueError):
+                    pass
+
+        tzn = self._log.tzn()
+
+        return timezone(timedelta(hours=tzn)) if tzn is not None else None
 
     def datetime_at(self, timestamp: int) -> datetime | None:
         """When the fix carrying `timestamp` was recorded, as an aware datetime.

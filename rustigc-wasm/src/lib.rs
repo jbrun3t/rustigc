@@ -10,8 +10,7 @@
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
 //! `headers` map.
 
-use rustigc::{FlightDetection, FlightSelection, TrackLine, Zoned};
-use serde::Serialize;
+use rustigc::{FlightDetection, FlightSelection, TrackLine};
 use wasm_bindgen::prelude::*;
 
 /// Shapes that cross as plain data, declared for the generated `.d.ts`.
@@ -60,18 +59,6 @@ export interface Header {
     origin: "flightrecorder" | "observer" | "pilot" | "unknown";
 }
 
-/** A zoned instant, handed over already split so callers never parse one. */
-export interface DateTime {
-    /** Local calendar day, `2022-08-05`. */
-    date: string;
-    /** Local wall clock, `10:09:32`. */
-    time: string;
-    /** The instant, `2022-08-05T10:09:32+01:00`. This is what `new Date()` accepts. */
-    iso: string;
-    /** IANA name, `Europe/London`, or an offset as fallback. */
-    zone: string;
-}
-
 /**
  * What the winning rule of a league scored.
  *
@@ -110,30 +97,6 @@ export interface Score {
     circuit: boolean;
 }
 "#;
-
-/// A zoned instant, handed over already split so callers never parse one.
-#[derive(Serialize)]
-struct DateTime {
-    /// Local calendar day, `2022-08-05`.
-    date: String,
-    /// Local wall clock, `10:09:32`.
-    time: String,
-    /// The instant, `2022-08-05T10:09:32+01:00`.
-    iso: String,
-    /// IANA name, `Europe/London`, or the offset as a fallback.
-    zone: String,
-}
-
-impl DateTime {
-    fn new(zoned: &Zoned) -> Self {
-        DateTime {
-            date: zoned.strftime("%Y-%m-%d").to_string(),
-            time: zoned.strftime("%H:%M:%S").to_string(),
-            iso: zoned.strftime("%Y-%m-%dT%H:%M:%S%:z").to_string(),
-            zone: zoned.strftime("%:Q").to_string(),
-        }
-    }
-}
 
 /// A parsed IGC log.
 #[wasm_bindgen]
@@ -197,18 +160,16 @@ impl Log {
         .to_vec()
     }
 
-    /// Instant this log's fix timestamps count from, or `undefined` without a usable `HFDTE`
-    /// header.
-    ///
-    /// UTC midnight of the flight's date, in the zone the track starts in. Add a fix's
-    /// `timestamp` milliseconds to it to get when that fix was recorded.
-    #[wasm_bindgen(unchecked_return_type = "DateTime | undefined")]
-    pub fn datetime(&self) -> Result<JsValue, JsError> {
-        let origin = self.inner.datetime();
+    /// Instant this log's fix timestamps count from as an ISO8601 String, or `undefined`
+    /// without a usable `HFDTE` header.
+    pub fn datetime(&self) -> Option<String> {
+        self.inner.datetime()
+    }
 
-        Ok(serde_wasm_bindgen::to_value(
-            &origin.as_ref().map(DateTime::new),
-        )?)
+    /// Offset from UTC to local time in hours, as the recorder declared it in `TZN`, or
+    /// `undefined` when it declared none.
+    pub fn tzn(&self) -> Option<f64> {
+        self.inner.tzn()
     }
 
     /// One fix. Throws when `index` is past the end of the track.
@@ -294,17 +255,6 @@ impl Log {
         Self::known_league(league)?;
 
         Ok(serde_json::to_string(&self.inner.describe(league))?)
-    }
-
-    /// When fix `index` was recorded, or `undefined` when the log has no date.
-    #[wasm_bindgen(unchecked_return_type = "DateTime | undefined")]
-    pub fn fix_datetime(&self, index: usize) -> Result<JsValue, JsError> {
-        let fix = self.get(index)?;
-        let stamp = self.inner.datetime().map(|origin| fix.datetime(&origin));
-
-        Ok(serde_wasm_bindgen::to_value(
-            &stamp.as_ref().map(DateTime::new),
-        )?)
     }
 }
 

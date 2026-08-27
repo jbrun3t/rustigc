@@ -40,8 +40,9 @@ const LABELS: [&str; 1] = ["PLT"];
 /// and `gap` — beside them. A leg's `distance_m` is its geodesic length in kilometers, so the legs
 /// of a task do not add up to the `score`'s `distance_m`, which is net of the penalty, if any.
 ///
-/// `datetime` is stated once as RFC 9557 — `2022-08-05T01:00:00+01:00[Europe/London]` — UTC
-/// midnight of the flight's date read in the zone the track starts in.
+/// `datetime` is stated once, in ISO8601 format. Every `timestamp` and `coordTimes` entry is
+/// milliseconds to add to it. `tzn` beside it, when the log declares one, is the offset to local
+/// time in hours — the recorder's own claim, which no dataset here checks.
 ///
 /// Every position over a fix is `[lon, lat, gnss_alt]`, trimmed to eight decimals — finer than
 /// any fix records.
@@ -243,10 +244,13 @@ impl Log {
     fn metadata_export(&self) -> Feature {
         let mut props = props("metadata");
 
-        // Include the datetime reference
-        // All flight should have a reference, guarding just in a record is missing DTE header
+        // The reference every timestamp counts from, and whatever shift the log itself declares.
         if let Some(origin) = self.datetime() {
-            props.insert("datetime".into(), origin.to_string().into());
+            props.insert("datetime".into(), origin.into());
+        }
+
+        if let Some(tzn) = self.tzn() {
+            props.insert("tzn".into(), tzn.into());
         }
 
         let headers: JsonObject = LABELS

@@ -67,9 +67,6 @@ pub use decode::{
     RecordExtension, Recorder, Task, TextEvent, TimedEvent, TurnPoint,
 };
 pub use error::{LError, LResult};
-/// Zoned instant, as [`Log::datetime`] and [`Fix::datetime`] report one. Re-exported from
-/// [`jiff`].
-pub use jiff::Zoned;
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};

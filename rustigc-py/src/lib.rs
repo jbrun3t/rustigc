@@ -166,12 +166,17 @@ impl PyLog {
 
     /// Instant this log's fix timestamps count from, or `None` without a usable `HFDTE` header.
     ///
-    /// UTC midnight of the flight's date, in the zone the track starts in, as RFC 9557 —
-    /// `2022-08-05T01:00:00+01:00[Europe/London]`. That is what a `Zoned` prints, offset and zone
-    /// name together, so the other side can rebuild the zone itself rather than be handed pieces.
+    /// UTC midnight of the flight's date, ISO 8601 — `2022-08-05T00:00:00.000Z`. Naming the zone
+    /// is the Python side's job; it has its own dataset for that.
     #[pyo3(text_signature = "($self)")]
     fn datetime(&self) -> Option<String> {
-        self.inner.datetime().map(|origin| origin.to_string())
+        self.inner.datetime()
+    }
+
+    /// Offset from UTC to local time in hours, as the `TZN` header declares it, or `None`.
+    #[pyo3(text_signature = "($self)")]
+    fn tzn(&self) -> Option<f64> {
+        self.inner.tzn()
     }
 
     /// Detect the flight sections, one handle each, empty when none was detected.
