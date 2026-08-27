@@ -19,6 +19,68 @@ pub use super::shapes::balanced::BalancedCircuit;
 pub use super::shapes::closed::ClosedCircuit;
 pub use super::shapes::polyline::OpenPolyline;
 
+/// A gap limit, as a rulebook states it.
+#[derive(Debug, Clone, Copy)]
+pub enum Limit {
+    /// No limit: nothing is free, or nothing closes once charged.
+    None,
+    /// An absolute distance, in meters.
+    Fixed(f64),
+    /// A share of the distance.
+    Ratio(f64),
+}
+
+impl Limit {
+    /// What the limit comes to against `distance`, in meters.
+    fn of(&self, distance: f64) -> f64 {
+        match self {
+            Limit::None => 0.0,
+            Limit::Fixed(meters) => *meters,
+            Limit::Ratio(share) => share * distance,
+        }
+    }
+}
+
+/// A closing law: what a gap costs, and how large it may get.
+///
+/// The two limits are independent, and either can be absolute or relative. `penalty` and `limit`
+/// derive from both, which is what keeps them in step. A law wanting the greater of an absolute and
+/// a share *within* one of them needs a variant [`Limit`] does not have; none does.
+#[derive(Debug, Clone, Copy)]
+pub struct Closing {
+    /// Gap allowed free of charge.
+    free: Limit,
+    /// Largest gap that closes once charged in full.
+    charged: Limit,
+}
+
+impl Closing {
+    /// A shape with no closing leg.
+    pub const NONE: Self = Self::new(Limit::None, Limit::None);
+
+    pub const fn new(free: Limit, charged: Limit) -> Self {
+        Self { free, charged }
+    }
+
+    /// Largest gap this law accepts, in meters, against the raw distance.
+    ///
+    /// A free gap closes whatever `charged` says, hence the larger of the two.
+    pub fn limit(&self, distance: f64) -> f64 {
+        self.free.of(distance).max(self.charged.of(distance))
+    }
+
+    /// Charge for the gap. INFINITY for a gap this law does not accept.
+    pub fn penalty(&self, distance: f64, gap: f64) -> f64 {
+        if gap <= self.free.of(distance) {
+            0.0
+        } else if gap <= self.charged.of(distance) {
+            gap
+        } else {
+            f64::INFINITY
+        }
+    }
+}
+
 /// What a rule made of a geometry, in meters, unrounded.
 #[derive(Debug)]
 pub struct Scored {
@@ -28,6 +90,9 @@ pub struct Scored {
     /// 0 when the minimum is not met: there is a path, it is worth nothing.
     pub score: f64,
     pub multiplier: f64,
+    /// Largest gap this result's description would still hold at, on the raw distance; 0 when
+    /// there is no closing leg.
+    pub threshold: f64,
     pub description: &'static str,
     pub league: &'static str,
 }
@@ -66,10 +131,6 @@ pub trait League {
         Self::NAME
     }
 
-    /// Charge for the closing leg. Return INFINITY for a gap this league will not accept.
-    fn penalty(_distance: f64, _gap: f64) -> f64 {
-        0.0
-    }
     /// Least score a rule may report, on the meter scale the search works in.
     fn minimum() -> f64 {
         0.0
@@ -81,19 +142,17 @@ pub trait RuleGeometry: Debug {
     type Shape: ShapeKind;
 }
 
-/// A rule paying a multiplier on the distance, net of the closing penalty. Overriding `penalty` or
-/// `minimum` diverges from the league without disturbing its other rules.
+/// A rule paying a multiplier on the distance, net of the closing penalty. Overriding `minimum`
+/// diverges from the league without disturbing its other rules.
 pub trait RuleDescription: Debug {
     type League: League;
 
-    /// Multiplier and identity, possibly one of several variants of the rule.
+    /// Multiplier, identity and closing law the rule reports at, possibly one of several variants
+    /// of the rule.
     ///
     /// `distance` is raw, before the penalty.
-    fn variant(&self, distance: f64, gap: f64) -> (f64, &'static str);
+    fn variant(&self, distance: f64, gap: f64) -> (f64, &'static str, Closing);
 
-    fn penalty(&self, distance: f64, gap: f64) -> f64 {
-        Self::League::penalty(distance, gap)
-    }
     fn minimum(&self) -> f64 {
         Self::League::minimum()
     }
@@ -114,17 +173,22 @@ impl<T: RuleGeometry> RuleShape for T {
 
 impl<T: RuleDescription> RuleScore for T {
     fn score(&self, distance: f64, gap: f64) -> f64 {
-        let (multiplier, _) = self.variant(distance, gap);
+        let (multiplier, _, closing) = self.variant(distance, gap);
+
+        // Nothing to close, so none of the closing mechanism is owed
+        if gap == 0.0 {
+            return distance * multiplier;
+        }
 
         // An infinite penalty leaves 0, which is what a candidate that cannot close is worth.
-        (distance - self.penalty(distance, gap)).max(0.0) * multiplier
+        (distance - closing.penalty(distance, gap)).max(0.0) * multiplier
     }
 }
 
 impl<T: RuleDescription> RuleReport for T {
     fn scored(&self, distance: f64, gap: f64) -> Scored {
-        let (multiplier, description) = self.variant(distance, gap);
-        let penalty = self.penalty(distance, gap);
+        let (multiplier, description, closing) = self.variant(distance, gap);
+        let penalty = closing.penalty(distance, gap);
         let net = (distance - penalty).max(0.0);
         let score = net * multiplier;
 
@@ -133,6 +197,7 @@ impl<T: RuleDescription> RuleReport for T {
             penalty,
             score: if score >= self.minimum() { score } else { 0.0 },
             multiplier,
+            threshold: closing.limit(distance),
             description,
             league: self.league(),
         }

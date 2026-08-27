@@ -20,8 +20,8 @@
 //!     - Shortest side at least 28 % of total distance
 
 use super::{
-    BalancedCircuit, ClosedCircuit, League, OpenPolyline, RuleDescription, RuleGeometry,
-    Ruleset,
+    BalancedCircuit, ClosedCircuit, Closing, League, Limit, OpenPolyline,
+    RuleDescription, RuleGeometry, Ruleset,
 };
 
 pub struct Cfd;
@@ -29,25 +29,13 @@ pub struct Cfd;
 impl Cfd {
     /// Least score that counts: 15 points
     const MIN_POINTS: f64 = 15000.0;
-    /// Gap allowed free of charge, in meters.
-    const CLOSING_FIXED: f64 = 3000.0;
-    /// Largest gap that still closes a circuit, as a share of the distance. Charged in full.
-    const CLOSING_RATIO: f64 = 0.05;
+    /// 3 km free, then charged in full out to 5 % of the distance.
+    const CLOSING: Closing = Closing::new(Limit::Fixed(3000.0), Limit::Ratio(0.05));
 }
 
 impl League for Cfd {
     const NAME: &'static str = "cfd";
     const RULES: Ruleset = &[&Distance3Points, &TrianglePlat, &TriangleFai];
-
-    fn penalty(distance: f64, gap: f64) -> f64 {
-        if gap <= Self::CLOSING_FIXED {
-            0.0
-        } else if gap <= (Self::CLOSING_RATIO * distance) {
-            gap
-        } else {
-            f64::INFINITY
-        }
-    }
 
     fn minimum() -> f64 {
         Self::MIN_POINTS
@@ -64,8 +52,8 @@ impl RuleGeometry for Distance3Points {
 impl RuleDescription for Distance3Points {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "distance 3 points")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "distance 3 points", Closing::NONE)
     }
 }
 
@@ -79,8 +67,8 @@ impl RuleGeometry for TrianglePlat {
 impl RuleDescription for TrianglePlat {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.2, "triangle plat")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.2, "triangle plat", Cfd::CLOSING)
     }
 }
 
@@ -94,7 +82,7 @@ impl RuleGeometry for TriangleFai {
 impl RuleDescription for TriangleFai {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.4, "triangle fai")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.4, "triangle fai", Cfd::CLOSING)
     }
 }

@@ -35,6 +35,8 @@ pub struct ScoringResult {
     pub distance_km: f64,
     /// Closing leg of a circuit, in kilometers; 0 for an open polyline.
     pub gap_km: f64,
+    /// Largest gap the reported rule and variant would still hold at, in meters.
+    pub threshold_m: f64,
     /// What the rule charged for that gap, in point.
     pub penalty: f64,
     /// Final score, in league points.

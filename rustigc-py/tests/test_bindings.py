@@ -85,8 +85,8 @@ def test_score_shape(igc_content):
     handle = log.score("xcontest", *FAI01_WINDOW)
 
     assert set(json.loads(handle.json())) == {
-        "league", "description", "distance_m", "distance_km", "gap_km", "penalty",
-        "score", "multiplier", "takeoff", "entry", "turnpoints",
+        "league", "description", "distance_m", "distance_km", "gap_km", "threshold_m",
+        "penalty", "score", "multiplier", "takeoff", "entry", "turnpoints",
         "exit", "landing", "circuit",
     }
 

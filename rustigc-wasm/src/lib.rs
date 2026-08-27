@@ -88,6 +88,8 @@ export interface Score {
     distance_km: number;
     /** Closing leg of a circuit, in kilometers; 0 for an open task. */
     gap_km: number;
+    /** Largest gap the rule would still accept, in meters; 0 for an open task. */
+    threshold_m: number;
     /** What the rule charged for that gap, in points. */
     penalty: number;
     /** Final score, in league points. */

@@ -118,7 +118,10 @@ fn human_output(log: &Log, result: &ScoringResult) {
         print!(" (×{})", result.multiplier);
     }
     if result.circuit {
-        print!(" [ closing distance: {} km ]", result.gap_km);
+        print!(
+            " [ closing distance: {} km, max {:.0} m ]",
+            result.gap_km, result.threshold_m
+        );
     }
     println!();
 }

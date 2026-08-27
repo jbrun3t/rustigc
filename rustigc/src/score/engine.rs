@@ -366,6 +366,7 @@ impl Scorer {
             distance_km: distance,
             distance_m: round_mm(scored.distance),
             gap_km: round_km(task.gap),
+            threshold_m: round_mm(scored.threshold),
             penalty: round_km(scored.penalty),
             score: round_km(scored.score),
             multiplier: scored.multiplier,

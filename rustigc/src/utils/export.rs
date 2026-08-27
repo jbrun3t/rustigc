@@ -30,7 +30,7 @@ const LABELS: [&str; 1] = ["PLT"];
 /// | `leg` | LineString | a scored side: `name` (`leg0`…), `from`, `to`, `distance_m` |
 /// | `closing` | LineString | a circuit's closing side, named `entry`, `exit` or `gap` |
 /// | `metadata` | none | `datetime`, the instant every `timestamp` counts from, and IGC metadata |
-/// | `score` | none | `rule`, `score`, `distance_km`, `distance_m`, `gap_km`, `penalty`, `multiplier`, `circuit` |
+/// | `score` | none | `rule`, `score`, `distance_km`, `distance_m`, `gap_km`, `threshold_m`, `penalty`, `multiplier`, `circuit` |
 ///
 /// Markers are named `takeoff`, `landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
 /// leg's `from`/`to` refer to.
@@ -116,6 +116,7 @@ fn score(result: &ScoringResult) -> Feature {
     props.insert("distance_km".into(), result.distance_km.into());
     props.insert("distance_m".into(), result.distance_m.into());
     props.insert("gap_km".into(), result.gap_km.into());
+    props.insert("threshold_m".into(), result.threshold_m.into());
     props.insert("penalty".into(), result.penalty.into());
     props.insert("multiplier".into(), result.multiplier.into());
     props.insert("circuit".into(), result.circuit.into());

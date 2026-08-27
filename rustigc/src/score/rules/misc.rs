@@ -4,7 +4,8 @@
 //! defaults — nothing charged, no minimum — except for `Oar`.
 
 use super::{
-    ClosedCircuit, League, OpenPolyline, RuleDescription, RuleGeometry, Ruleset,
+    ClosedCircuit, Closing, League, Limit, OpenPolyline, RuleDescription, RuleGeometry,
+    Ruleset,
 };
 
 pub struct TwoTurnpoints;
@@ -24,8 +25,8 @@ impl RuleGeometry for FreeDistance2 {
 impl RuleDescription for FreeDistance2 {
     type League = TwoTurnpoints;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "2 turnpoints free distance")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "2 turnpoints free distance", Closing::NONE)
     }
 }
 
@@ -46,8 +47,8 @@ impl RuleGeometry for FreeDistance1 {
 impl RuleDescription for FreeDistance1 {
     type League = OneTurnpoint;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "1 turnpoint free distance")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "1 turnpoint free distance", Closing::NONE)
     }
 }
 
@@ -69,29 +70,21 @@ impl RuleGeometry for StraightDistance {
 impl RuleDescription for StraightDistance {
     type League = Line;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "straight distance")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "straight distance", Closing::NONE)
     }
 }
 
 pub struct Oar;
 
 impl Oar {
-    /// Largest gap that still closes the circuit, as a share of the distance.
-    const CLOSING_RATIO: f64 = 0.10;
+    /// Charged in full out to 10 % of the distance.
+    const CLOSING: Closing = Closing::new(Limit::None, Limit::Ratio(0.10));
 }
 
 impl League for Oar {
     const NAME: &'static str = "oar";
     const RULES: Ruleset = &[&OutAndReturn];
-
-    fn penalty(distance: f64, gap: f64) -> f64 {
-        if gap <= (Self::CLOSING_RATIO * distance) {
-            gap
-        } else {
-            f64::INFINITY
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -104,7 +97,7 @@ impl RuleGeometry for OutAndReturn {
 impl RuleDescription for OutAndReturn {
     type League = Oar;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "out and return")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "out and return", Oar::CLOSING)
     }
 }

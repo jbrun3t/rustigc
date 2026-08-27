@@ -28,8 +28,9 @@ class Score:
 
         `description` names the winning rule, `score` is the league points, `distance_km` the
         scored distance as the rule presents it and `distance_m` the same in meters. `gap_km` is
-        a circuit's closing leg, `penalty` what the rule charged for it, `multiplier` the rate
-        it scored at, and `circuit` whether the task closes on itself.
+        a circuit's closing leg, `threshold_m` the largest gap the rule would still have accepted,
+        `penalty` what the rule charged for the gap, `multiplier` the rate it scored at, and
+        `circuit` whether the task closes on itself.
         """
         try:
             return self._data[name]

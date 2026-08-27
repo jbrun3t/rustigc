@@ -4,6 +4,7 @@
   "distance_m": 301650.342,
   "distance_km": 301.65,
   "gap_km": 0.0,
+  "threshold_m": 15082.517,
   "penalty": 0.0,
   "score": 422.31,
   "multiplier": 1.4,

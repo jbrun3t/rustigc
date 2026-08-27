@@ -5,26 +5,19 @@
 //! Expect those rules to be computationally heavy.
 
 use super::{
-    ClosedCircuit, League, OpenPolyline, RuleDescription, RuleGeometry, Ruleset,
+    ClosedCircuit, Closing, League, Limit, OpenPolyline, RuleDescription, RuleGeometry,
+    Ruleset,
 };
 
 pub struct Crazy;
 
 impl Crazy {
-    const CLOSING_RATIO: f64 = 0.10;
+    const CLOSING: Closing = Closing::new(Limit::None, Limit::Ratio(0.10));
 }
 
 impl League for Crazy {
     const NAME: &'static str = "misc4tp";
     const RULES: Ruleset = &[&FreeDistance4TP, &Quad];
-
-    fn penalty(distance: f64, gap: f64) -> f64 {
-        if gap <= (Self::CLOSING_RATIO * distance) {
-            gap
-        } else {
-            f64::INFINITY
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -37,8 +30,8 @@ impl RuleGeometry for FreeDistance4TP {
 impl RuleDescription for FreeDistance4TP {
     type League = Crazy;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "free distance 4 turnpoints")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.0, "free distance 4 turnpoints", Closing::NONE)
     }
 }
 
@@ -52,7 +45,7 @@ impl RuleGeometry for Quad {
 impl RuleDescription for Quad {
     type League = Crazy;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.2, "quadrilateral circuit")
+    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
+        (1.2, "quadrilateral circuit", Crazy::CLOSING)
     }
 }
