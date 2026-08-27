@@ -37,3 +37,23 @@ export function fixes(bytes: Uint8Array): Fix[] {
 
 	return out;
 }
+
+/**
+ * Encodes a track into raw `#[repr(C)] Fix` bytes (32 bytes per fix).
+ */
+export function encode(track: Fix[]): Uint8Array {
+	const buffer = new ArrayBuffer(track.length * STRIDE);
+	const dv = new DataView(buffer);
+
+	for (let i = 0, at = 0; i < track.length; i++, at += STRIDE) {
+		const fix = track[i];
+		dv.setUint32(at, fix.timestamp, true);
+		dv.setFloat64(at + 8, fix.lat, true);
+		dv.setFloat64(at + 16, fix.lon, true);
+		dv.setInt32(at + 24, fix.baro_alt ?? 0, true);
+		dv.setInt32(at + 28, fix.gnss_alt ?? 0, true);
+	}
+
+	return new Uint8Array(buffer);
+}
+

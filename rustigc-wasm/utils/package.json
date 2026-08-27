@@ -24,7 +24,8 @@
     "rustigc-wasm": "^0.1.0"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=24"

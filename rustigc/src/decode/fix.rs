@@ -27,6 +27,15 @@ use super::Record;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "serde")]
+fn deserialize_opt_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt = Option::<i32>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or(0))
+}
+
 /// One position fix.
 ///
 /// The unit of a track. Timestamps count seconds and carry no date; [`Fix::datetime`] renders one
@@ -49,8 +58,10 @@ pub struct Fix {
     /// Longitude in decimal degrees, east positive.
     pub lon: f64,
     /// Pressure altitude in meters.
+    #[cfg_attr(feature = "serde", serde(default, deserialize_with = "deserialize_opt_i32"))]
     pub baro_alt: i32,
     /// GNSS (GPS) altitude in meters.
+    #[cfg_attr(feature = "serde", serde(default, deserialize_with = "deserialize_opt_i32"))]
     pub gnss_alt: i32,
 }
 

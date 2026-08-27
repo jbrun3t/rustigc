@@ -27,6 +27,10 @@ extern "C" {
     /// A `Score` on its way in, for the same reason.
     #[wasm_bindgen(typescript_type = "Score")]
     pub type ScoreArg;
+
+    /// An array of `Fix` objects on its way in.
+    #[wasm_bindgen(typescript_type = "Fix[]")]
+    pub type TrackArg;
 }
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -40,9 +44,9 @@ export interface Fix {
     /** Longitude in decimal degrees, east positive. */
     lon: number;
     /** Pressure altitude in meters. */
-    baro_alt: number;
+    baro_alt?: number;
     /** GNSS altitude in meters. */
-    gnss_alt: number;
+    gnss_alt?: number;
 }
 
 /** One flight section, as fix indices into the track it was detected in. */
@@ -146,6 +150,41 @@ impl Log {
             .map_err(|e| JsError::new(&format!("Failed to parse IGC file: {e}")))?;
 
         Ok(Log { inner })
+    }
+
+    /// Create a log from an array of `Fix` objects.
+    pub fn from_track(track: TrackArg) -> Result<Log, JsError> {
+        let fixes: Vec<rustigc::Fix> = serde_wasm_bindgen::from_value(track.into())?;
+        Ok(Log {
+            inner: rustigc::Log::from_track(fixes),
+        })
+    }
+
+    /// Create a log from raw `#[repr(C)] Fix` bytes (32 bytes per fix).
+    pub fn from_track_bytes(bytes: &[u8]) -> Result<Log, JsError> {
+        if bytes.len() % 32 != 0 {
+            return Err(JsError::new("track bytes length must be a multiple of 32"));
+        }
+        let count = bytes.len() / 32;
+        let mut fixes = Vec::with_capacity(count);
+        for i in 0..count {
+            let offset = i * 32;
+            let ts = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+            let lat = f64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap());
+            let lon = f64::from_le_bytes(bytes[offset + 16..offset + 24].try_into().unwrap());
+            let baro_alt = i32::from_le_bytes(bytes[offset + 24..offset + 28].try_into().unwrap());
+            let gnss_alt = i32::from_le_bytes(bytes[offset + 28..offset + 32].try_into().unwrap());
+            fixes.push(rustigc::Fix {
+                timestamp: ts,
+                lat,
+                lon,
+                baro_alt,
+                gnss_alt,
+            });
+        }
+        Ok(Log {
+            inner: rustigc::Log::from_track(fixes),
+        })
     }
 
     /// Number of fixes in the track.

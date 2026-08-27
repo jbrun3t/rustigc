@@ -121,6 +121,32 @@ impl Log {
         raw.try_into()
     }
 
+    /// Creates a log from an existing track of [`Fix`]es.
+    ///
+    /// Fixes with non-increasing timestamps are dropped.
+    pub fn from_track(track: Vec<Fix>) -> Self {
+        let mut filtered = Vec::with_capacity(track.len());
+        let mut last_ts: i64 = -1;
+        for fix in track {
+            let ts = fix.timestamp as i64;
+            if ts <= last_ts {
+                continue;
+            }
+            last_ts = ts;
+            filtered.push(fix);
+        }
+        Self {
+            recorder: Recorder {
+                manufacturer: String::new(),
+                uid: String::new(),
+                data: None,
+            },
+            headers: HashMap::new(),
+            track: filtered,
+            task: None,
+        }
+    }
+
     /// Scores the fixes in `[start, stop]` against every rule of `league`, reporting the best.
     ///
     /// The window is a pair of indices into [`Log::track`]; flight detection is the usual source
@@ -163,5 +189,37 @@ mod tests {
         assert_eq!(log.headers["DTE"].text, "150120");
         assert_eq!(log.track.len(), 3);
         assert_eq!(log.track[0].timestamp, 39695);
+    }
+
+    #[test]
+    fn test_log_from_track() {
+        let fixes = vec![
+            Fix {
+                timestamp: 100,
+                lat: 45.0,
+                lon: 6.0,
+                baro_alt: 1000,
+                gnss_alt: 1050,
+            },
+            Fix {
+                timestamp: 100, // duplicate timestamp, should be dropped
+                lat: 45.1,
+                lon: 6.1,
+                baro_alt: 1010,
+                gnss_alt: 1060,
+            },
+            Fix {
+                timestamp: 105,
+                lat: 45.2,
+                lon: 6.2,
+                baro_alt: 1020,
+                gnss_alt: 1070,
+            },
+        ];
+
+        let log = Log::from_track(fixes);
+        assert_eq!(log.track.len(), 2);
+        assert_eq!(log.track[0].timestamp, 100);
+        assert_eq!(log.track[1].timestamp, 105);
     }
 }
