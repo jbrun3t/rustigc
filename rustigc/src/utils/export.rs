@@ -32,7 +32,7 @@ const LABELS: [&str; 1] = ["PLT"];
 /// | `metadata` | none | `datetime`, the instant every `timestamp` counts from, and IGC metadata |
 /// | `score` | none | `rule`, `score`, `distance`, `raw_distance`, `gap`, `penalty`, `multiplier`, `circuit` |
 ///
-/// Markers are named `Takeoff`, `Landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
+/// Markers are named `takeoff`, `landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
 /// leg's `from`/`to` refer to.
 ///
 /// An open task is drawn as `leg`s alone, `leg0` starting at its entry and the last one ending at
@@ -98,12 +98,12 @@ fn marker(track: &[Fix], fix: &(usize, &str), symbol: &str, color: &str) -> Feat
     }
 }
 
-/// Takeoff and landing markers.
+/// takeoff and landing markers.
 impl GeoJson for Flight {
     fn features(&self, track: &[Fix]) -> Vec<Feature> {
         vec![
-            marker(track, &(self.start, "Takeoff"), "airport", "#333333"),
-            marker(track, &(self.stop, "Landing"), "cancel", "#333333"),
+            marker(track, &(self.start, "takeoff"), "airport", "#333333"),
+            marker(track, &(self.stop, "landing"), "cancel", "#333333"),
         ]
     }
 }
