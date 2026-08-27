@@ -5,7 +5,7 @@ WASM bindings for [rustigc](../rustigc), as the `rustigc-wasm` npm package.
 | directory | package | |
 |---|---|---|
 | `pkg/` | `rustigc-wasm` | the bindings: wasm, ESM glue and types, all generated |
-| `utils/` | `rustigc-utils` | optional helpers: `track_bytes` decoder, local wall clock |
+| `utils/` | `rustigc-utils` | optional helpers: `Log` with local times, `track_bytes` decoder |
 | `score/` | — | example CLI, not published |
 
 ## Prerequisites
@@ -103,6 +103,15 @@ The layout is 32 bytes per fix, little-endian, matching `Fix`:
 
 `TZN` is the pilot's instrument setting and can simply be stale — a caller holding a real tz
 dataset should shift `Log.datetime` itself instead.
+
+`rustigc-utils/datetime` does that shift: `LocalTime.of(log)`, then `.at(timestamp)` for a
+`{ date, time }` and `.zone` for how it reads.
+
+## A friendlier `Log`
+
+`rustigc-utils/log` extends the binding's `Log` rather than wrapping it, so everything it already
+does is still there. It adds text input, `datetimeAt(timestamp)` and `zone`. Text is converted one
+character to one byte.
 
 ## Example CLI
 

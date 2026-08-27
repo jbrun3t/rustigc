@@ -5,15 +5,8 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import {
-	initSync,
-	league_names,
-	Log,
-	type Flight,
-	type Score,
-	type SyncInitInput,
-} from "rustigc-wasm";
-import { LocalTime } from "rustigc-utils/datetime";
+import { initSync, league_names, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
+import { Log } from "rustigc-utils/log";
 
 const FORMATS = ["human", "geojson"];
 
@@ -62,26 +55,23 @@ function parseWindow(text: string): Flight {
 }
 
 /// One fix as `HH:MM:SS - [lat,lon] - @index`, dropping the time when the log has no date.
-function disp(log: Log, index: number, local: LocalTime | undefined): string {
+function disp(log: Log, index: number): string {
 	const { lat, lon, timestamp } = log.fix(index);
 	const place = `[${lat.toFixed(4)},${lon.toFixed(4)}] - @${index}`;
+	const when = log.datetimeAt(timestamp);
 
-	return local ? `${local.at(timestamp).time} - ${place}` : place;
+	return when ? `${when.time} - ${place}` : place;
 }
 
 function humanOutput(log: Log, result: Score): void {
-	const local = LocalTime.of(log);
-	console.log(
-		local
-			? `Flight on ${local.at(log.fix(result.entry).timestamp).date} ${local.zone}`
-			: "Flight has no date !",
-	);
+	const when = log.datetimeAt(log.fix(result.entry).timestamp);
+	console.log(when ? `Flight on ${when.date} ${log.zone}` : "Flight has no date !");
 
-	console.log(`Takeoff: ${disp(log, result.takeoff, local)}`);
-	console.log(` Entry : ${disp(log, result.entry, local)}`);
-	result.turnpoints.forEach((tp, i) => console.log(`  TP${i}  : ${disp(log, tp, local)}`));
-	console.log(` Exit  : ${disp(log, result.exit, local)}`);
-	console.log(`Landing: ${disp(log, result.landing, local)}`);
+	console.log(`Takeoff: ${disp(log, result.takeoff)}`);
+	console.log(` Entry : ${disp(log, result.entry)}`);
+	result.turnpoints.forEach((tp, i) => console.log(`  TP${i}  : ${disp(log, tp)}`));
+	console.log(` Exit  : ${disp(log, result.exit)}`);
+	console.log(`Landing: ${disp(log, result.landing)}`);
 
 	let report = `${result.description} ${result.score} points, ${result.distance_km} km`;
 	if (result.multiplier !== 1) {
@@ -129,7 +119,14 @@ export function main(wasm: SyncInitInput): void {
 		process.exit(0);
 	}
 
-	const log = new Log(content);
+	let log: Log;
+	try {
+		log = new Log(content);
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : `Could not parse: ${error}`);
+		process.exit(1);
+	}
+
 	const window = requested ?? log.longest_flight();
 	const scored = log.score(league, window);
 

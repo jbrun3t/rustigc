@@ -19,6 +19,10 @@
     "./datetime": {
       "types": "./dist/datetime.d.ts",
       "default": "./dist/datetime.js"
+    },
+    "./log": {
+      "types": "./dist/log.d.ts",
+      "default": "./dist/log.js"
     }
   },
   "files": [
