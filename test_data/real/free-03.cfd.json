@@ -1,8 +1,8 @@
 {
   "description": "Distance 3 points",
-  "distance": 82.08,
-  "raw_distance": 82083.45,
-  "gap": 0.0,
+  "distance_m": 82083.45,
+  "distance_km": 82.08,
+  "gap_km": 0.0,
   "penalty": 0.0,
   "score": 82.08,
   "multiplier": 1.0,

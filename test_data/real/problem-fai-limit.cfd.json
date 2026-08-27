@@ -1,8 +1,8 @@
 {
   "description": "Triangle FAI",
-  "distance": 29.75,
-  "raw_distance": 29751.004,
-  "gap": 1.06,
+  "distance_m": 29751.004,
+  "distance_km": 29.75,
+  "gap_km": 1.06,
   "penalty": 0.0,
   "score": 41.65,
   "multiplier": 1.4,

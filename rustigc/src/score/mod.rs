@@ -20,20 +20,20 @@ fn round_mm(meters: f64) -> f64 {
 
 /// What the winning rule scored, as that rule presents it.
 ///
-/// Every fix here is an index into the track that was scored, not into the window. `distance` and
-/// `score` are rounded the way the league publishes them; `raw_distance` keeps the metres.
+/// Every fix here is an index into the track that was scored, not into the window. `distance_km`
+/// and `score` are rounded the way the league publishes them; `distance_m` keeps the metres.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
     /// Identity of the rule, e.g. `"Triangle plat"`.
     pub description: String,
-    /// Scored distance, as the rule presents it.
-    pub distance: f64,
-    /// The same distance in meters, rounded to the nearest millimeter.
-    pub raw_distance: f64,
-    /// Closing leg of a circuit, 0 for an open polyline.
-    pub gap: f64,
-    /// What the rule charged for that gap.
+    /// Scored distance in meters, rounded to the nearest millimeter.
+    pub distance_m: f64,
+    /// The same distance in kilometers, as the rule presents it.
+    pub distance_km: f64,
+    /// Closing leg of a circuit, in kilometers; 0 for an open polyline.
+    pub gap_km: f64,
+    /// What the rule charged for that gap, in point.
     pub penalty: f64,
     /// Final score, in league points.
     pub score: f64,

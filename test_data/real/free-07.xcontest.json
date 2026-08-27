@@ -1,8 +1,8 @@
 {
   "description": "Free Flight",
-  "distance": 3.86,
-  "raw_distance": 3864.296,
-  "gap": 0.0,
+  "distance_m": 3864.296,
+  "distance_km": 3.86,
+  "gap_km": 0.0,
   "penalty": 0.0,
   "score": 3.86,
   "multiplier": 1.0,

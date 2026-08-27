@@ -31,9 +31,9 @@ Or as JSON, for a chosen league:
 > rustigc-xc-score --league xcontest --format json < flight.igc
 {
   "description": "Closed Free Triangle",
-  "distance": 117.88,
-  "raw_distance": 117876.93,
-  "gap": 1.19,
+  "distance_m": 117876.93,
+  "distance_km": 117.88,
+  "gap_km": 1.19,
   "penalty": 1.19,
   "score": 165.03,
   "multiplier": 1.4,

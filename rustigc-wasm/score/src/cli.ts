@@ -72,12 +72,12 @@ function humanOutput(log: Log, result: Score): void {
 	console.log(` Exit  : ${disp(log, result.exit)}`);
 	console.log(`Landing: ${disp(log, result.landing)}`);
 
-	let report = `${result.description} ${result.score} points, ${result.distance} km`;
+	let report = `${result.description} ${result.score} points, ${result.distance_km} km`;
 	if (result.multiplier !== 1) {
 		report += ` (×${result.multiplier})`;
 	}
 	if (result.circuit) {
-		report += ` [ closing distance: ${result.gap} km ]`;
+		report += ` [ closing distance: ${result.gap_km} km ]`;
 	}
 	console.log(report);
 }

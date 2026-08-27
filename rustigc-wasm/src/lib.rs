@@ -3,7 +3,7 @@
 //! WASM bindings for rustigc.
 //!
 //! Everything crosses as plain data: there is no handle to keep alive and nothing to free.
-//! Field names come from the core's serde derives, so they stay `snake_case` — `raw_distance`,
+//! Field names come from the core's serde derives, so they stay `snake_case` — `distance_m`,
 //! `baro_alt` — and the method names follow them.
 //!
 //! Nothing crosses as a Rust map. `serde_wasm_bindgen` renders one as a `Map`, which
@@ -80,13 +80,13 @@ export interface DateTime {
 export interface Score {
     /** The rule that won, `"Closed FAI Triangle"`. */
     description: string;
-    /** Scored distance, as the rule presents it. */
-    distance: number;
-    /** The same distance in meters, to the nearest millimeter. */
-    raw_distance: number;
-    /** Closing leg of a circuit, 0 for an open task. */
-    gap: number;
-    /** What the rule charged for that gap. */
+    /** Scored distance in meters, to the nearest millimeter. */
+    distance_m: number;
+    /** The same distance in kilometers, as the rule presents it. */
+    distance_km: number;
+    /** Closing leg of a circuit, in kilometers; 0 for an open task. */
+    gap_km: number;
+    /** What the rule charged for that gap, in points. */
     penalty: number;
     /** Final score, in league points. */
     score: number;

@@ -13,7 +13,7 @@ the flights in it, scores them against a league, and draws the result as GeoJSON
     flight = log.flights().longest
     score = log.score("xcontest")
     if score:
-        print(score.description, score.score, score.distance)
+        print(score.description, score.score, score.distance_km)
 
     open("flight.geojson", "w").write(log.export([flight, score]))
 

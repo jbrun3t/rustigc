@@ -27,18 +27,18 @@ const LABELS: [&str; 1] = ["PLT"];
 /// | --- | --- | --- |
 /// | `track` | LineString, 3D | the whole flown line and its `coordTimes` |
 /// | `marker` | Point, 3D | `name`, `fix`, `timestamp` |
-/// | `leg` | LineString | a scored side: `name` (`leg0`…), `from`, `to`, `distance` |
+/// | `leg` | LineString | a scored side: `name` (`leg0`…), `from`, `to`, `distance_m` |
 /// | `closing` | LineString | a circuit's closing side, named `entry`, `exit` or `gap` |
 /// | `metadata` | none | `datetime`, the instant every `timestamp` counts from, and IGC metadata |
-/// | `score` | none | `rule`, `score`, `distance`, `raw_distance`, `gap`, `penalty`, `multiplier`, `circuit` |
+/// | `score` | none | `rule`, `score`, `distance_km`, `distance_m`, `gap_km`, `penalty`, `multiplier`, `circuit` |
 ///
 /// Markers are named `takeoff`, `landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
 /// leg's `from`/`to` refer to.
 ///
 /// An open task is drawn as `leg`s alone, `leg0` starting at its entry and the last one ending at
 /// its exit. A circuit's `leg`s close over its turnpoints, with `closing` legs — `entry`, `exit`
-/// and `gap` — beside them. A leg's `distance` is its geodesic length in kilometers, so the legs
-/// of a task do not add up to the `score`'s `distance`, which is net of the penalty, if any.
+/// and `gap` — beside them. A leg's `distance_m` is its geodesic length in kilometers, so the legs
+/// of a task do not add up to the `score`'s `distance_m`, which is net of the penalty, if any.
 ///
 /// `datetime` is stated once as RFC 9557 — `2022-08-05T01:00:00+01:00[Europe/London]` — UTC
 /// midnight of the flight's date read in the zone the track starts in.
@@ -113,9 +113,9 @@ fn score(result: &ScoringResult) -> Feature {
     let mut props = props("score");
     props.insert("rule".into(), result.description.clone().into());
     props.insert("score".into(), result.score.into());
-    props.insert("distance".into(), result.distance.into());
-    props.insert("raw_distance".into(), result.raw_distance.into());
-    props.insert("gap".into(), result.gap.into());
+    props.insert("distance_km".into(), result.distance_km.into());
+    props.insert("distance_m".into(), result.distance_m.into());
+    props.insert("gap_km".into(), result.gap_km.into());
     props.insert("penalty".into(), result.penalty.into());
     props.insert("multiplier".into(), result.multiplier.into());
     props.insert("circuit".into(), result.circuit.into());
@@ -144,7 +144,7 @@ fn leg(
     props.insert("from".into(), from.1.into());
     props.insert("to".into(), to.1.into());
     props.insert(
-        "distance".into(),
+        "distance_m".into(),
         round_km(Geodesic::distance(&track[from.0], &track[to.0])).into(),
     );
 

@@ -1,8 +1,8 @@
 {
   "description": "Free Triangle",
-  "distance": 21.03,
-  "raw_distance": 21026.073,
-  "gap": 3.34,
+  "distance_m": 21026.073,
+  "distance_km": 21.03,
+  "gap_km": 3.34,
   "penalty": 3.34,
   "score": 25.23,
   "multiplier": 1.2,

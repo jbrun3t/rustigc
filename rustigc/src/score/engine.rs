@@ -362,9 +362,9 @@ impl Scorer {
 
         Some(ScoringResult {
             description: scored.description.to_string(),
-            distance,
-            raw_distance: round_mm(scored.distance),
-            gap: round_km(task.gap),
+            distance_km: distance,
+            distance_m: round_mm(scored.distance),
+            gap_km: round_km(task.gap),
             penalty: round_km(scored.penalty),
             score: round_km(scored.score),
             multiplier: scored.multiplier,

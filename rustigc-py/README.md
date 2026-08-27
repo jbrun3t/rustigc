@@ -22,7 +22,7 @@ print(log.pilot_name, log.glider_type, len(log.track))
 flight = log.flights().longest
 score = log.score("xcontest")            # or log.score("xcontest", (125, 25457))
 if score:
-    print(score.description, score.score, score.distance)
+    print(score.description, score.score, score.distance_km)
 
 open("flight.geojson", "w").write(log.export([flight, score]))
 ```

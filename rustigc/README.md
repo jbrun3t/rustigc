@@ -20,7 +20,7 @@ let flights = log.track.flights();
 let flight = flights.longest().expect("no flight detected");
 
 if let Some(result) = log.score("xcontest", flight.start, flight.stop) {
-    println!("{}: {} points over {} km", result.description, result.score, result.distance);
+    println!("{}: {} points over {} km", result.description, result.score, result.distance_km);
 }
 ```
 

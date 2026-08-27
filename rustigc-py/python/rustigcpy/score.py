@@ -26,8 +26,8 @@ class Score:
     def __getattr__(self, name):
         """Scalars of the result.
 
-        `description` names the winning rule, `score` is the league points, `distance` the
-        scored distance as the rule presents it and `raw_distance` the same in meters. `gap` is
+        `description` names the winning rule, `score` is the league points, `distance_km` the
+        scored distance as the rule presents it and `distance_m` the same in meters. `gap_km` is
         a circuit's closing leg, `penalty` what the rule charged for it, `multiplier` the rate
         it scored at, and `circuit` whether the task closes on itself.
         """
@@ -63,4 +63,4 @@ class Score:
 
     def __repr__(self) -> str:
         return (f"Score({self.description!r}, score={self.score}, "
-                f"distance={self.distance})")
+                f"distance_km={self.distance_km})")

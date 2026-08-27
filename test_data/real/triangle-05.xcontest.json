@@ -1,8 +1,8 @@
 {
   "description": "Closed Free Triangle",
-  "distance": 87.23,
-  "raw_distance": 87233.903,
-  "gap": 2.25,
+  "distance_m": 87233.903,
+  "distance_km": 87.23,
+  "gap_km": 2.25,
   "penalty": 2.25,
   "score": 122.13,
   "multiplier": 1.4,

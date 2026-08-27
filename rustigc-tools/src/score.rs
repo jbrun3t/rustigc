@@ -112,13 +112,13 @@ fn human_output(log: &Log, result: &ScoringResult) {
     // Final score report
     print!(
         "{} {} points, {} km",
-        result.description, result.score, result.distance
+        result.description, result.score, result.distance_km
     );
     if result.multiplier != 1.0 {
         print!(" (×{})", result.multiplier);
     }
     if result.circuit {
-        print!(" [ closing distance: {} km ]", result.gap);
+        print!(" [ closing distance: {} km ]", result.gap_km);
     }
     println!();
 }

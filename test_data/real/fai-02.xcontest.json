@@ -1,8 +1,8 @@
 {
   "description": "Closed FAI Triangle",
-  "distance": 358.98,
-  "raw_distance": 358976.014,
-  "gap": 0.0,
+  "distance_m": 358976.014,
+  "distance_km": 358.98,
+  "gap_km": 0.0,
   "penalty": 0.0,
   "score": 574.36,
   "multiplier": 1.6,

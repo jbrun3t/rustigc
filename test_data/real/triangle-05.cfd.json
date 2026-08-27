@@ -1,8 +1,8 @@
 {
   "description": "Triangle plat",
-  "distance": 89.49,
-  "raw_distance": 89485.103,
-  "gap": 2.25,
+  "distance_m": 89485.103,
+  "distance_km": 89.49,
+  "gap_km": 2.25,
   "penalty": 0.0,
   "score": 107.38,
   "multiplier": 1.2,
