@@ -140,8 +140,10 @@ fn main() -> io::Result<()> {
         std::process::exit(0);
     }
 
-    let log =
-        Log::new(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+    let log = Log::new(&content).unwrap_or_else(|e| {
+        eprintln!("Could not parse: {e}");
+        std::process::exit(1);
+    });
 
     let window = args
         .window
