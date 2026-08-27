@@ -40,6 +40,19 @@ test("Log.from_track constructs log from JS fixes array", () => {
   assert.equal(score.description, "Closed FAI Triangle");
 });
 
+test("Log.set_header sets and updates header values", () => {
+  const igcBuffer = readFileSync(fixturePath);
+  const log = new Log(igcBuffer);
+
+  log.set_header("PLT", "Custom Pilot");
+  assert.equal(log.header("PLT")?.text, "Custom Pilot");
+  assert.equal(log.header("PLT")?.origin, "unknown");
+
+  log.set_header("NEW", "Custom Header");
+  assert.equal(log.header("NEW")?.text, "Custom Header");
+  assert.equal(log.header("NEW")?.origin, "unknown");
+});
+
 test("Log.from_track_bytes constructs log from encoded track bytes", () => {
   const igcBuffer = readFileSync(fixturePath);
   const parsedLog = new Log(igcBuffer);

@@ -187,6 +187,17 @@ impl Log {
         })
     }
 
+    /// Set a header value on the log.
+    pub fn set_header(&mut self, key: &str, text: &str) {
+        self.inner.headers.insert(
+            key.to_string(),
+            rustigc::HeaderData {
+                text: text.to_string(),
+                origin: rustigc::HeaderOrigin::Unknown,
+            },
+        );
+    }
+
     /// Number of fixes in the track.
     #[wasm_bindgen(getter)]
     pub fn fix_count(&self) -> usize {
