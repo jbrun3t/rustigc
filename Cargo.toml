@@ -22,6 +22,5 @@ codegen-units = 1
 [profile.profiling]
 inherits = "release"
 lto = "thin"
-codegen-units = 1
 debug = true             # Full debug info for symbols
 strip = false           # Don't strip symbols
