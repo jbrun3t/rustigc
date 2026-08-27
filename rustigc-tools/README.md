@@ -22,7 +22,7 @@ Takeoff: 12:12:16 - [45.3101,5.8907] - @0
   TP2  : 17:32:09 - [45.2574,6.0143] - @19192
  Exit  : 17:54:09 - [45.2678,5.8488] - @20512
 Landing: 17:54:09 - [45.2678,5.8488] - @20512
-Closed Free Triangle 165.03 points, 117.88 km (×1.4) [ closing distance: 1.19 km ]
+closed free triangle 165.03 points, 117.88 km (×1.4) [ closing distance: 1.19 km ]
 ```
 
 Or as JSON, for a chosen league:
@@ -30,7 +30,8 @@ Or as JSON, for a chosen league:
 ```bash
 > rustigc-xc-score --league xcontest --format json < flight.igc
 {
-  "description": "Closed Free Triangle",
+  "league": "xcontest",
+  "description": "closed free triangle",
   "distance_m": 117876.93,
   "distance_km": 117.88,
   "gap_km": 1.19,

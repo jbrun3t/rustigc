@@ -49,6 +49,7 @@ reported score.
 
 ## Naming
 
-Rule strings are identity, not decoration. They match igc-xc-score's own names (`"Triangle plat"`,
-`"Free Flight"`) so a corpus comparison can pair rules across the two implementations by string
-equality alone. Renaming one breaks that pairing silently.
+Rule strings are identity, not decoration. They match igc-xc-score's own names, case-insensitively
+(`"triangle plat"` here is `"Triangle plat"` there) — `xc-score-compare` folds case so a corpus
+comparison can still pair rules across the two implementations by name. Renaming one breaks that
+pairing silently.

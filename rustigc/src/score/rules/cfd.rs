@@ -65,7 +65,7 @@ impl RuleDescription for Distance3Points {
     type League = Cfd;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "Distance 3 points")
+        (1.0, "distance 3 points")
     }
 }
 
@@ -80,7 +80,7 @@ impl RuleDescription for TrianglePlat {
     type League = Cfd;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.2, "Triangle plat")
+        (1.2, "triangle plat")
     }
 }
 
@@ -95,6 +95,6 @@ impl RuleDescription for TriangleFai {
     type League = Cfd;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.4, "Triangle FAI")
+        (1.4, "triangle fai")
     }
 }

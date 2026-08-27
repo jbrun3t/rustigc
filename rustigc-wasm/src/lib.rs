@@ -78,7 +78,9 @@ export interface DateTime {
  * Every fix is an index into the track that was scored.
  */
 export interface Score {
-    /** The rule that won, `"Closed FAI Triangle"`. */
+    /** Identity of the scoring league, `"xcontest"`. */
+    league: string;
+    /** The rule that won, `"closed fai triangle"`. */
     description: string;
     /** Scored distance in meters, to the nearest millimeter. */
     distance_m: number;

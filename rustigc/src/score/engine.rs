@@ -361,6 +361,7 @@ impl Scorer {
         }
 
         Some(ScoringResult {
+            league: scored.league.to_string(),
             description: scored.description.to_string(),
             distance_km: distance,
             distance_m: round_mm(scored.distance),

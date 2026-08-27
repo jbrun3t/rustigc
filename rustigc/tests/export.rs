@@ -45,10 +45,10 @@ fn describe_fai_01() {
         .find(|f| f["properties"]["role"] == "score")
         .unwrap();
     assert_eq!(scored["geometry"], Value::Null);
-    assert_eq!(scored["properties"]["rule"], "Closed FAI Triangle");
-    assert_eq!(scored["properties"]["distance"], 622.85);
+    assert_eq!(scored["properties"]["rule"], "closed fai triangle");
+    assert_eq!(scored["properties"]["distance_km"], 622.85);
     assert_eq!(scored["properties"]["score"], 996.56);
-    assert_eq!(scored["properties"]["gap"], 0.07);
+    assert_eq!(scored["properties"]["gap_km"], 0.07);
 
     // every leg names its ends after markers that are actually there
     let markers: Vec<&str> = features

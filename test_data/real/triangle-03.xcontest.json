@@ -1,5 +1,6 @@
 {
-  "description": "Closed Free Triangle",
+  "league": "xcontest",
+  "description": "closed free triangle",
   "distance_m": 17722.315,
   "distance_km": 17.72,
   "gap_km": 0.01,

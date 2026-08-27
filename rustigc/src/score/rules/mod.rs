@@ -29,6 +29,7 @@ pub struct Scored {
     pub score: f64,
     pub multiplier: f64,
     pub description: &'static str,
+    pub league: &'static str,
 }
 
 pub trait RuleShape: Debug {
@@ -60,6 +61,11 @@ pub trait League {
     /// Nothing ties a listed rule's [`RuleDescription::League`] back to this one.
     const RULES: Ruleset;
 
+    /// Identity of the scoring league
+    fn league() -> &'static str {
+        Self::NAME
+    }
+
     /// Charge for the closing leg. Return INFINITY for a gap this league will not accept.
     fn penalty(_distance: f64, _gap: f64) -> f64 {
         0.0
@@ -90,6 +96,9 @@ pub trait RuleDescription: Debug {
     }
     fn minimum(&self) -> f64 {
         Self::League::minimum()
+    }
+    fn league(&self) -> &'static str {
+        Self::League::league()
     }
 }
 
@@ -125,6 +134,7 @@ impl<T: RuleDescription> RuleReport for T {
             score: if score >= self.minimum() { score } else { 0.0 },
             multiplier,
             description,
+            league: self.league(),
         }
     }
 }

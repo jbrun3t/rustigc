@@ -1,5 +1,6 @@
 {
-  "description": "Distance 3 points",
+  "league": "cfd",
+  "description": "distance 3 points",
   "distance_m": 33754.488,
   "distance_km": 33.75,
   "gap_km": 0.0,

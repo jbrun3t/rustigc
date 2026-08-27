@@ -1,5 +1,6 @@
 {
-  "description": "Closed FAI Triangle",
+  "league": "xcontest",
+  "description": "closed fai triangle",
   "distance_m": 622852.252,
   "distance_km": 622.85,
   "gap_km": 0.07,

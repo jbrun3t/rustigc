@@ -1,5 +1,6 @@
 {
-  "description": "Free Flight",
+  "league": "xcontest",
+  "description": "free flight",
   "distance_m": 26488.45,
   "distance_km": 26.49,
   "gap_km": 0.0,

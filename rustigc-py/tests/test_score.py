@@ -14,7 +14,7 @@ def test_score_output(igc_content):
     log = Log.from_bytes(igc_content)
     score = log.score("xcontest", FAI01_WINDOW)
 
-    assert score.description == "Closed FAI Triangle"
+    assert score.description == "closed fai triangle"
     assert score.distance_km == 622.85
     assert score.distance_m == 622852.252
     assert score.gap_km == 0.07
@@ -44,5 +44,5 @@ def test_repr(igc_content):
     repr_str = repr(score)
 
     assert "Score" in repr_str
-    assert "Closed FAI Triangle" in repr_str
+    assert "closed fai triangle" in repr_str
     assert "996.56" in repr_str

@@ -27,8 +27,8 @@ def test_describe(igc_content):
 
     scored = next(f for f in described["features"] if f["properties"]["role"] == "score")
     assert scored["geometry"] is None
-    assert scored["properties"]["rule"] == "Closed FAI Triangle"
-    assert scored["properties"]["distance"] == 622.85
+    assert scored["properties"]["rule"] == "closed fai triangle"
+    assert scored["properties"]["distance_km"] == 622.85
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

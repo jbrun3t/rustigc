@@ -38,7 +38,7 @@ impl RuleDescription for FreeDistance4TP {
     type League = Crazy;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "Free Distance 4 Turnpoints")
+        (1.0, "free distance 4 turnpoints")
     }
 }
 
@@ -53,6 +53,6 @@ impl RuleDescription for Quad {
     type League = Crazy;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.2, "Quadrilateral Circuit")
+        (1.2, "quadrilateral circuit")
     }
 }

@@ -25,7 +25,7 @@ impl RuleDescription for FreeDistance2 {
     type League = TwoTurnpoints;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "2 Turnpoints Free Distance")
+        (1.0, "2 turnpoints free distance")
     }
 }
 
@@ -47,7 +47,7 @@ impl RuleDescription for FreeDistance1 {
     type League = OneTurnpoint;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "1 Turnpoint Free Distance")
+        (1.0, "1 turnpoint free distance")
     }
 }
 
@@ -70,7 +70,7 @@ impl RuleDescription for StraightDistance {
     type League = Line;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "Straight Distance")
+        (1.0, "straight distance")
     }
 }
 
@@ -105,6 +105,6 @@ impl RuleDescription for OutAndReturn {
     type League = Oar;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "Out And Return")
+        (1.0, "out and return")
     }
 }

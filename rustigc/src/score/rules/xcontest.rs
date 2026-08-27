@@ -74,7 +74,7 @@ impl RuleDescription for FreeFlight {
     type League = Xcontest;
 
     fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str) {
-        (1.0, "Free Flight")
+        (1.0, "free flight")
     }
 }
 
@@ -92,8 +92,8 @@ impl RuleDescription for FreeTriangle {
         Xcontest::closed_variant(
             distance,
             gap,
-            (1.2, "Free Triangle"),
-            (1.4, "Closed Free Triangle"),
+            (1.2, "free triangle"),
+            (1.4, "closed free triangle"),
         )
     }
 }
@@ -112,8 +112,8 @@ impl RuleDescription for FaiTriangle {
         Xcontest::closed_variant(
             distance,
             gap,
-            (1.4, "FAI Triangle"),
-            (1.6, "Closed FAI Triangle"),
+            (1.4, "fai triangle"),
+            (1.6, "closed fai triangle"),
         )
     }
 }

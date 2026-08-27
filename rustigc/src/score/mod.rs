@@ -25,7 +25,9 @@ fn round_mm(meters: f64) -> f64 {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
-    /// Identity of the rule, e.g. `"Triangle plat"`.
+    /// Identity of the scoring league, e.g. "xcontest"
+    pub league: String,
+    /// Identity of the rule, e.g. `"triangle plat"`.
     pub description: String,
     /// Scored distance in meters, rounded to the nearest millimeter.
     pub distance_m: f64,
