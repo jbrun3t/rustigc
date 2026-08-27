@@ -15,6 +15,10 @@ repository = "https://github.com/jbrun3t/rustigc"
 keywords = ["igc", "soaring", "aviation", "gps"]
 categories = ["parser-implementations", "aerospace"]
 
+# Important so LLVM properly re-partition inlining
+[profile.release]
+codegen-units = 1
+
 [profile.profiling]
 inherits = "release"
 lto = "thin"
