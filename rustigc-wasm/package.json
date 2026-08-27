@@ -1,5 +1,6 @@
 {
   "name": "rustigc-wasm-workspace",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "description": "Workspace root for the rustigc wasm bindings and the packages built beside them",
@@ -14,6 +15,7 @@
     "score"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && node --test test/*.test.js"
   }
 }

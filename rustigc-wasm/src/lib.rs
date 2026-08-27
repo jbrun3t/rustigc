@@ -27,6 +27,10 @@ extern "C" {
     /// A `Score` on its way in, for the same reason.
     #[wasm_bindgen(typescript_type = "Score")]
     pub type ScoreArg;
+
+    /// Content on its way in: raw bytes or an IGC text string.
+    #[wasm_bindgen(typescript_type = "Uint8Array | string")]
+    pub type ContentArg;
 }
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -139,11 +143,23 @@ pub struct Log {
 
 #[wasm_bindgen]
 impl Log {
-    /// Parse IGC file content. Throws when the bytes are not usable IGC.
+    /// Parse IGC file content. Throws when the bytes or string are not usable IGC.
     #[wasm_bindgen(constructor)]
-    pub fn new(content: &[u8]) -> Result<Log, JsError> {
-        let inner = rustigc::Log::new(content)
-            .map_err(|e| JsError::new(&format!("Failed to parse IGC file: {e}")))?;
+    pub fn new(content: ContentArg) -> Result<Log, JsError> {
+        let val: &JsValue = content.as_ref();
+        let inner = if let Some(s) = val.as_string() {
+            rustigc::Log::new(s.as_bytes())
+        } else if js_sys::ArrayBuffer::is_view(val) || val.is_instance_of::<js_sys::ArrayBuffer>() {
+            let array = js_sys::Uint8Array::new(val);
+            let mut bytes = vec![0u8; array.byte_length() as usize];
+            array.copy_to(&mut bytes);
+            rustigc::Log::new(&bytes)
+        } else {
+            return Err(JsError::new(
+                "expected Uint8Array, Buffer, ArrayBuffer, or string",
+            ));
+        }
+        .map_err(|e| JsError::new(&format!("Failed to parse IGC file: {e}")))?;
 
         Ok(Log { inner })
     }
