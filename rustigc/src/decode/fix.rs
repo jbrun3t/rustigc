@@ -20,7 +20,7 @@ use winnow::prelude::*;
 
 use super::utils::robust_ending_eof;
 use super::utils::till_robust_ending;
-use super::utils::{latitude, longitude, n_digits, ts_to_sec};
+use super::utils::{latitude, longitude, n_digits, ts_to_ms};
 use super::utils::{latitude_to_igc, longitude_to_igc, ts_to_igc};
 use super::Record;
 
@@ -29,8 +29,8 @@ use serde::{Deserialize, Serialize};
 
 /// One position fix.
 ///
-/// The unit of a track. Timestamps count seconds and carry no date; [`Fix::datetime`] renders one
-/// against the origin [`Log::datetime`] gives.
+/// The unit of a track. Timestamps count milliseconds and carry no date; [`Fix::datetime`] renders
+/// one against the origin [`Log::datetime`] gives.
 ///
 /// `repr(C)`, 32 bytes: the `u32` timestamp, four bytes of alignment padding, then the `f64` and
 /// `i32` fields. A binding reading a track as raw bytes must account for that padding. Do not
@@ -41,8 +41,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Fix {
-    /// Seconds since UTC midnight of the flight's first day. A flight crossing midnight keeps
-    /// counting past 86400, so this can exceed one day.
+    /// Milliseconds since UTC midnight of the flight's first day. A flight crossing midnight
+    /// keeps counting past 86,400,000, so this can exceed one day.
     pub timestamp: u32,
     /// Latitude in decimal degrees, north positive.
     pub lat: f64,
@@ -133,7 +133,7 @@ fn valid3d(input: &mut &[u8]) -> PResult<bool> {
 }
 
 fn fix(input: &mut &[u8]) -> PResult<(Fix, bool)> {
-    (ts_to_sec, latitude, longitude, valid3d, altitude, altitude)
+    (ts_to_ms, latitude, longitude, valid3d, altitude, altitude)
         .map(|(t, ns, ew, v, baro_alt, gnss_alt)| {
             (
                 Fix {
@@ -163,7 +163,7 @@ mod tests {
     fn test_parse_valid_b_record() {
         let line = b"B1101355206300N00006180WA0058700558\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
-            assert_eq!(rec.fix.timestamp, 39695);
+            assert_eq!(rec.fix.timestamp, 39_695_000);
             assert_eq!(rec.fix.lat, 52.105);
             assert_eq!(rec.fix.lon, -0.103);
             assert_eq!(rec.fix.baro_alt, 587);
@@ -193,7 +193,7 @@ mod tests {
     fn test_parse_southern_eastern_negative_alt() {
         let line = b"B1200003000000S12000000EA-0100-0200\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
-            assert_eq!(rec.fix.timestamp, 43200);
+            assert_eq!(rec.fix.timestamp, 43_200_000);
             assert_eq!(rec.fix.lat, -30.0);
             assert_eq!(rec.fix.lon, 120.0);
             assert_eq!(rec.fix.baro_alt, -100);
@@ -209,7 +209,7 @@ mod tests {
         let line = b"B1200005012345N00012345WA00500005001234567890\n";
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             assert_eq!(rec.ext, b"1234567890");
-            assert_eq!(rec.fix.timestamp, 43200);
+            assert_eq!(rec.fix.timestamp, 43_200_000);
         } else {
             panic!()
         };

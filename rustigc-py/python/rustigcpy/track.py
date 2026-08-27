@@ -53,7 +53,7 @@ class Track:
 
     @property
     def _timestamp(self) -> numpy.ndarray:
-        """Timestamps, in seconds from the instant `Log.datetime` reports."""
+        """Timestamps, in milliseconds from the instant `Log.datetime` reports."""
         return self._npdata['timestamp']
 
     def __len__(self) -> int:

@@ -16,12 +16,12 @@ use crate::Fix;
 /// Minimal flight speed
 const FGSLIM: f64 = 4.2; // ~15kph
 
-/// Seconds a track must hold above `FGSLIM` to count as flying.
-const TTHRES: f64 = 30.0;
+/// Milliseconds a track must hold above `FGSLIM` to count as flying.
+const TTHRES: f64 = 30_000.0;
 
-/// Longest gap interval, in seconds, a flight may contain.
+/// Longest gap interval, in milliseconds, a flight may contain.
 /// FIXME: different leagues, different rules
-const MAX_GAP: f64 = 300.0;
+const MAX_GAP: f64 = 300_000.0;
 
 /// One flight section, as fix indices into the track it was detected in.
 ///
@@ -98,7 +98,8 @@ fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
         })
         .collect();
 
-    // Get the ground speed
+    // Get the ground speed. `t`/`dt` are milliseconds; `FGSLIM` is m/s, so the speed calc
+    // converts `duration` to seconds at that one point.
     let t: Vec<f64> = track.iter().map(|fix| fix.timestamp as f64).collect();
     let d: Vec<f64> = flatp
         .windows(2)
@@ -111,7 +112,7 @@ fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
         .zip(dt.iter())
         .map(|(dist, duration)| {
             if *duration > 0.0 {
-                dist / duration
+                dist / (duration / 1000.0)
             } else {
                 bad += 1;
                 0.0
@@ -165,7 +166,7 @@ fn detect(gs: &[f64], dt: &[f64]) -> Vec<[usize; 2]> {
     let mut start = 0;
 
     // Look for the start of the flight: the first stretch holding above the threshold for `TTHRES`
-    // seconds. Yes it sucks, but it is not here to stay.
+    // milliseconds. Yes it sucks, but it is not here to stay.
     for (i, gs) in sgs.iter().enumerate() {
         if *gs >= FGSLIM {
             if held == 0.0 {

@@ -155,13 +155,13 @@ class Log:
         """When the fix carrying `timestamp` was recorded, as an aware datetime.
 
         Args:
-            timestamp: A `Fix.timestamp`, in seconds.
+            timestamp: A `Fix.timestamp`, in milliseconds.
         """
         origin = self.datetime
         if origin is None:
             return None
 
-        return (origin.astimezone(UTC) + timedelta(seconds=timestamp)).astimezone(origin.tzinfo)
+        return (origin.astimezone(UTC) + timedelta(milliseconds=timestamp)).astimezone(origin.tzinfo)
 
     def flights(self) -> Flights:
         """Flight sections detected in the track, cached until `reset()` or `push()`.

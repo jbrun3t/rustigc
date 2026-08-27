@@ -162,6 +162,6 @@ mod tests {
         assert_eq!(log.recorder.manufacturer, "FLA");
         assert_eq!(log.headers["DTE"].text, "150120");
         assert_eq!(log.track.len(), 3);
-        assert_eq!(log.track[0].timestamp, 39695);
+        assert_eq!(log.track[0].timestamp, 39_695_000);
     }
 }

@@ -40,7 +40,7 @@ use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
 use super::utils::{robust_ending_eof, till_robust_ending};
-use super::utils::{ts_to_igc, ts_to_sec};
+use super::utils::{ts_to_igc, ts_to_ms};
 use super::Record;
 
 #[cfg(feature = "serde")]
@@ -64,7 +64,7 @@ impl fmt::Display for TextEvent<'_> {
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 /// A record that carries text and a time: an event, a satellite list, sensor data.
 pub struct TimedEvent<'a> {
-    /// Seconds from UTC midnight of the flight's first day, carried past 86400.
+    /// Milliseconds from UTC midnight of the flight's first day, carried past 86,400,000.
     pub timestamp: u32,
     /// The line past the timestamp, as written.
     pub text: &'a [u8],
@@ -91,7 +91,7 @@ fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
 
 fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
     move |input: &mut &[u8]| {
-        (ts_to_sec, till_robust_ending)
+        (ts_to_ms, till_robust_ending)
             .map(|(timestamp, text): (_, &[u8])| TimedEvent { timestamp, text })
             .parse_next(input)
     }
@@ -161,7 +161,7 @@ mod tests {
     fn test_parse_e_record() {
         let line = b"E101409PEV\n";
         if let Record::E(event) = e_record.parse(line).unwrap() {
-            assert_eq!(event.timestamp, 36849);
+            assert_eq!(event.timestamp, 36_849_000);
             assert_eq!(event.text, b"PEV");
         } else {
             panic!()
@@ -172,7 +172,7 @@ mod tests {
     fn test_parse_e_record_with_text() {
         let line = b"E114734BFION AH\n";
         if let Record::E(event) = e_record.parse(line).unwrap() {
-            assert_eq!(event.timestamp, 42454);
+            assert_eq!(event.timestamp, 42_454_000);
             assert_eq!(event.text, b"BFION AH");
         } else {
             panic!()
@@ -183,7 +183,7 @@ mod tests {
     fn test_parse_f_record() {
         let line = b"F09093227163023070801103221\n";
         if let Record::F(event) = f_record.parse(line).unwrap() {
-            assert_eq!(event.timestamp, 32972);
+            assert_eq!(event.timestamp, 32_972_000);
             assert_eq!(event.text, b"27163023070801103221");
         } else {
             panic!()
@@ -194,7 +194,7 @@ mod tests {
     fn test_parse_k_record() {
         let line = b"K09115208100062\n";
         if let Record::K(event) = k_record.parse(line).unwrap() {
-            assert_eq!(event.timestamp, 33112);
+            assert_eq!(event.timestamp, 33_112_000);
             assert_eq!(event.text, b"08100062");
         } else {
             panic!()

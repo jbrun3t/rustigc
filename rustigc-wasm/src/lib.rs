@@ -33,7 +33,7 @@ extern "C" {
 const TYPES: &'static str = r#"
 /** One position fix. */
 export interface Fix {
-    /** Seconds from the instant `Log.datetime` reports. */
+    /** Milliseconds from the instant `Log.datetime` reports. */
     timestamp: number;
     /** Latitude in decimal degrees, north positive. */
     lat: number;
@@ -201,7 +201,7 @@ impl Log {
     /// header.
     ///
     /// UTC midnight of the flight's date, in the zone the track starts in. Add a fix's
-    /// `timestamp` seconds to it to get when that fix was recorded.
+    /// `timestamp` milliseconds to it to get when that fix was recorded.
     #[wasm_bindgen(unchecked_return_type = "DateTime | undefined")]
     pub fn datetime(&self) -> Result<JsValue, JsError> {
         let origin = self.inner.datetime();

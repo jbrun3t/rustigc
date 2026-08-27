@@ -43,7 +43,7 @@ class Fix:
 
     @property
     def timestamp(self) -> int:
-        """Seconds from the instant `Log.datetime` reports."""
+        """Milliseconds from the instant `Log.datetime` reports."""
         return int(self._data['timestamp'])
 
     def __eq__(self, other) -> bool:

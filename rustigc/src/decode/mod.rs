@@ -111,8 +111,8 @@ fn ts_offset(ts: &mut u32, offset: &mut u32, last: &mut u32) {
     // between different records
     if *last < *ts {
         *last = *ts;
-    } else if (*last - *ts) > 1000 {
-        *offset += 24 * 60 * 60;
+    } else if (*last - *ts) > 1_000_000 {
+        *offset += 24 * 60 * 60 * 1000;
         *last = *ts;
     }
 

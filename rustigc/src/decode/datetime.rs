@@ -2,9 +2,9 @@
 
 //! Wall-clock date-times for fixes
 //!
-//! A `Fix` timestamp counts seconds from UTC midnight of the flight's first day and carries no
-//! date, so rendering one needs an origin: [`Log::datetime`] builds it from the `HFDTE` header and
-//! the zone the track starts in, and [`Fix::datetime`] offsets it.
+//! A `Fix` timestamp counts milliseconds from UTC midnight of the flight's first day and carries
+//! no date, so rendering one needs an origin: [`Log::datetime`] builds it from the `HFDTE` header
+//! and the zone the track starts in, and [`Fix::datetime`] offsets it.
 //!
 //! The zone comes from the track, not from a header. Two datasets with two jobs get it: `utz`
 //! maps a position to an IANA name against timezone-boundary polygons, `jiff` turns that name into
@@ -91,7 +91,7 @@ impl Log {
 impl Fix {
     /// Wall-clock time of this fix, `origin` coming from [`Log::datetime`].
     pub fn datetime(&self, origin: &Zoned) -> Zoned {
-        origin + SignedDuration::from_secs(i64::from(self.timestamp))
+        origin + SignedDuration::from_millis(i64::from(self.timestamp))
     }
 }
 
@@ -115,7 +115,7 @@ mod tests {
         };
 
         assert_eq!(shown(&log.track[0]), "2024-07-15 13:01:35 +02:00");
-        assert_eq!(log.track[2].timestamp, 24 * 3600 + 30 * 60);
+        assert_eq!(log.track[2].timestamp, (24 * 3600 + 30 * 60) * 1000);
         assert_eq!(shown(&log.track[2]), "2024-07-16 02:30:00 +02:00");
     }
 }

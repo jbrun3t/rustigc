@@ -20,7 +20,7 @@
 //!
 //! assert_eq!(log.headers["PLT"].text, "Tripoux Robert");
 //! assert_eq!(log.track.len(), 2);
-//! assert_eq!(log.track[0].timestamp, 39695); // seconds from UTC midnight
+//! assert_eq!(log.track[0].timestamp, 39_695_000); // milliseconds from UTC midnight
 //! # Ok::<(), rustigc::LError>(())
 //! ```
 //!

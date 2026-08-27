@@ -104,7 +104,7 @@ Example output, abridged:
   },
   "track": [
     {
-      "timestamp": 39695,
+      "timestamp": 39695000,
       "lat": 52.105,
       "lon": -0.103,
       "baro_alt": 587,

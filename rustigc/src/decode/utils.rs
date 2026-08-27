@@ -49,14 +49,14 @@ pub fn n_alphanum<'a>(n: usize) -> impl Fn(&mut &'a [u8]) -> PResult<&'a [u8]> {
     move |input: &mut &[u8]| take_while(n..=n, AsChar::is_alphanum).parse_next(input)
 }
 
-/// Parse a HHMMSS timestamp and convert it to a number of seconds
-pub fn ts_to_sec(input: &mut &[u8]) -> PResult<u32> {
+/// Parse a HHMMSS timestamp and convert it to a number of milliseconds
+pub fn ts_to_ms(input: &mut &[u8]) -> PResult<u32> {
     (
         n_digits(2).verify(|&h| h < 24),
         n_digits(2).verify(|&m| m < 60),
         n_digits(2).verify(|&s| s < 60),
     )
-        .map(|(h, m, s): (u32, u32, u32)| ((h * 60) + m) * 60 + s)
+        .map(|(h, m, s): (u32, u32, u32)| (((h * 60) + m) * 60 + s) * 1000)
         .parse_next(input)
 }
 
@@ -72,7 +72,7 @@ pub fn date_to_ymd(input: &mut &[u8]) -> PResult<(i16, i8, i8)> {
 }
 
 pub fn ts_to_igc(input: u32) -> String {
-    let input = input % (24 * 60 * 60);
+    let input = (input / 1000) % (24 * 60 * 60);
     let (h, rem) = (input / 3600, input % 3600);
     let (m, s) = (rem / 60, rem % 60);
     format!("{:02}{:02}{:02}", h, m, s)
@@ -144,14 +144,14 @@ mod tests {
 
     #[test]
     fn test_parse_time() {
-        let time = ts_to_sec.parse(b"110135").unwrap();
-        // 11:01:35 = 11*3600 + 1*60 + 35 = 39695 seconds
-        assert_eq!(time, 39695);
+        let time = ts_to_ms.parse(b"110135").unwrap();
+        // 11:01:35 = 11*3600 + 1*60 + 35 = 39695 seconds = 39695000 ms
+        assert_eq!(time, 39_695_000);
     }
 
     #[test]
     fn test_parse_bad_time() {
-        assert!(ts_to_sec.parse(b"117135").is_err());
+        assert!(ts_to_ms.parse(b"117135").is_err());
     }
 
     #[test]
