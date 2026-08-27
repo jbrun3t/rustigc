@@ -5,7 +5,7 @@ WASM bindings for [rustigc](../rustigc), as the `rustigc-wasm` npm package.
 | directory | package | |
 |---|---|---|
 | `pkg/` | `rustigc-wasm` | the bindings: wasm, ESM glue and types, all generated |
-| `track/` | `rustigc-track` | optional decoder for `track_bytes` |
+| `utils/` | `rustigc-utils` | optional decoder for `track_bytes` |
 | `score/` | — | example CLI, not published |
 
 ## Prerequisites
@@ -22,7 +22,7 @@ WASM bindings for [rustigc](../rustigc), as the `rustigc-wasm` npm package.
 ```sh
 wasm-pack build rustigc-wasm --target web
 npm install     # links the three packages together; needs pkg/ to exist
-npm run build   # tsc over track/ and score/
+npm run build   # tsc over utils/ and score/
 ```
 
 `--target web` hands the wasm bytes to the standard `WebAssembly` API instead of importing the
@@ -82,10 +82,10 @@ wasm and calls back out per fix: `Object::new` and an array append each time, ag
 copy for `track_bytes`.
 
 `track` needs nothing of the caller; `track_bytes` is for a caller who will decode, and
-`rustigc-track` ships a decoder so that caller does not have to write one:
+`rustigc-utils` ships a decoder so that caller does not have to write one:
 
 ```ts
-import { fixes } from "rustigc-track";
+import { fixes } from "rustigc-utils";
 
 log.track                // Fix[], straight from the binding
 fixes(log.track_bytes)   // the same Fix[], 10x faster

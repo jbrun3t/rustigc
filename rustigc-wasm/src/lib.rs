@@ -177,7 +177,7 @@ impl Log {
 
     /// The same track as raw `#[repr(C)] Fix` bytes, 32 per fix, little-endian.
     ///
-    /// About 10x faster than `track`, if you decode it yourself. The `rustigc-track`
+    /// About 10x faster than `track`, if you decode it yourself. The `rustigc-utils`
     /// package ships a decoder; the crate README has the layout.
     #[wasm_bindgen(getter)]
     pub fn track_bytes(&self) -> Vec<u8> {

@@ -10,7 +10,7 @@
   },
   "workspaces": [
     "pkg",
-    "track",
+    "utils",
     "score"
   ],
   "scripts": {
