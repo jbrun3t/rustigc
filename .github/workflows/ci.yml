@@ -106,3 +106,8 @@ jobs:
           node score/dist/rustigc-wasm-score.js --league xcontest \
             < ../test_data/real/fai-01.igc | grep -q '996.56 points, 622.85 km'
 
+      - name: Test the bindings
+        run: |
+          cd rustigc-wasm
+          npm test
+

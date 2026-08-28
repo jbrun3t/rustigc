@@ -128,6 +128,13 @@ dataset should shift `Log.datetime` itself instead.
 does is still there. It adds text input, `datetimeAt(timestamp)` and `zone`. Text is converted one
 character to one byte.
 
+## Tests
+
+`npm test` runs `test/binding.test.mjs` on node's own test runner — no dependency, and it needs
+`pkg/` built and `npm install` run. It checks that each entry point crosses the boundary and that
+the results agree with the blessed corpus, including a `Scorer` table against the same window's
+`Log.score`. The corpus itself is `rustigc`'s to sweep, not this package's.
+
 ## Example CLI
 
 `score/` mirrors `rustigc-xc-score`, minus its `json` format, reading IGC on stdin. It is the
