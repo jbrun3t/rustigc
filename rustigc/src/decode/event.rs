@@ -56,7 +56,7 @@ pub struct TextEvent<'a> {
 
 impl fmt::Display for TextEvent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", std::str::from_utf8(self.text).unwrap())
+        write!(f, "{}", String::from_utf8_lossy(self.text))
     }
 }
 
@@ -72,7 +72,7 @@ pub struct TimedEvent<'a> {
 
 impl fmt::Display for TimedEvent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let text = std::str::from_utf8(self.text).unwrap();
+        let text = String::from_utf8_lossy(self.text);
         if f.alternate() {
             write!(f, "{}: {}", self.timestamp, text)
         } else {

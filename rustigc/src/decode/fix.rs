@@ -92,14 +92,14 @@ pub struct RawFix<'a> {
 
 impl fmt::Display for RawFix<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let ext = std::str::from_utf8(self.ext).unwrap();
+        let ext = String::from_utf8_lossy(self.ext);
         if f.alternate() {
             write!(
                 f,
                 "{} - {} - {}",
                 if self.valid { "OK" } else { "KO" },
                 self.fix,
-                if self.ext.len() == 2 { "none" } else { ext }
+                if self.ext.len() == 2 { "none" } else { &ext }
             )?;
         } else {
             write!(

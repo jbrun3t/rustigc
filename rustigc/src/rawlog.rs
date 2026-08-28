@@ -94,6 +94,10 @@ impl From<Log> for RawLog<'_> {
 }
 
 /// Prints back valid IGC, one record per line.
+///
+/// A record holding bytes that are not UTF-8 — which the parser accepts — comes back with each
+/// of them replaced, so the output matches the input only for a file that was UTF-8 to begin
+/// with. This should not really happen since IGC are supposed to be ASCII only ...
 impl fmt::Display for RawLog<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for rec in &self.records {

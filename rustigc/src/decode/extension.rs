@@ -46,7 +46,7 @@ pub struct RecordExtension<'a> {
 
 impl fmt::Display for RecordExtension<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let tlc = std::str::from_utf8(self.tlc).unwrap();
+        let tlc = String::from_utf8_lossy(self.tlc);
         if f.alternate() {
             write!(f, "{}: {}->{}", tlc, self.start, self.finish)
         } else {
