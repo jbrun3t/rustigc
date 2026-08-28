@@ -6,7 +6,7 @@
 
 use super::{
     ClosedCircuit, Closing, League, Limit, OpenPolyline, RuleDescription, RuleGeometry,
-    Ruleset,
+    Ruleset, Variant, VariantKind,
 };
 
 pub struct Crazy;
@@ -30,8 +30,12 @@ impl RuleGeometry for FreeDistance4TP {
 impl RuleDescription for FreeDistance4TP {
     type League = Crazy;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "free distance 4 turnpoints", Closing::NONE)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "free distance 4 turnpoints",
+            multiplier: 1.0,
+            kind: VariantKind::Open,
+        }]
     }
 }
 
@@ -45,7 +49,11 @@ impl RuleGeometry for Quad {
 impl RuleDescription for Quad {
     type League = Crazy;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.2, "quadrilateral circuit", Crazy::CLOSING)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "quadrilateral circuit",
+            multiplier: 1.2,
+            kind: VariantKind::Closing(Crazy::CLOSING),
+        }]
     }
 }

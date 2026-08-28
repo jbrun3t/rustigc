@@ -5,7 +5,7 @@
 
 use super::{
     ClosedCircuit, Closing, League, Limit, OpenPolyline, RuleDescription, RuleGeometry,
-    Ruleset,
+    Ruleset, Variant, VariantKind,
 };
 
 pub struct TwoTurnpoints;
@@ -25,8 +25,12 @@ impl RuleGeometry for FreeDistance2 {
 impl RuleDescription for FreeDistance2 {
     type League = TwoTurnpoints;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "2 turnpoints free distance", Closing::NONE)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "2 turnpoints free distance",
+            multiplier: 1.0,
+            kind: VariantKind::Open,
+        }]
     }
 }
 
@@ -47,8 +51,12 @@ impl RuleGeometry for FreeDistance1 {
 impl RuleDescription for FreeDistance1 {
     type League = OneTurnpoint;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "1 turnpoint free distance", Closing::NONE)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "1 turnpoint free distance",
+            multiplier: 1.0,
+            kind: VariantKind::Open,
+        }]
     }
 }
 
@@ -70,8 +78,12 @@ impl RuleGeometry for StraightDistance {
 impl RuleDescription for StraightDistance {
     type League = Line;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "straight distance", Closing::NONE)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "straight distance",
+            multiplier: 1.0,
+            kind: VariantKind::Open,
+        }]
     }
 }
 
@@ -97,7 +109,11 @@ impl RuleGeometry for OutAndReturn {
 impl RuleDescription for OutAndReturn {
     type League = Oar;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "out and return", Oar::CLOSING)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "out and return",
+            multiplier: 1.0,
+            kind: VariantKind::Closing(Oar::CLOSING),
+        }]
     }
 }

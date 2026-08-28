@@ -21,7 +21,7 @@
 
 use super::{
     BalancedCircuit, ClosedCircuit, Closing, League, Limit, OpenPolyline,
-    RuleDescription, RuleGeometry, Ruleset,
+    RuleDescription, RuleGeometry, Ruleset, Variant, VariantKind,
 };
 
 pub struct Cfd;
@@ -52,8 +52,12 @@ impl RuleGeometry for Distance3Points {
 impl RuleDescription for Distance3Points {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.0, "distance 3 points", Closing::NONE)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "distance 3 points",
+            multiplier: 1.0,
+            kind: VariantKind::Open,
+        }]
     }
 }
 
@@ -67,8 +71,12 @@ impl RuleGeometry for TrianglePlat {
 impl RuleDescription for TrianglePlat {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.2, "triangle plat", Cfd::CLOSING)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "triangle plat",
+            multiplier: 1.2,
+            kind: VariantKind::Closing(Cfd::CLOSING),
+        }]
     }
 }
 
@@ -82,7 +90,11 @@ impl RuleGeometry for TriangleFai {
 impl RuleDescription for TriangleFai {
     type League = Cfd;
 
-    fn variant(&self, _distance: f64, _gap: f64) -> (f64, &'static str, Closing) {
-        (1.4, "triangle fai", Cfd::CLOSING)
+    fn variants(&self) -> &'static [Variant] {
+        &[Variant {
+            name: "triangle fai",
+            multiplier: 1.4,
+            kind: VariantKind::Closing(Cfd::CLOSING),
+        }]
     }
 }

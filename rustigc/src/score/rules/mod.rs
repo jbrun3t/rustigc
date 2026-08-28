@@ -56,9 +56,6 @@ pub struct Closing {
 }
 
 impl Closing {
-    /// A shape with no closing leg.
-    pub const NONE: Self = Self::new(Limit::None, Limit::None);
-
     pub const fn new(free: Limit, charged: Limit) -> Self {
         Self { free, charged }
     }
@@ -143,16 +140,83 @@ pub trait RuleGeometry: Debug {
     type Shape: ShapeKind;
 }
 
-/// A rule paying a multiplier on the distance, net of the closing penalty. Overriding `minimum`
-/// diverges from the league without disturbing its other rules.
+/// One way a rule prices a geometry: what the gap costs, if anything, and what the price is worth.
+#[derive(Debug, Clone, Copy)]
+pub struct Variant {
+    pub name: &'static str,
+    pub multiplier: f64,
+    pub kind: VariantKind,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum VariantKind {
+    /// A shape with no closing leg.
+    Open,
+    /// A circuit closing under this law, which also charges the gap.
+    Closing(Closing),
+}
+
+impl VariantKind {
+    /// Whether this variant's closing law still holds at this gap, against the raw distance. An
+    /// open shape holds only with nothing to close.
+    fn accepts(&self, distance: f64, gap: f64) -> bool {
+        match self {
+            VariantKind::Open => gap == 0.0,
+            VariantKind::Closing(closing) => gap <= closing.limit(distance),
+        }
+    }
+
+    /// Charge for the gap under this variant. INFINITY once the variant no longer accepts it.
+    fn penalty(&self, distance: f64, gap: f64) -> f64 {
+        match self {
+            VariantKind::Open => {
+                if gap == 0.0 {
+                    0.0
+                } else {
+                    f64::INFINITY
+                }
+            }
+            VariantKind::Closing(closing) => closing.penalty(distance, gap),
+        }
+    }
+
+    /// Largest gap this variant accepts, in meters, against the raw distance; 0 with no closing leg.
+    fn limit(&self, distance: f64) -> f64 {
+        match self {
+            VariantKind::Open => 0.0,
+            VariantKind::Closing(closing) => closing.limit(distance),
+        }
+    }
+}
+
+impl Variant {
+    fn score(&self, distance: f64, gap: f64) -> f64 {
+        (distance - self.kind.penalty(distance, gap)).max(0.0) * self.multiplier
+    }
+}
+
+trait VariantList {
+    fn pick(&self, distance: f64, gap: f64) -> &Variant;
+}
+
+impl VariantList for [Variant] {
+    /// The variant a rule prices a geometry at: the first, listed strictest first, whose closing
+    /// law holds at this gap — the loosest one if none do.
+    fn pick(&self, distance: f64, gap: f64) -> &Variant {
+        self.iter()
+            .find(|v| v.kind.accepts(distance, gap))
+            .unwrap_or_else(|| {
+                self.last().expect("a rule always has at least one variant")
+            })
+    }
+}
+
+/// A rule pricing a geometry through one or more [`Variant`]s, listed from the strictest (tightest
+/// gap allowance, best rate) to the loosest.
 pub trait RuleDescription: Debug {
     type League: League;
 
-    /// Multiplier, identity and closing law the rule reports at, possibly one of several variants
-    /// of the rule.
-    ///
-    /// `distance` is raw, before the penalty.
-    fn variant(&self, distance: f64, gap: f64) -> (f64, &'static str, Closing);
+    fn variants(&self) -> &'static [Variant];
 
     fn minimum(&self) -> f64 {
         Self::League::minimum()
@@ -174,32 +238,23 @@ impl<T: RuleGeometry> RuleShape for T {
 
 impl<T: RuleDescription> RuleScore for T {
     fn score(&self, distance: f64, gap: f64) -> f64 {
-        let (multiplier, _, closing) = self.variant(distance, gap);
-
-        // Nothing to close, so none of the closing mechanism is owed
-        if gap == 0.0 {
-            return distance * multiplier;
-        }
-
-        // An infinite penalty leaves 0, which is what a candidate that cannot close is worth.
-        (distance - closing.penalty(distance, gap)).max(0.0) * multiplier
+        self.variants().pick(distance, gap).score(distance, gap)
     }
 }
 
 impl<T: RuleDescription> RuleReport for T {
     fn scored(&self, distance: f64, gap: f64) -> Scored {
-        let (multiplier, description, closing) = self.variant(distance, gap);
-        let penalty = closing.penalty(distance, gap);
-        let net = (distance - penalty).max(0.0);
-        let score = net * multiplier;
+        let variant = self.variants().pick(distance, gap);
+        let penalty = variant.kind.penalty(distance, gap);
+        let score = variant.score(distance, gap);
 
         Scored {
-            distance: net,
+            distance: (distance - penalty).max(0.0),
             penalty,
             score: if score >= self.minimum() { score } else { 0.0 },
-            multiplier,
-            threshold: closing.limit(distance),
-            description,
+            multiplier: variant.multiplier,
+            threshold: variant.kind.limit(distance),
+            description: variant.name,
             league: self.league(),
         }
     }
