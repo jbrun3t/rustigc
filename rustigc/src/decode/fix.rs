@@ -29,8 +29,8 @@ use serde::{Deserialize, Serialize};
 
 /// One position fix.
 ///
-/// The unit of a track. Timestamps count milliseconds and carry no date; [`Fix::datetime`] renders
-/// one against the origin [`Log::datetime`] gives.
+/// The unit of a track. A timestamp counts milliseconds from the origin [`Log::datetime`] states
+/// and carries no date of its own.
 ///
 /// `repr(C)`, 32 bytes: the `u32` timestamp, four bytes of alignment padding, then the `f64` and
 /// `i32` fields. A binding reading a track as raw bytes must account for that padding. Do not

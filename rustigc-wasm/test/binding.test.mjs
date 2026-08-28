@@ -101,6 +101,15 @@ test("Scorer rejects an unusable table", () => {
 	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, NaN, 6.1)), /not scorable/);
 });
 
+test("a layer the track does not hold throws", () => {
+	const log = load("triangle-01");
+	const window = log.longest_flight();
+
+	assert.ok(log.export(window).length > 0);
+	assert.throws(() => log.export({ start: 0, stop: log.fix_count }), /out of range/);
+	assert.throws(() => log.export({ nope: 1 }), /missing field/);
+});
+
 test("an unknown league throws", () => {
 	const log = load("triangle-01");
 

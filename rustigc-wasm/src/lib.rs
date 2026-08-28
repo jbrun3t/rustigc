@@ -221,6 +221,9 @@ impl Log {
     /// `window` and `scored` may each be left out; `track` draws the flown line. Every feature
     /// declares a `role` — `track`, `marker`, `leg`, `closing`, `score` or `metadata`.
     /// `JSON.parse` it for objects.
+    ///
+    /// Throws when a layer is not the shape it should be, or reads a fix this log's track does
+    /// not hold
     pub fn export(
         &self,
         window: Option<FlightArg>,
@@ -241,7 +244,7 @@ impl Log {
             false => TrackLine::Skip,
         };
 
-        let collection = self.inner.export_flight(window, scored.as_ref(), line);
+        let collection = self.inner.export_flight(window, scored.as_ref(), line)?;
 
         Ok(serde_json::to_string(&collection)?)
     }

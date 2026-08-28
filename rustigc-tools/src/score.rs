@@ -157,7 +157,12 @@ fn main() -> io::Result<()> {
     match args.format {
         Format::Geojson => {
             let flight = window.map(|(start, stop)| Flight { start, stop });
-            let collection = log.export_flight(flight, scored.as_ref(), TrackLine::Draw);
+            let collection = log
+                .export_flight(flight, scored.as_ref(), TrackLine::Draw)
+                .unwrap_or_else(|e| {
+                    eprintln!("Could not draw: {e}");
+                    std::process::exit(1);
+                });
 
             println!("{}", serde_json::to_string(&collection)?);
         }

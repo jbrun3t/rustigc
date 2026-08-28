@@ -75,14 +75,13 @@ def test_export_rejects_other(igc_content):
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_export_foreign_layer(igc_content):
-    """A layer drawn against another log's track, and nothing checks that
-
-    Its indices still point where they did, so a shorter track puts them out of range. Today that
-    surfaces as a Rust panic rather than a Python error, hence the broad catch.
-    """
+    """A layer whose fixes the track does not hold is refused, not drawn past the end"""
     log = Log.from_bytes(igc_content)
     flight = log.flights().longest
-    shorter = log.with_track(log.track._data[1000:])
+    shorter = log.with_track(log.track._data[20000:])
 
-    with pytest.raises(BaseException, match="index out of bounds"):
+    with pytest.raises(ValueError, match=r"fix 25425 is out of range, the track holds 5459"):
         shorter.export(flight)
+
+    # the log it came from still draws it
+    assert roles(log.export(flight))

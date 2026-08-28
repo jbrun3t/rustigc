@@ -81,7 +81,7 @@ pub use decode::{
     Declaration, Extensions, Fix, Header, HeaderData, HeaderOrigin, RawFix, Record,
     RecordExtension, Recorder, Task, TextEvent, TimedEvent, TurnPoint,
 };
-pub use error::{LError, LResult};
+pub use error::{LError, LResult, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};

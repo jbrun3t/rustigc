@@ -9,7 +9,9 @@ use super::geometry::{
 };
 use super::iter::pairs;
 use super::round_km;
-use crate::{Fix, Flight, FlightDetection, FlightSelection, Log, ScoringResult};
+use crate::{
+    Fix, Flight, FlightDetection, FlightSelection, Log, ScoringResult, TrackError,
+};
 
 /// Header codes a log labels its flown line with.
 const LABELS: [&str; 1] = ["PLT"];
@@ -48,7 +50,11 @@ const LABELS: [&str; 1] = ["PLT"];
 /// any fix records.
 pub trait GeoJson: Sync {
     /// Features for `self`, its fix indices resolved against `track`.
-    fn features(&self, track: &[Fix]) -> Vec<Feature>;
+    ///
+    /// # Errors
+    ///
+    /// [`TrackError::FixOutOfRange`] when `track` does not hold a fix this layer draws.
+    fn features(&self, track: &[Fix]) -> Result<Vec<Feature>, TrackError>;
 }
 
 // --- Helpers ---
@@ -83,8 +89,21 @@ fn coord_times(track: &[Fix]) -> Vec<JsonValue> {
 
 // --- Geometries ---
 
-fn marker(track: &[Fix], fix: &(usize, &str), symbol: &str, color: &str) -> Feature {
-    let f = &track[fix.0];
+/// Fix `index` of `track`, as an error rather than the panic indexing would raise.
+fn at(track: &[Fix], index: usize) -> Result<&Fix, TrackError> {
+    track.get(index).ok_or(TrackError::FixOutOfRange {
+        index,
+        len: track.len(),
+    })
+}
+
+fn marker(
+    track: &[Fix],
+    fix: &(usize, &str),
+    symbol: &str,
+    color: &str,
+) -> Result<Feature, TrackError> {
+    let f = at(track, fix.0)?;
     let mut props = props("marker");
     props.insert("name".into(), fix.1.into());
     props.insert("marker-symbol".into(), symbol.into());
@@ -92,20 +111,20 @@ fn marker(track: &[Fix], fix: &(usize, &str), symbol: &str, color: &str) -> Feat
     props.insert("fix".into(), fix.0.into());
     props.insert("timestamp".into(), f.timestamp.into());
 
-    Feature {
+    Ok(Feature {
         geometry: Some(Geometry::new_point(position3d(f))),
         properties: Some(props),
         ..Default::default()
-    }
+    })
 }
 
 /// takeoff and landing markers.
 impl GeoJson for Flight {
-    fn features(&self, track: &[Fix]) -> Vec<Feature> {
-        vec![
-            marker(track, &(self.start, "takeoff"), "airport", "#333333"),
-            marker(track, &(self.stop, "landing"), "cancel", "#333333"),
-        ]
+    fn features(&self, track: &[Fix]) -> Result<Vec<Feature>, TrackError> {
+        Ok(vec![
+            marker(track, &(self.start, "takeoff"), "airport", "#333333")?,
+            marker(track, &(self.stop, "landing"), "cancel", "#333333")?,
+        ])
     }
 }
 
@@ -138,7 +157,8 @@ fn leg(
     name: &str,
     color: &str,
     width: usize,
-) -> Feature {
+) -> Result<Feature, TrackError> {
+    let (start, end) = (at(track, from.0)?, at(track, to.0)?);
     let mut props = props(role);
     props.insert("name".into(), name.into());
     props.insert("stroke".into(), color.into());
@@ -147,22 +167,19 @@ fn leg(
     props.insert("to".into(), to.1.into());
     props.insert(
         "distance_m".into(),
-        round_km(Geodesic::distance(&track[from.0], &track[to.0])).into(),
+        round_km(Geodesic::distance(start, end)).into(),
     );
 
-    Feature {
-        geometry: Some(Geometry::new_line_string([
-            position(&track[from.0]),
-            position(&track[to.0]),
-        ])),
+    Ok(Feature {
+        geometry: Some(Geometry::new_line_string([position(start), position(end)])),
         properties: Some(props),
         ..Default::default()
-    }
+    })
 }
 
 /// The score, the legs of the task, and a marker on every fix the rule picked.
 impl GeoJson for ScoringResult {
-    fn features(&self, track: &[Fix]) -> Vec<Feature> {
+    fn features(&self, track: &[Fix]) -> Result<Vec<Feature>, TrackError> {
         let mut features = Vec::new();
 
         // Score as an empty geometry
@@ -181,14 +198,14 @@ impl GeoJson for ScoringResult {
 
         // Draw them right away
         for tp in chain.iter() {
-            features.push(marker(track, tp, "marker", "#0000ff"));
+            features.push(marker(track, tp, "marker", "#0000ff")?);
         }
 
         // Draw entry and exit
         let entry = (self.entry, "Entry");
         let exit = (self.exit, "Exit");
-        features.push(marker(track, &entry, "marker", "#00a000"));
-        features.push(marker(track, &exit, "marker", "#ff0000"));
+        features.push(marker(track, &entry, "marker", "#00a000")?);
+        features.push(marker(track, &exit, "marker", "#ff0000")?);
 
         if !self.circuit {
             // Include entry and exit for open tasks
@@ -198,7 +215,7 @@ impl GeoJson for ScoringResult {
             // Actual entry and exit legs
             features.push(leg(
                 track, &entry, &chain[0], "closing", "entry", "#ff8000", 1,
-            ));
+            )?);
             features.push(leg(
                 track,
                 &chain[chain.len() - 1],
@@ -207,10 +224,10 @@ impl GeoJson for ScoringResult {
                 "exit",
                 "#ff8000",
                 1,
-            ));
+            )?);
 
             // ... and the closing gap
-            features.push(leg(track, &exit, &entry, "closing", "gap", "#00a000", 2));
+            features.push(leg(track, &exit, &entry, "closing", "gap", "#00a000", 2)?);
         }
 
         // An empty chain would mean a rule of cardinality below 2.
@@ -222,12 +239,12 @@ impl GeoJson for ScoringResult {
                 let name = format!("leg{n}");
                 leg(track, from, to, "leg", &name, "#ffff00", 3)
             })
-            .collect();
+            .collect::<Result<_, _>>()?;
 
         // Draw the task line
         features.extend(legs);
 
-        features
+        Ok(features)
     }
 }
 
@@ -288,11 +305,15 @@ impl Log {
     /// Draws `layers` over this log, `line` deciding whether the flown line comes with them.
     ///
     /// The `metadata` feature is always there.
+    ///
+    /// # Errors
+    ///
+    /// [`TrackError::FixOutOfRange`] when a layer reads a fix this log's track does not hold.
     pub fn export_with(
         &self,
         layers: &[&dyn GeoJson],
         line: TrackLine,
-    ) -> FeatureCollection {
+    ) -> Result<FeatureCollection, TrackError> {
         let mut features = Vec::new();
 
         features.push(self.metadata_export());
@@ -303,7 +324,7 @@ impl Log {
 
         // Extend with all provided layers
         for layer in layers {
-            features.extend(layer.features(&self.track));
+            features.extend(layer.features(&self.track)?);
         }
 
         // Geojson wants west, south, east, north
@@ -317,25 +338,32 @@ impl Log {
                     .to_vec()
             });
 
-        FeatureCollection {
+        Ok(FeatureCollection {
             bbox,
             features,
             foreign_members: None,
-        }
+        })
     }
 
     /// Draws `layers` over this log, including the trackline
-    pub fn export(&self, layers: &[&dyn GeoJson]) -> FeatureCollection {
+    pub fn export(
+        &self,
+        layers: &[&dyn GeoJson],
+    ) -> Result<FeatureCollection, TrackError> {
         self.export_with(layers, TrackLine::Draw)
     }
 
     /// Draws `window` and the task `scored` found in it, each when there is one.
+    ///
+    /// # Errors
+    ///
+    /// [`TrackError::FixOutOfRange`] when either was produced from a longer track.
     pub fn export_flight(
         &self,
         window: Option<Flight>,
         scored: Option<&ScoringResult>,
         line: TrackLine,
-    ) -> FeatureCollection {
+    ) -> Result<FeatureCollection, TrackError> {
         let mut layers: Vec<&dyn GeoJson> = Vec::new();
 
         if let Some(window) = &window {
@@ -358,5 +386,6 @@ impl Log {
         let scored = window.and_then(|w| self.score(league, w.start, w.stop));
 
         self.export_flight(window, scored.as_ref(), TrackLine::Draw)
+            .expect("detection and scoring index this log's track")
     }
 }

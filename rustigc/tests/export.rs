@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rustigc::Log;
+use rustigc::{FlightDetection, FlightSelection, Log, TrackError, TrackLine};
 use serde_json::Value;
 
 fn fixture(stem: &str) -> Vec<u8> {
@@ -89,4 +89,33 @@ fn describe_unknown_league() {
     assert!(!roles.contains(&"score"));
     // the detected flight is still worth its two markers
     assert_eq!(roles.iter().filter(|r| **r == "marker").count(), 2);
+}
+
+/// A layer produced from a longer track is refused, not drawn past the end.
+#[test]
+fn export_layer_out_of_range() {
+    let log = Log::new(&fixture("fai-01")).unwrap();
+    let window = log.track.flights().longest().copied().unwrap();
+    let scored = log.score("xcontest", window.start, window.stop);
+
+    let shorter = Log {
+        track: log.track[20_000..].to_vec(),
+        ..log.clone()
+    };
+
+    let err = shorter
+        .export_flight(Some(window), scored.as_ref(), TrackLine::Draw)
+        .unwrap_err();
+
+    assert_eq!(
+        err,
+        TrackError::FixOutOfRange {
+            index: window.stop,
+            len: shorter.track.len()
+        }
+    );
+    // its own layers still draw
+    assert!(log
+        .export_flight(Some(window), scored.as_ref(), TrackLine::Draw)
+        .is_ok());
 }

@@ -34,3 +34,11 @@ impl From<ContextError> for LError {
 
 /// [`Result`] of this crate's parsing entry points.
 pub type LResult<T> = std::result::Result<T, LError>;
+
+/// What went wrong against a track.
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrackError {
+    /// A fix index the track does not hold — it came from a longer one.
+    #[error("fix {index} is out of range, the track holds {len}")]
+    FixOutOfRange { index: usize, len: usize },
+}
