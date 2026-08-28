@@ -11,7 +11,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use common::{for_each_fixture, stem_of};
-use rustigc::{FlightDetection, FlightSelection, Log};
+use rustigc::{FlightDetection, FlightSelection, Log, Scorer, ScoringResult};
 use serde_json::Value;
 
 fn corpus_dir() -> PathBuf {
@@ -74,3 +74,47 @@ macro_rules! xcontest_test {
 }
 
 for_each_fixture!(xcontest_test);
+
+// A `Scorer` needs no `Log`. Check that each Scorer entry point yield the exact same
+// result as a complete Log would.
+
+/// triangle-01 as a `[latitude, longitude]` table, with what `Log::score` makes of it.
+fn coord_table() -> (Vec<[f64; 2]>, ScoringResult) {
+    let path = corpus_dir().join("triangle-01.igc");
+    let content = fs::read(&path).unwrap_or_else(|e| panic!("read {path:?}: {e}"));
+    let log = Log::new(&content).unwrap_or_else(|e| panic!("parse {path:?}: {e}"));
+
+    let last = log.track.len() - 1;
+    let expected = log.score("xcontest", 0, last).expect("triangle-01 scores");
+    let table = log.track.iter().map(|fix| [fix.lat, fix.lon]).collect();
+
+    (table, expected)
+}
+
+#[test]
+fn scorer_new_over_a_coord_table() {
+    let (table, expected) = coord_table();
+    let last = table.len() - 1;
+
+    let result = Scorer::new(&table, 0, last).unwrap().solve("xcontest");
+
+    assert_eq!(result.as_ref(), Some(&expected));
+}
+
+#[test]
+fn scorer_from_slice_over_a_coord_table() {
+    let (table, expected) = coord_table();
+
+    let result = Scorer::from_slice(&table).unwrap().solve("xcontest");
+
+    assert_eq!(result.as_ref(), Some(&expected));
+}
+
+#[test]
+fn scorer_from_vec_over_a_coord_table() {
+    let (table, expected) = coord_table();
+
+    let result = Scorer::from_vec(table).unwrap().solve("xcontest");
+
+    assert_eq!(result.as_ref(), Some(&expected));
+}

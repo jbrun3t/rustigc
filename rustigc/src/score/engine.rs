@@ -387,9 +387,6 @@ impl Scorer {
     /// Prepares the fixes in `[start, stop]` for searching.
     ///
     /// `None` when the window is empty, inverted, or reaches past `track`.
-    ///
-    /// Collects the fixes into the cache-friendly layout the search reads, with longitude
-    /// "unwrapped" so the antimeridian is no longer an issue.
     pub fn new<P: PointCoords<f64>>(
         track: &[P],
         start: usize,
@@ -400,21 +397,63 @@ impl Scorer {
         }
 
         let fixes = &track[start..=stop];
-        let points = fixes.iter().map(|fix| [fix.y(), fix.x()]);
-        let track: Vec<SPoint> = if fixes.crosses_antimeridian() {
-            points.unwrapped().collect()
-        } else {
-            points.collect()
-        };
+
+        Some(Self::build(
+            fixes.iter().map(|fix| [fix.y(), fix.x()]).collect(),
+            start,
+        ))
+    }
+
+    /// Prepares the whole of `track`, [`Scorer::new`] without a window.
+    ///
+    /// Coordinates are taken on trust, as they are by [`Scorer::new`];.
+    pub fn from_slice<P: PointCoords<f64>>(track: &[P]) -> Option<Self> {
+        Self::new(track, 0, track.len().checked_sub(1)?)
+    }
+
+    /// Prepares an owned table of `[latitude, longitude]` points, in decimal degrees and in flight
+    /// order.
+    ///
+    /// Keeps the allocation it is given, so a binding can hand over the buffer it copied across its
+    /// FFI without a second pass. `None` for fewer than two points, or a coordinate that is not
+    /// finite or out of range.
+    pub fn from_vec(track: Vec<[f64; 2]>) -> Option<Self> {
+        if track.len() < 2 {
+            return None;
+        }
+
+        // Unlike `new`, whose points come from the B-record parser (`decode/utils.rs` bounds both
+        // degrees), this table is arbitrary. A NaN would silently poison the heap's `total_cmp`
+        // ordering, and an out-of-range longitude would make `crosses_antimeridian` misfire.
+        let sane = track.iter().all(|p| {
+            p.y().is_finite()
+                && p.y().abs() <= 90.0
+                && p.x().is_finite()
+                && p.x().abs() <= 180.0
+        });
+
+        sane.then(|| Self::build(track, 0))
+    }
+
+    /// Sets up the caches and the latitude band over `track`, `offset` fixes into the caller's own
+    /// point list.
+    ///
+    /// `track` is the cache-friendly layout the search reads, and gets its longitudes "unwrapped"
+    /// here so the antimeridian is no longer an issue.
+    fn build(mut track: Vec<SPoint>, offset: usize) -> Self {
+        if track.crosses_antimeridian() {
+            track = track.iter().copied().unwrapped().collect();
+        }
+
         let caches = Caches::new(track.len());
         let band = Self::band(&track);
 
-        Some(Self {
+        Self {
             track,
-            offset: start,
+            offset,
             caches,
             band,
-        })
+        }
     }
 
     /// Scores the window against every rule of `league` and reports the best.
@@ -474,5 +513,40 @@ impl Scorer {
         };
 
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_vec_rejects_short() {
+        assert!(Scorer::from_vec(vec![[45.0, 6.0]]).is_none());
+    }
+
+    #[test]
+    fn from_vec_rejects_nan() {
+        assert!(Scorer::from_vec(vec![[45.0, 6.0], [f64::NAN, 6.1]]).is_none());
+    }
+
+    #[test]
+    fn from_vec_rejects_infinite() {
+        assert!(Scorer::from_vec(vec![[45.0, 6.0], [45.1, f64::INFINITY]]).is_none());
+    }
+
+    #[test]
+    fn from_vec_rejects_out_of_band() {
+        assert!(Scorer::from_vec(vec![[45.0, 6.0], [90.5, 6.1]]).is_none());
+    }
+
+    #[test]
+    fn from_slice_rejects_empty() {
+        assert!(Scorer::from_slice::<SPoint>(&[]).is_none());
+    }
+
+    #[test]
+    fn from_slice_rejects_short() {
+        assert!(Scorer::from_slice(&[[45.0, 6.0]]).is_none());
     }
 }
