@@ -20,6 +20,12 @@ the flights in it, scores them against a league, and draws the result as GeoJSON
 The track is a numpy structured array underneath, copied once from Rust and then read entirely in
 Python. Parsing, detection and scoring release the GIL.
 
+`Scorer` scores a table of coordinates on its own, with no IGC file behind it:
+
+    from rustigcpy import Scorer
+
+    score = Scorer(points).score("xcontest")   # points is an (N, 2) [lat, lon] array
+
 `rustigcpy._bindings` is the raw extension module this package is built on, not an interface to use
 directly.
 """
@@ -30,7 +36,8 @@ from .fix import Fix
 from .flight import Flight, Flights
 from .log import Log
 from .score import Score
+from .scorer import Scorer
 from .track import Track
 
 __version__ = "0.1.0"
-__all__ = ["Log", "Track", "Fix", "Flight", "Flights", "Score", "league_names"]
+__all__ = ["Log", "Scorer", "Track", "Fix", "Flight", "Flights", "Score", "league_names"]

@@ -3,6 +3,7 @@
 #![allow(clippy::useless_conversion)]
 
 use ::rustigc;
+use numpy::{PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
@@ -253,6 +254,65 @@ impl PyLog {
     }
 }
 
+/// A scoring window over a table of coordinates, needing no log.
+///
+/// The raw binding behind `rustigcpy.Scorer`, which is the interface to use.
+#[pyclass(name = "RustScorer")]
+struct PyScorer {
+    inner: rustigc::Scorer,
+}
+
+#[pymethods]
+impl PyScorer {
+    /// Prepare an `(N, 2)` float64 array of `[latitude, longitude]`, in degrees and flight order.
+    ///
+    /// Raises ValueError unless the array is C-contiguous, two columns wide, and holds at least
+    /// two points whose coordinates are all in range.
+    #[new]
+    #[pyo3(text_signature = "(points)")]
+    fn new(points: PyReadonlyArray2<f64>) -> PyResult<Self> {
+        // An (N, 3) of [lat, lon, alt] holds an even number of floats, so the column count is
+        // what rules it out, not the size.
+        let &[rows, 2] = points.shape() else {
+            return Err(PyValueError::new_err(format!(
+                "points must be an (N, 2) array of [latitude, longitude], got {:?}",
+                points.shape()
+            )));
+        };
+
+        let flat = points.as_slice().map_err(|_| {
+            PyValueError::new_err(
+                "points must be C-contiguous; try numpy.ascontiguousarray",
+            )
+        })?;
+
+        // `as_chunks` is a view, so the only copy is the one `Scorer` then owns.
+        let (table, _) = flat.as_chunks::<2>();
+
+        let inner = rustigc::Scorer::from_vec(table.to_vec()).ok_or_else(|| {
+            PyValueError::new_err(format!(
+                "{rows} points are not scorable: fewer than two, or a coordinate out of range"
+            ))
+        })?;
+
+        Ok(Self { inner })
+    }
+
+    /// Score the table against every rule of `league` and report the best.
+    ///
+    /// `None` when the league is unknown, or nothing could be scored. Every fix of the result is
+    /// an index into the table.
+    #[pyo3(text_signature = "($self, league)")]
+    fn score(&mut self, py: Python<'_>, league: &str) -> Option<PyScore> {
+        // `&mut`, not `&`: a `Scorer` is `Send` but not `Sync` — its caches are `RefCell` — so a
+        // shared reference cannot cross `allow_threads` and an exclusive one can.
+        let scorer: &mut rustigc::Scorer = &mut self.inner;
+
+        py.allow_threads(move || scorer.solve(league))
+            .map(|inner| PyScore { inner })
+    }
+}
+
 /// Every league name `score` and `describe` accept.
 #[pyfunction]
 #[pyo3(text_signature = "()")]
@@ -263,8 +323,8 @@ fn league_names() -> Vec<&'static str> {
 /// Raw bindings to the rustigc library.
 ///
 /// Not the interface to use: `rustigcpy` wraps this with numpy tracks, caching and Python
-/// objects. It holds `RustLog`, the opaque `RustFlight`/`RustScore` layer handles, `league_names`
-/// and `FIX_DTYPE`.
+/// objects. It holds `RustLog`, `RustScorer`, the opaque `RustFlight`/`RustScore` layer handles,
+/// `league_names` and `FIX_DTYPE`.
 #[pymodule]
 #[pyo3(name = "_bindings")]
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -272,6 +332,7 @@ fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLog>()?;
     m.add_class::<PyFlight>()?;
     m.add_class::<PyScore>()?;
+    m.add_class::<PyScorer>()?;
     m.add_function(wrap_pyfunction!(league_names, m)?)?;
 
     // Export FIX_DTYPE as numpy dtype

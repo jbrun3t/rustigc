@@ -4,23 +4,26 @@
 import json
 from typing import TYPE_CHECKING
 
-from .track import Track
-
 if TYPE_CHECKING:
     from .fix import Fix
+    from .track import Track
 
 
 class Score:
     """Result over a `Log` from a league scored over one window.
 
     Obtained from `Log.score`, and drawable by `Log.export`.
+
+    Positions are resolved by indexing `positions`, so what `takeoff` and the rest hand back is
+    whatever that holds: a `Track` gives `Fix` objects, and `range(n)` — what `Scorer` passes,
+    having only coordinates — gives the plain indices back.
     """
 
-    def __init__(self, track: Track, handle):
+    def __init__(self, positions: 'Track | range', handle):
         # The handle is the result as Rust still holds it, so `Log.export` can draw it without
         # scoring again. Its scalars are read from the JSON dump.
         self._handle = handle
-        self._track = track
+        self._positions = positions
         self._data = json.loads(handle.json())
 
     def __getattr__(self, name):
@@ -38,29 +41,29 @@ class Score:
             raise AttributeError(name) from None
 
     @property
-    def takeoff(self) -> 'Fix':
+    def takeoff(self) -> 'Fix | int':
         """First fix of the scored window."""
-        return self._track[self._data["takeoff"]]
+        return self._positions[self._data["takeoff"]]
 
     @property
-    def entry(self) -> 'Fix':
+    def entry(self) -> 'Fix | int':
         """First fix of the scored task."""
-        return self._track[self._data["entry"]]
+        return self._positions[self._data["entry"]]
 
     @property
-    def turnpoints(self) -> list['Fix']:
+    def turnpoints(self) -> list['Fix | int']:
         """Turnpoints of the task, in order."""
-        return [self._track[i] for i in self._data["turnpoints"]]
+        return [self._positions[i] for i in self._data["turnpoints"]]
 
     @property
-    def exit(self) -> 'Fix':
+    def exit(self) -> 'Fix | int':
         """Last fix of the scored task."""
-        return self._track[self._data["exit"]]
+        return self._positions[self._data["exit"]]
 
     @property
-    def landing(self) -> 'Fix':
+    def landing(self) -> 'Fix | int':
         """Last fix of the scored window."""
-        return self._track[self._data["landing"]]
+        return self._positions[self._data["landing"]]
 
     def __repr__(self) -> str:
         return (f"Score({self.description!r}, score={self.score}, "

@@ -41,8 +41,22 @@ log.track._data[0:100]
 The array is read-only, so it always matches what Rust holds; `Log.push` is the way to change a
 track.
 
-`rustigcpy._bindings` is the raw extension module this package is built on, not an interface to
-use directly. `league_names()` lists what `score` accepts.
+## Scoring without a log
+
+`Scorer` scores a table of coordinates, so points that do not come from an IGC file score the same
+way. It takes an `(N, 2)` array of `[latitude, longitude]` in degrees, in flight order:
+
+```python
+from rustigcpy import Scorer
+
+score = Scorer(points).score("xcontest")
+```
+
+The whole table is the scored window — there are no timestamps to detect a flight in — and there
+are no fixes behind the result, so `takeoff`, `entry`, `turnpoints`, `exit` and `landing` come back
+as plain indices into the table rather than `Fix` objects.
+
+`league_names()` lists what `score` accepts.
 
 ## Development
 
