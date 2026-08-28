@@ -2,38 +2,37 @@
 
 use winnow::error::{ContextError, ParseError};
 
-/// What went wrong reading a log.
-#[derive(thiserror::Error, Debug)]
-pub enum LError {
-    /// The bytes are not IGC: not one record could be read.
-    #[error("Parse error: {0}")]
-    Parse(String),
+/// What went wrong turning bytes into a [`Log`].
+///
+/// [`Log`]: crate::Log
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DecodeError {
+    /// Not one record could be read. Means an empty input. every other byte sequence
+    /// decodes, badly, as `Record::Bad`.
+    #[error("no record could be read at byte {offset}")]
+    Parse { offset: usize },
 
-    /// IGC-shaped, but not usable — too much of it is invalid.
-    #[error("D'oh: {0}")]
-    Doh(String),
+    /// Nothing to work from — a [`RawLog`] built or deserialized with no records.
+    ///
+    /// [`RawLog`]: crate::RawLog
+    #[error("no records to decode")]
+    Empty,
+
+    /// IGC-shaped, but at least 80% of its records are invalid.
+    ///
+    /// Carries no count: rejecting earlier, while parsing, would leave any total partial.
+    #[error("too many invalid records")]
+    TooManyBadRecords,
 }
 
-impl From<ParseError<&str, ContextError>> for LError {
-    fn from(err: ParseError<&str, ContextError>) -> Self {
-        LError::Parse(err.to_string())
-    }
-}
-
-impl From<ParseError<&[u8], ContextError>> for LError {
+impl From<ParseError<&[u8], ContextError>> for DecodeError {
     fn from(err: ParseError<&[u8], ContextError>) -> Self {
-        LError::Parse(err.to_string())
+        Self::Parse {
+            offset: err.offset(),
+        }
     }
 }
-
-impl From<ContextError> for LError {
-    fn from(err: ContextError) -> Self {
-        LError::Parse(err.to_string())
-    }
-}
-
-/// [`Result`] of this crate's parsing entry points.
-pub type LResult<T> = std::result::Result<T, LError>;
 
 /// What went wrong against a track.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]

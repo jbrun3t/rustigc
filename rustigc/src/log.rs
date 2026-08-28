@@ -5,11 +5,14 @@
 use std::collections::HashMap;
 
 use crate::{decode::*, Scorer, ScoringResult};
-use crate::{LError, LResult, RawLog};
+use crate::{DecodeError, RawLog};
 
 use log::warn;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+/// Share of invalid records at or above which a file is rejected, in tenths.
+const BAD_RECORD_LIMIT: usize = 8;
 
 /// An IGC file, decoded.
 ///
@@ -33,16 +36,20 @@ pub struct Log {
 }
 
 impl TryFrom<RawLog<'_>> for Log {
-    type Error = LError;
+    type Error = DecodeError;
 
     fn try_from(raw: RawLog) -> Result<Self, Self::Error> {
+        let count = raw.records.len();
+        if count == 0 {
+            return Err(DecodeError::Empty);
+        }
+
         let mut headers = HashMap::new();
         let mut track = Vec::new();
         let mut task: Option<Task> = None;
         let mut recorder: Option<Recorder> = None;
         let mut _bextensions: Option<Vec<RecordExtension>> = None;
         let mut bad_count: usize = 0;
-        let count = raw.records.len();
         // -1 so the first fix passes whatever its timestamp
         let mut last_ts: i64 = -1;
         let mut dropped: usize = 0;
@@ -77,12 +84,10 @@ impl TryFrom<RawLog<'_>> for Log {
             }
         }
 
-        // Reject a file that is more than 80% bad
+        // Reject a file that is 80% bad or worse
         // TODO: Try to reject earlier, while parsing
-        if ((bad_count * 10) / count) >= 8 {
-            return Err(LError::Doh(format!(
-                "Invalid content: {bad_count} bad records"
-            )));
+        if (bad_count * 10) / count >= BAD_RECORD_LIMIT {
+            return Err(DecodeError::TooManyBadRecords);
         }
 
         if dropped > 0 {
@@ -114,9 +119,9 @@ impl Log {
     ///
     /// # Errors
     ///
-    /// [`LError::Parse`] when no record can be read at all, [`LError::Doh`] when more than 80% of
-    /// the records are invalid.
-    pub fn new(input: &[u8]) -> LResult<Self> {
+    /// [`DecodeError::Parse`] when no record can be read at all,
+    /// [`DecodeError::TooManyBadRecords`] when at least 80% of them are invalid.
+    pub fn new(input: &[u8]) -> Result<Self, DecodeError> {
         let raw = RawLog::new(input)?;
         raw.try_into()
     }
@@ -163,5 +168,16 @@ mod tests {
         assert_eq!(log.headers["DTE"].text, "150120");
         assert_eq!(log.track.len(), 3);
         assert_eq!(log.track[0].timestamp, 39_695_000);
+    }
+
+    /// A `RawLog` can be built or deserialized empty, and the bad-record ratio divides by its
+    /// record count.
+    #[test]
+    fn log_from_recordless_rawlog() {
+        let raw = RawLog {
+            records: Vec::new(),
+        };
+
+        assert_eq!(Log::try_from(raw).unwrap_err(), DecodeError::Empty);
     }
 }

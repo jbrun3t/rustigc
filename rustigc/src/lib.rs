@@ -21,7 +21,7 @@
 //! assert_eq!(log.headers["PLT"].text, "Tripoux Robert");
 //! assert_eq!(log.track.len(), 2);
 //! assert_eq!(log.track[0].timestamp, 39_695_000); // milliseconds from UTC midnight
-//! # Ok::<(), rustigc::LError>(())
+//! # Ok::<(), rustigc::DecodeError>(())
 //! ```
 //!
 //! [`RawLog`] is the record-level view. It borrows from the input, keeps every record including
@@ -81,7 +81,7 @@ pub use decode::{
     Declaration, Extensions, Fix, Header, HeaderData, HeaderOrigin, RawFix, Record,
     RecordExtension, Recorder, Task, TextEvent, TimedEvent, TurnPoint,
 };
-pub use error::{LError, LResult, TrackError};
+pub use error::{DecodeError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};

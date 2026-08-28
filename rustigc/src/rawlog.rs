@@ -7,7 +7,7 @@ use winnow::combinator::{alt, repeat};
 use winnow::prelude::*;
 
 use crate::decode::*;
-use crate::{LResult, Log};
+use crate::{DecodeError, Log};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -31,10 +31,8 @@ impl<'a> RawLog<'a> {
     ///
     /// # Errors
     ///
-    /// [`LError::Parse`] when not a single record can be read.
-    ///
-    /// [`LError::Parse`]: crate::LError::Parse
-    pub fn new(input: &'a [u8]) -> LResult<Self> {
+    /// [`DecodeError::Parse`] when not a single record can be read.
+    pub fn new(input: &'a [u8]) -> Result<Self, DecodeError> {
         let mut offset: u32 = 0;
         let mut lastts: u32 = 0;
         let records = repeat(
