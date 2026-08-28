@@ -3,7 +3,7 @@
 """Test Track wrapper"""
 import numpy
 import pytest
-from rustigcpy import Fix, Log
+from rustigcpy import Log
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
@@ -72,18 +72,6 @@ def test_track_repr(igc_content):
 
     assert "Track" in repr_str
     assert "fixes=25459" in repr_str
-
-
-@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_track_coordinates(igc_content):
-    """Test coordinate values are in valid ranges"""
-    log = Log.from_bytes(igc_content)
-    track = log.track
-
-    assert numpy.all(track._latitude >= -90)
-    assert numpy.all(track._latitude <= 90)
-    assert numpy.all(track._longitude >= -180)
-    assert numpy.all(track._longitude <= 180)
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

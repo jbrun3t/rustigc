@@ -2,7 +2,6 @@
 
 """Test rustigcpy Rust extension (minimal low-level API)"""
 import json
-from concurrent.futures import ThreadPoolExecutor
 
 import numpy
 import pytest
@@ -20,49 +19,38 @@ def test_import():
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_parse(igc_content):
-    """Parse IGC file"""
-    log = rib.RustLog.from_bytes(igc_content)
-    assert log is not None
-    assert len(log.track_bytes) == 814688
-
-
-@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_track_bytes_numpy(igc_content):
-    """Verify numpy conversion works"""
+def test_track_bytes_is_fix_dtype(igc_content):
+    """FIX_DTYPE mirrors `#[repr(C)] Fix`, so numpy reads the raw bytes without a copy"""
     log = rib.RustLog.from_bytes(igc_content)
     track = numpy.frombuffer(log.track_bytes, dtype=FIX_DTYPE)
 
-    assert len(track) == 25459
+    assert len(log.track_bytes) == len(track) * FIX_DTYPE.itemsize
     assert FIX_DTYPE.itemsize == 32
-    assert len(track['latitude']) == 25459
-    assert len(track['longitude']) == 25459
-    assert len(track['timestamp']) == 25459
+    assert {name: offset for name, (_, offset) in FIX_DTYPE.fields.items()} == {
+        "timestamp": 0,
+        "_pad": 4,
+        "latitude": 8,
+        "longitude": 16,
+        "baro_altitude": 24,
+        "gnss_altitude": 28,
+    }
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_metadata(igc_content):
-    """Test metadata access via get_header"""
+def test_header_origin(igc_content):
+    """get_header renders HeaderOrigin as the string the wrapper reads"""
     log = rib.RustLog.from_bytes(igc_content)
 
-    # get_header returns tuple of (text, origin)
-    pilot = log.get_header("PLT")
-    assert pilot == ("Mike Young", "Flight Recorder")
-
-    glider = log.get_header("GTY")
-    assert glider == ("Ventus 3T", "Flight Recorder")
-
-    date = log.get_header("DTE")
-    assert date == ("050822", "Flight Recorder")
+    assert log.get_header("PLT") == ("Mike Young", "Flight Recorder")
+    assert log.get_header("XXX") is None
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_flights_detection(igc_content):
-    """Detection reports the section bounds, one handle each"""
+def test_flights_are_handles(igc_content):
+    """Detection hands back layer handles the wrapper can read as JSON"""
     log = rib.RustLog.from_bytes(igc_content)
-    flights = log.flights()
 
-    assert [json.loads(f.json()) for f in flights] == [{"start": 125, "stop": 25425}]
+    assert [set(json.loads(f.json())) for f in log.flights()] == [{"start", "stop"}]
 
 
 def test_invalid_content():

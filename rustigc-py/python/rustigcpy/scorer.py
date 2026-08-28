@@ -15,7 +15,7 @@ class Scorer:
         """Hold an `(N, 2)` array of `[latitude, longitude]`, degrees, in flight order.
 
         Args:
-            points: The table. Converted to C-contiguous float64 if it is not already.
+            points: The table, made C-contiguous if it is not. Coordinates are float64.
 
         Raises:
             ValueError: Not a 2-dimensional `(N, 2)` array, or it holds fewer than two points, or

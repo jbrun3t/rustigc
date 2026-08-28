@@ -68,6 +68,22 @@ fn flight_window_stops_at_time_gap() {
     );
 }
 
+/// fai-01 is the fixture the bindings and their READMEs quote, so pin what they quote.
+#[test]
+fn flight_window_of_fai_01() {
+    let path = fixture_test_dir().join("real/fai-01.igc");
+    let log = fixture_parse_file(&path);
+
+    assert_eq!(log.track.len(), 25459);
+    assert_eq!(log.headers["PLT"].text, "Mike Young");
+    assert_eq!(log.headers["GTY"].text, "Ventus 3T");
+
+    let flights = log.track.flights();
+    let flight = flights.longest().expect("a flight is detected");
+
+    assert_eq!((flight.start, flight.stop), (125, 25425));
+}
+
 fn check_fixture(name: &str) {
     let stem = stem_of(name);
     let path = fixture_test_dir().join("real").join(format!("{stem}.igc"));
