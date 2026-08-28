@@ -82,36 +82,36 @@ def test_track_cached(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_flights_cached(igc_content):
-    """Detection runs once per log"""
+def test_flights_fresh(igc_content):
+    """Detection runs per call, and a log is immutable so it always agrees with itself"""
     log = Log.from_bytes(igc_content)
-    assert log.flights() is log.flights()
+    first, second = log.flights(), log.flights()
+
+    assert first is not second
+    assert [(f.start, f.stop) for f in first] == [(f.start, f.stop) for f in second]
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_push_replaces_track(igc_content):
-    """A pushed track lands in Rust, fix count and detection follow"""
+def test_with_track_leaves_the_original(igc_content):
+    """The replacement is a new log; the one it came from keeps its track"""
     log = Log.from_bytes(igc_content)
-    before = log.flights()
+    shorter = log.with_track(log.track._data[1000:])
 
-    log.push(log.track._data[1000:])
-
-    assert len(log.track) == 25459 - 1000
-    assert log.flights() is not before
-    assert log.score("xcontest") is not None
+    assert len(shorter.track) == 25459 - 1000
+    assert len(log.track) == 25459
+    assert shorter.pilot_name == log.pilot_name
+    assert shorter.score("xcontest") is not None
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_push_rejects_unordered(igc_content):
-    """Timestamps must stay strictly increasing, and a refused push changes nothing"""
+def test_with_track_rejects_unordered(igc_content):
+    """Timestamps must stay strictly increasing"""
     log = Log.from_bytes(igc_content)
     unordered = log.track._data.copy()
     unordered["timestamp"][5] = unordered["timestamp"][4]
 
     with pytest.raises(ValueError, match="strictly increasing"):
-        log.push(unordered)
-
-    assert len(log.track) == 25459
+        log.with_track(unordered)
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

@@ -3,7 +3,7 @@
 """The parsed IGC log and everything derived from it."""
 from __future__ import annotations
 
-from collections.abc import Iterable
+import json
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -21,6 +21,7 @@ def _finder():
 
     return _TIMEZONE_FINDER
 
+
 import numpy
 
 import rustigcpy._bindings as rib
@@ -32,13 +33,9 @@ from .score import Score
 from .track import Track
 
 
-def _handle(item: 'Flight | Score'):
-    """The Rust-side layer behind a wrapper, which is what draws it"""
-    handle = getattr(item, "_handle", None)
-    if handle is None:
-        raise TypeError(f"cannot draw a {type(item).__name__}")
-
-    return handle
+def _json(item) -> str | None:
+    """A layer's scalars, for Rust to read back into the struct that draws it"""
+    return None if item is None else json.dumps(item._data)
 
 
 def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
@@ -58,31 +55,23 @@ def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
 class Log:
     """A parsed IGC file.
 
-    Use `from_file` or `from_bytes` to build one. The track is copied into a numpy array on
-    first `track` access and cached; reading it after that stays in Python.
+    A log never changes, so the track is copied into a numpy array on first `track` access
+    and kept; reading it after that stays in Python.
     """
 
     def __init__(self, log: rib.RustLog):
         """Wrap an already-parsed log. Prefer `from_file` or `from_bytes`."""
         self._log = log
         self._track: Track | None = None
-        self._flights: Flights | None = None
 
-    def reset(self) -> None:
-        """Drop the cached flight detection, so the next `flights()` runs it again."""
-        self._flights = None
+    def with_track(self, track: numpy.ndarray) -> 'Log':
+        """A new log over `track`, carrying everything else this one holds.
 
-    def push(self, track: numpy.ndarray) -> None:
-        """Replace the track, dropping everything cached from the old one.
-
-        The track itself is read-only, so editing means working on a copy and pushing it back:
+        The track is read-only, so editing means working on a copy:
 
             edited = log.track._data.copy()
             edited["baro_altitude"] += 10
-            log.push(edited)
-
-        The fix count may change. A `Flight` or `Score` obtained before the push refers to the
-        old track and can no longer be drawn against this log.
+            log = log.with_track(edited)
 
         Args:
             track: A `FIX_DTYPE` structured array, timestamps strictly increasing.
@@ -95,11 +84,7 @@ class Log:
         if track.dtype != FIX_DTYPE:
             raise TypeError(f"track must be a {FIX_DTYPE} array, got {track.dtype}")
 
-        self._log.set_track_bytes(track.tobytes())
-
-        # Let the track come back up again from the Rust side
-        self._track = None
-        self.reset()
+        return Log(self._log.with_track_bytes(track.tobytes()))
 
     @classmethod
     def from_bytes(cls, content: bytes) -> 'Log':
@@ -193,16 +178,16 @@ class Log:
         return (origin.astimezone(UTC) + timedelta(milliseconds=timestamp)).astimezone(origin.tzinfo)
 
     def flights(self) -> Flights:
-        """Flight sections detected in the track, cached until `reset()` or `push()`.
+        """Detect the flight sections in the track.
+
+        Each call detects again; hold the result to reuse it.
 
         Returns:
             A `Flights` list, empty when nothing was detected.
         """
-        if self._flights is None:
-            self._flights = Flights(
-                Flight(self.track, handle) for handle in self._log.flights()
-            )
-        return self._flights
+        return Flights(
+            Flight(self.track, data) for data in json.loads(self._log.flights())
+        )
 
     def score(self, league: str,
               window: tuple[int, int] | tuple[Fix, Fix] | None = None) -> Score | None:
@@ -229,10 +214,10 @@ class Log:
         else:
             start, stop = _window(window)
 
-        handle = self._log.score(league, start, stop)
-        if handle is None:
+        scored = self._log.score(league, start, stop)
+        if scored is None:
             return None
-        return Score(self.track, handle)
+        return Score(self.track, json.loads(scored))
 
     def describe(self, league: str) -> str:
         """Everything this log describes about itself, as a GeoJSON string.
@@ -244,11 +229,13 @@ class Log:
         """
         return self._log.describe(league)
 
-    def export(self, items: Iterable[Flight | Score] = (), track: bool = True) -> str:
-        """This log and each of `items`, in the order given, as a GeoJSON string.
+    def export(self, flight: Flight | None = None, score: Score | None = None,
+               track: bool = True) -> str:
+        """This log, `flight` and `score`, as a GeoJSON string.
 
         Args:
-            items: `Flight` and `Score` objects to draw, in drawing order.
+            flight: A detected section to draw, or None.
+            score: A scored task to draw, or None.
             track: Whether to include the flown line.
 
         Returns:
@@ -256,12 +243,14 @@ class Log:
             `leg`, `closing`, `score` or `metadata`.
 
         Raises:
-            TypeError: An item is neither a `Flight` nor a `Score`.
+            ValueError: A layer is not the kind its slot draws. Rust reads each one back and
+                names the field it is missing.
+            TypeError: A layer is not a layer at all.
 
-        Indices are taken on trust: an item detected or scored before a `push()` no longer
-        refers to the track it came from.
+        Indices are taken on trust: a layer detected or scored in another log — what `with_track`
+        hands back, for one — no longer refers to the track it came from.
         """
-        return self._log.export([_handle(item) for item in items], track)
+        return self._log.export(_json(flight), _json(score), track)
 
     def __repr__(self) -> str:
         return f"Log(fixes={len(self.track)}, pilot={self.pilot_name!r})"

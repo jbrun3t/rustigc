@@ -24,7 +24,7 @@ score = log.score("xcontest")            # or log.score("xcontest", (125, 25457)
 if score:
     print(score.description, score.score, score.distance_km)
 
-open("flight.geojson", "w").write(log.export([flight, score]))
+open("flight.geojson", "w").write(log.export(flight, score))
 ```
 
 `Log` is the entry point. The API is documented in the docstrings — `help(rustigcpy.Log)`, or hover
@@ -38,8 +38,8 @@ log.track._latitude.mean()
 log.track._data[0:100]
 ```
 
-The array is read-only, so it always matches what Rust holds; `Log.push` is the way to change a
-track.
+The array is read-only, so it always matches what Rust holds. A `Log` never changes either:
+`Log.with_track` hands back a new one over the track it is given.
 
 ## Scoring without a log
 

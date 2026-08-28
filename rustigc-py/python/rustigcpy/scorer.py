@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Scoring a table of coordinates, with no IGC file behind it."""
+import json
+
 import numpy
 
 import rustigcpy._bindings as rib
@@ -40,10 +42,10 @@ class Scorer:
         Returns:
             The best scoring result, or None when the league is unknown or nothing scored.
         """
-        handle = self._scorer.score(league)
-        if handle is None:
+        scored = self._scorer.score(league)
+        if scored is None:
             return None
 
         # A `Score` resolves a position by indexing what it is given, and `range` is the sequence
         # that hands an index straight back.
-        return Score(range(self._points), handle)
+        return Score(range(self._points), json.loads(scored))

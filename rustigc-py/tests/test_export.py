@@ -38,7 +38,7 @@ def test_export_matches_describe(igc_content):
     flight = log.flights().longest
     score = log.score("xcontest")
 
-    assert log.export([flight, score]) == log.describe("xcontest")
+    assert log.export(flight, score) == log.describe("xcontest")
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
@@ -51,40 +51,38 @@ def test_export_bare(igc_content):
 def test_export_without_track(igc_content):
     """Skipping the line keeps the metadata the markers resolve against"""
     log = Log.from_bytes(igc_content)
-    without = roles(log.export([log.score("xcontest")], track=False))
+    without = roles(log.export(score=log.score("xcontest"), track=False))
 
     assert "track" not in without
     assert "metadata" in without
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_export_order(igc_content):
-    """Layers are drawn in the order given"""
-    log = Log.from_bytes(igc_content)
-    flight, score = log.flights().longest, log.score("xcontest")
-
-    assert roles(log.export([flight, score])) != roles(log.export([score, flight]))
-
-
-@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_export_rejects_other(igc_content):
-    """Only a flight or a score is a layer"""
+    """Reading the layer back is what refuses it, and it names the field it wanted"""
     log = Log.from_bytes(igc_content)
 
-    with pytest.raises(TypeError, match="cannot draw a Fix"):
-        log.export([log.track[0]])
+    with pytest.raises(ValueError, match="Not a score: missing field `league`"):
+        log.export(score=log.flights().longest)
+
+    with pytest.raises(ValueError, match="Not a flight: missing field `start`"):
+        log.export(flight=log.score("xcontest"))
+
+    # A fix carries no layer to serialize, so it never reaches Rust
+    with pytest.raises(TypeError):
+        log.export(flight=log.track[0])
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_export_after_push(igc_content):
-    """A layer outlives the track it came from, and nothing checks that
+def test_export_foreign_layer(igc_content):
+    """A layer drawn against another log's track, and nothing checks that
 
-    Its indices still point where they did, so a shortened track puts them out of range. Today that
+    Its indices still point where they did, so a shorter track puts them out of range. Today that
     surfaces as a Rust panic rather than a Python error, hence the broad catch.
     """
     log = Log.from_bytes(igc_content)
     flight = log.flights().longest
-    log.push(log.track._data[1000:])
+    shorter = log.with_track(log.track._data[1000:])
 
     with pytest.raises(BaseException, match="index out of bounds"):
-        log.export([flight])
+        shorter.export(flight)

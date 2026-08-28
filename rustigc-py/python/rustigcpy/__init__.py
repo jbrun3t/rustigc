@@ -15,7 +15,7 @@ the flights in it, scores them against a league, and draws the result as GeoJSON
     if score:
         print(score.description, score.score, score.distance_km)
 
-    open("flight.geojson", "w").write(log.export([flight, score]))
+    open("flight.geojson", "w").write(log.export(flight, score))
 
 The track is a numpy structured array underneath, copied once from Rust and then read entirely in
 Python. Parsing, detection and scoring release the GIL.

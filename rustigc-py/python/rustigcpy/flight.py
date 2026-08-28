@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Flight sections detected in a track."""
-import json
 from typing import TYPE_CHECKING
 
 from .track import Track
@@ -17,12 +16,9 @@ class Flight:
     into the track it was detected in; `takeoff` and `landing` are the fixes they point at.
     """
 
-    def __init__(self, track: Track, handle):
-        # The handle is the section as Rust still holds it, so `Log.export` can draw it without
-        # detecting again. Its scalars are read from the JSON dump.
-        self._handle = handle
+    def __init__(self, track: Track, data: dict):
         self._track = track
-        self._data = json.loads(handle.json())
+        self._data = data
 
     def __getattr__(self, name):
         """Scalars of the section as detection reports them: `start`, `stop`."""

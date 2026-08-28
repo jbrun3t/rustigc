@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """What a league's rules made of a flight."""
-import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,12 +18,9 @@ class Score:
     having only coordinates — gives the plain indices back.
     """
 
-    def __init__(self, positions: 'Track | range', handle):
-        # The handle is the result as Rust still holds it, so `Log.export` can draw it without
-        # scoring again. Its scalars are read from the JSON dump.
-        self._handle = handle
+    def __init__(self, positions: 'Track | range', data: dict):
         self._positions = positions
-        self._data = json.loads(handle.json())
+        self._data = data
 
     def __getattr__(self, name):
         """Scalars of the result.

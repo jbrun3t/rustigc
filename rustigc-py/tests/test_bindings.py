@@ -46,11 +46,11 @@ def test_header_origin(igc_content):
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_flights_are_handles(igc_content):
-    """Detection hands back layer handles the wrapper can read as JSON"""
+def test_flights_shape(igc_content):
+    """Detection hands back one JSON array of sections"""
     log = rib.RustLog.from_bytes(igc_content)
 
-    assert [set(json.loads(f.json())) for f in log.flights()] == [{"start", "stop"}]
+    assert [set(f) for f in json.loads(log.flights())] == [{"start", "stop"}]
 
 
 def test_invalid_content():
@@ -70,9 +70,9 @@ def test_league_names():
 def test_score_shape(igc_content):
     """Result carries exactly the fields the wrapper expects"""
     log = rib.RustLog.from_bytes(igc_content)
-    handle = log.score("xcontest", *FAI01_WINDOW)
+    scored = log.score("xcontest", *FAI01_WINDOW)
 
-    assert set(json.loads(handle.json())) == {
+    assert set(json.loads(scored)) == {
         "league", "description", "distance_m", "distance_km", "gap_km", "threshold_m",
         "penalty", "score", "multiplier", "takeoff", "entry", "turnpoints",
         "exit", "landing", "circuit",

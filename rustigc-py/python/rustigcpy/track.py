@@ -18,7 +18,7 @@ class Track:
         track._data[0:100]
 
     They expose the fix layout directly, hence the underscores. The array is read-only, so it
-    always matches what Rust holds; `Log.push` is the way to change a track.
+    always matches what Rust holds; `Log.with_track` hands back a log over a different one.
     """
 
     def __init__(self, track_bytes: bytes):
