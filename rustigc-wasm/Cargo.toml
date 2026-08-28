@@ -20,3 +20,10 @@ rustigc = { path = "../rustigc", features = ["serde", "geojson"] }
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
 serde_json = "1"
+
+# Configure wasm-opt when building with wasm-pack
+[package.metadata.wasm-pack.profile.release]
+# -Oz optimizes for size; -all enables WebAssembly features (bulk-memory, etc.) required by rustc
+wasm-opt = ["-Oz", "-all"]
+
+
