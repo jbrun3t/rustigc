@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::{decode::*, Scorer, ScoringResult};
+use crate::{decode::*, ScoreError, Scorer, ScoringResult};
 use crate::{DecodeError, RawLog};
 
 use log::warn;
@@ -131,8 +131,12 @@ impl Log {
     /// The window is a pair of indices into [`Log::track`]; flight detection is the usual source
     /// of one.
     ///
-    /// `None` when `league` is not one of [`league_names`], when the window is unusable, or when
-    /// no rule could score it.
+    /// `None` when no rule could score the window — a real answer, not a failure.
+    ///
+    /// # Errors
+    ///
+    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`],
+    /// [`ScoreError::Track`] when the window is not one this log's track holds.
     ///
     /// [`league_names`]: crate::league_names
     pub fn score(
@@ -140,7 +144,7 @@ impl Log {
         league: &str,
         start: usize,
         stop: usize,
-    ) -> Option<ScoringResult> {
+    ) -> Result<Option<ScoringResult>, ScoreError> {
         Scorer::new(&self.track, start, stop)?.solve(league)
     }
 }

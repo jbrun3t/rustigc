@@ -7,6 +7,7 @@ mod engine;
 mod rules;
 mod shapes;
 
+pub(crate) use rules::known_league;
 pub use rules::league_names;
 
 pub use engine::Scorer;

@@ -195,23 +195,24 @@ impl Log {
     ///
     /// `window` defaults to the longest detected flight, whether left out or passed `undefined`.
     /// `undefined` when nothing could be scored; throws when `league` is not one of
-    /// `league_names()`.
+    /// `league_names()`, when the window is not one this track holds, or when it is left to
+    /// detection and there is no flight to take it from.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn score(
         &self,
         league: &str,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
-        known_league(league)?;
-
         let given: Option<rustigc::Flight> = match window {
             Some(value) => serde_wasm_bindgen::from_value(value.into())?,
             None => None,
         };
 
-        let scored = given
+        let window = given
             .or_else(|| self.inner.track.flights().longest().copied())
-            .and_then(|w| self.inner.score(league, w.start, w.stop));
+            .ok_or_else(|| JsError::new("no flight detected, pass an explicit window"))?;
+
+        let scored = self.inner.score(league, window.start, window.stop)?;
 
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
@@ -254,18 +255,8 @@ impl Log {
     /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
     /// score are already at hand.
     pub fn describe(&self, league: &str) -> Result<String, JsError> {
-        known_league(league)?;
-
-        Ok(serde_json::to_string(&self.inner.describe(league))?)
+        Ok(serde_json::to_string(&self.inner.describe(league)?)?)
     }
-}
-
-/// Reject a league the registry does not hold.
-fn known_league(league: &str) -> Result<(), JsError> {
-    rustigc::league_names()
-        .any(|name| name == league)
-        .then_some(())
-        .ok_or_else(|| JsError::new(&format!("unknown league {league:?}")))
 }
 
 impl Log {
@@ -309,11 +300,7 @@ impl Scorer {
             Box::from_raw(std::slice::from_raw_parts_mut(ptr, points))
         };
 
-        let inner = rustigc::Scorer::from_vec(table.into_vec()).ok_or_else(|| {
-            JsError::new(&format!(
-                "{points} points are not scorable: fewer than two, or a coordinate out of range"
-            ))
-        })?;
+        let inner = rustigc::Scorer::from_vec(table.into_vec())?;
 
         Ok(Scorer { inner })
     }
@@ -324,9 +311,7 @@ impl Scorer {
     /// scored; throws when `league` is not one of `league_names()`.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn solve(&self, league: &str) -> Result<JsValue, JsError> {
-        known_league(league)?;
-
-        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(league))?)
+        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(league)?)?)
     }
 }
 

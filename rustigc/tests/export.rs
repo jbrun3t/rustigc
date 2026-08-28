@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rustigc::{FlightDetection, FlightSelection, Log, TrackError, TrackLine};
+use rustigc::{FlightDetection, FlightSelection, Log, ScoreError, TrackError, TrackLine};
 use serde_json::Value;
 
 fn fixture(stem: &str) -> Vec<u8> {
@@ -22,7 +22,7 @@ fn roles(features: &[Value]) -> Vec<&str> {
 #[test]
 fn describe_fai_01() {
     let log = Log::new(&fixture("fai-01")).unwrap();
-    let described = serde_json::to_value(log.describe("xcontest")).unwrap();
+    let described = serde_json::to_value(log.describe("xcontest").unwrap()).unwrap();
 
     let features = described["features"].as_array().unwrap();
     let roles = roles(features);
@@ -77,18 +77,15 @@ fn describe_fai_01() {
     }
 }
 
-/// A log nothing can be scored in still describes its own track.
+/// A league name is the caller's, so a wrong one is refused rather than drawn without a score.
 #[test]
 fn describe_unknown_league() {
     let log = Log::new(&fixture("fai-01")).unwrap();
-    let described = serde_json::to_value(log.describe("xkontest")).unwrap();
 
-    let roles = roles(described["features"].as_array().unwrap());
-    assert!(roles.contains(&"track"));
-    assert!(roles.contains(&"metadata"));
-    assert!(!roles.contains(&"score"));
-    // the detected flight is still worth its two markers
-    assert_eq!(roles.iter().filter(|r| **r == "marker").count(), 2);
+    assert_eq!(
+        log.describe("xkontest").unwrap_err(),
+        ScoreError::UnknownLeague
+    );
 }
 
 /// A layer produced from a longer track is refused, not drawn past the end.
@@ -96,7 +93,7 @@ fn describe_unknown_league() {
 fn export_layer_out_of_range() {
     let log = Log::new(&fixture("fai-01")).unwrap();
     let window = log.track.flights().longest().copied().unwrap();
-    let scored = log.score("xcontest", window.start, window.stop);
+    let scored = log.score("xcontest", window.start, window.stop).unwrap();
 
     let shorter = Log {
         track: log.track[20_000..].to_vec(),

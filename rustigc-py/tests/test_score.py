@@ -33,8 +33,21 @@ def test_score_output(igc_content):
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_unknown_league(igc_content):
-    """Unknown league scores nothing, for now"""
-    assert Log.from_bytes(igc_content).score("xkontest") is None
+    """A league name is the caller's, so a wrong one is refused"""
+    with pytest.raises(ValueError, match="unknown league"):
+        Log.from_bytes(igc_content).score("xkontest")
+
+
+def test_score_without_a_detected_flight():
+    """No flight means no default window, which is refused like any other bad window"""
+    tiny = (b"AFLA1BX\nHFDTE150120\n"
+            b"B1101355206343N00006198WA005870055801005\n"
+            b"B1101365206345N00006200WA005890056004208\n")
+    log = Log.from_bytes(tiny)
+    assert len(log.flights()) == 0
+
+    with pytest.raises(ValueError, match="no flight detected"):
+        log.score("xcontest")
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

@@ -199,17 +199,18 @@ class Log:
                 objects. Defaults to the longest detected flight.
 
         Returns:
-            The best `Score`. None when the league is unknown, the window unusable, no flight
-            was detected for the default window, or no rule could score.
+            The best `Score`. None when no rule could score.
 
         Raises:
             TypeError: One bound of `window` is a `Fix` and the other is not.
-            ValueError: A `Fix` bound does not know its position in a track.
+            ValueError: `league` is not one of `league_names()`, the window is not one this
+                track holds — including a default window with no flight to take it from — or a
+                `Fix` bound does not know its position in a track.
         """
         if window is None:
             flight = self.flights().longest
             if flight is None:
-                return None
+                raise ValueError("no flight detected, pass an explicit window")
             start, stop = _window((flight.takeoff, flight.landing))
         else:
             start, stop = _window(window)
@@ -222,10 +223,13 @@ class Log:
     def describe(self, league: str) -> str:
         """Everything this log describes about itself, as a GeoJSON string.
 
-        The longest flight detected in the track, and what it scored under `league`. Layers it
-        cannot produce are left out: an unscorable league leaves just the track.
+        The longest flight detected in the track, and what it scored under `league`. A flight
+        that scores nothing leaves just the track.
 
         Use `export` when the flight and score are already at hand.
+
+        Raises:
+            ValueError: `league` is not one of `league_names()`.
         """
         return self._log.describe(league)
 

@@ -7,6 +7,7 @@
 use std::fmt::Debug;
 
 use super::shapes::{ShapeBuilder, ShapeKind};
+use crate::ScoreError;
 
 pub mod cfd;
 pub mod misc;
@@ -237,6 +238,16 @@ static LEAGUES: &[&'static dyn LeagueInfo] = &[
 
 pub(crate) fn league_rules(name: &str) -> Option<Ruleset> {
     LEAGUES.iter().find(|l| l.name() == name).map(|l| l.rules())
+}
+
+/// Refuses a name the registry does not hold, for an entry point that takes a league but may not
+/// reach [`Scorer::solve`].
+///
+/// [`Scorer::solve`]: crate::Scorer::solve
+pub fn known_league(name: &str) -> Result<(), ScoreError> {
+    league_rules(name)
+        .map(|_| ())
+        .ok_or(ScoreError::UnknownLeague)
 }
 
 /// Every league name [`Log::score`] and [`Scorer::solve`] accept.

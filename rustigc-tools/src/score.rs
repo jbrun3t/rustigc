@@ -148,7 +148,14 @@ fn main() -> io::Result<()> {
     let window = args
         .window
         .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
-    let scored = window.and_then(|(start, stop)| log.score(&args.league, start, stop));
+    let scored = window
+        .map(|(start, stop)| {
+            log.score(&args.league, start, stop).unwrap_or_else(|e| {
+                eprintln!("Could not score: {e}");
+                std::process::exit(1);
+            })
+        })
+        .flatten();
 
     if scored.is_none() {
         eprintln!("Could not score");

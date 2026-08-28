@@ -146,7 +146,9 @@ impl PyLog {
 
     /// Score the fixes in `[start, stop]` against every rule of `league`, reporting the best.
     ///
-    /// `None` when the league is unknown, the window unusable, or nothing could be scored.
+    /// `None` when no rule could score the window.
+    ///
+    /// Raises ValueError for an unknown league, or a window this log's track does not hold.
     #[pyo3(text_signature = "($self, league, start, stop)")]
     fn score(
         &self,
@@ -155,9 +157,9 @@ impl PyLog {
         start: usize,
         stop: usize,
     ) -> PyResult<Option<String>> {
-        // FIXME: `None` covers every way this can fail: unknown league, bad window, nothing scored.
-        // Something to fixme in the core
-        let result = py.allow_threads(|| self.inner.score(league, start, stop));
+        let result = py
+            .allow_threads(|| self.inner.score(league, start, stop))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         result
             .map(|scored| serde_json::to_string(&scored))
@@ -167,13 +169,16 @@ impl PyLog {
 
     /// Everything the log describes about itself under `league`, as one GeoJSON string.
     ///
-    /// Detects the longest flight and scores it.
+    /// Detects the longest flight and scores it. Raises ValueError for an unknown league.
     #[pyo3(text_signature = "($self, league)")]
     fn describe(&self, py: Python<'_>, league: &str) -> PyResult<String> {
-        py.allow_threads(|| serde_json::to_string(&self.inner.describe(league)))
-            .map_err(|e| {
-                PyValueError::new_err(format!("Failed to serialize geojson: {e}"))
-            })
+        py.allow_threads(|| {
+            let collection = self.inner.describe(league).map_err(|e| e.to_string())?;
+
+            serde_json::to_string(&collection)
+                .map_err(|e| format!("Failed to serialize geojson: {e}"))
+        })
+        .map_err(PyValueError::new_err)
     }
 
     /// The log, its time reference, `flight` and `score`, as one GeoJSON string.
@@ -245,7 +250,7 @@ impl PyScorer {
     fn new(points: PyReadonlyArray2<f64>) -> PyResult<Self> {
         // An (N, 3) of [lat, lon, alt] holds an even number of floats, so the column count is
         // what rules it out, not the size.
-        let &[rows, 2] = points.shape() else {
+        let &[_, 2] = points.shape() else {
             return Err(PyValueError::new_err(format!(
                 "points must be an (N, 2) array of [latitude, longitude], got {:?}",
                 points.shape()
@@ -261,19 +266,16 @@ impl PyScorer {
         // `as_chunks` is a view, so the only copy is the one `Scorer` then owns.
         let (table, _) = flat.as_chunks::<2>();
 
-        let inner = rustigc::Scorer::from_vec(table.to_vec()).ok_or_else(|| {
-            PyValueError::new_err(format!(
-                "{rows} points are not scorable: fewer than two, or a coordinate out of range"
-            ))
-        })?;
+        let inner = rustigc::Scorer::from_vec(table.to_vec())
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         Ok(Self { inner })
     }
 
     /// Score the table against every rule of `league` and report the best.
     ///
-    /// `None` when the league is unknown, or nothing could be scored. Every fix of the result is
-    /// an index into the table.
+    /// `None` when no rule could score the table; raises ValueError for an unknown league. Every
+    /// fix of the result is an index into the table.
     #[pyo3(text_signature = "($self, league)")]
     fn score(&mut self, py: Python<'_>, league: &str) -> PyResult<Option<String>> {
         // `&mut`, not `&`: a `Scorer` is `Send` but not `Sync` — its caches are `RefCell` — so a
@@ -281,6 +283,7 @@ impl PyScorer {
         let scorer: &mut rustigc::Scorer = &mut self.inner;
 
         py.allow_threads(move || scorer.solve(league))
+            .map_err(|e| PyValueError::new_err(e.to_string()))?
             .map(|scored| serde_json::to_string(&scored))
             .transpose()
             .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))

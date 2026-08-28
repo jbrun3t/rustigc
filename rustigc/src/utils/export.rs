@@ -9,8 +9,10 @@ use super::geometry::{
 };
 use super::iter::pairs;
 use super::round_km;
+use crate::score::known_league;
 use crate::{
-    Fix, Flight, FlightDetection, FlightSelection, Log, ScoringResult, TrackError,
+    Fix, Flight, FlightDetection, FlightSelection, Log, ScoreError, ScoringResult,
+    TrackError,
 };
 
 /// Header codes a log labels its flown line with.
@@ -381,11 +383,26 @@ impl Log {
     /// that flight scored under `league`.
     ///
     /// Use [`Log::export`] when the flight and score are already at hand.
-    pub fn describe(&self, league: &str) -> FeatureCollection {
-        let window = self.track.flights().longest().copied();
-        let scored = window.and_then(|w| self.score(league, w.start, w.stop));
+    ///
+    /// # Errors
+    ///
+    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`].
+    ///
+    /// [`league_names`]: crate::league_names
+    pub fn describe(&self, league: &str) -> Result<FeatureCollection, ScoreError> {
+        // Detection may find nothing to score, and the name is refused either way.
+        known_league(league)?;
 
-        self.export_flight(window, scored.as_ref(), TrackLine::Draw)
-            .expect("detection and scoring index this log's track")
+        let window = self.track.flights().longest().copied();
+        let scored = window
+            .map(|w| self.score(league, w.start, w.stop))
+            .transpose()?
+            .flatten();
+
+        // Nothing here comes from the caller: an out-of-range index would be a bug in detection
+        // or scoring, not a failure to report.
+        Ok(self
+            .export_flight(window, scored.as_ref(), TrackLine::Draw)
+            .expect("detection and scoring index this log's own track"))
     }
 }

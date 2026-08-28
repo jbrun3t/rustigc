@@ -40,7 +40,7 @@
 //! let flights = log.track.flights();
 //! let flight = flights.longest().expect("no flight detected");
 //!
-//! if let Some(result) = log.score("xcontest", flight.start, flight.stop) {
+//! if let Some(result) = log.score("xcontest", flight.start, flight.stop)? {
 //!     println!("{}: {} points over {} km", result.description, result.score, result.distance_km);
 //! }
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -55,10 +55,11 @@
 //! let points = vec![[45.00, 6.00], [45.05, 6.10], [45.20, 6.30],
 //!                   [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]];
 //!
-//! let scorer = Scorer::new(&points, 0, points.len() - 1).expect("unusable window");
-//! let result = scorer.solve("xcontest").expect("nothing scored");
+//! let scorer = Scorer::from_vec(points)?;
+//! let result = scorer.solve("xcontest")?.expect("nothing scored");
 //!
 //! assert_eq!(result.description, "closed free triangle");
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
 //! # Feature flags
@@ -81,7 +82,7 @@ pub use decode::{
     Declaration, Extensions, Fix, Header, HeaderData, HeaderOrigin, RawFix, Record,
     RecordExtension, Recorder, Task, TextEvent, TimedEvent, TurnPoint,
 };
-pub use error::{DecodeError, TrackError};
+pub use error::{DecodeError, ScoreError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
 pub use score::{league_names, Scorer, ScoringResult};

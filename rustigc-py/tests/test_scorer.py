@@ -36,16 +36,19 @@ def test_accepts_a_strided_table():
 
 
 def test_unknown_league():
-    """Unknown league scores nothing, as Log.score reports it"""
-    assert Scorer(TRIANGLE).score("xkontest") is None
+    """Refuse unknown leagues"""
+    with pytest.raises(ValueError, match="unknown league"):
+        Scorer(TRIANGLE).score("xkontest")
 
 
 @pytest.mark.parametrize("table, message", [
     (numpy.zeros(4), "2-dimensional"),
     (numpy.zeros((4, 3)), r"\(N, 2\)"),
-    (numpy.zeros((1, 2)), "not scorable"),
+    (numpy.zeros((1, 2)), "2 are the minimum"),
+    (numpy.array([[45.0, 6.0], [numpy.nan, 6.1]]), "point 1 is not a finite coordinate"),
+    (numpy.array([[45.0, 6.0], [90.5, 6.1]]), "point 1 is not a finite coordinate"),
 ])
 def test_rejects_unusable_tables(table, message):
-    """The shape checks are this binding's; `not scorable` is the core's None surfacing"""
+    """The shape checks are this binding's; the rest is the core naming what is wrong"""
     with pytest.raises(ValueError, match=message):
         Scorer(table)

@@ -94,11 +94,11 @@ test("Scorer over a coordinate table matches Log.score", () => {
 	}
 });
 
-test("Scorer rejects an unusable table", () => {
+test("Scorer rejects an unusable table, naming what is wrong", () => {
 	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, 45.1)), /whole number/);
-	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0)), /not scorable/);
-	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, 90.5, 6.1)), /not scorable/);
-	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, NaN, 6.1)), /not scorable/);
+	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0)), /2 are the minimum/);
+	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, 90.5, 6.1)), /point 1 is not a finite coordinate/);
+	assert.throws(() => new Scorer(Float64Array.of(45.0, 6.0, NaN, 6.1)), /point 1 is not a finite coordinate/);
 });
 
 test("a layer the track does not hold throws", () => {

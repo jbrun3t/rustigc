@@ -19,6 +19,7 @@
 use crate::utils::geometry::{
     AntimeridianCheck, AntimeridianUnwrap, BBox, PointCoords, SPoint, Vertices,
 };
+use crate::{ScoreError, TrackError};
 use log::{debug, info};
 use std::cmp::{max, min, Ordering};
 use std::collections::BinaryHeap;
@@ -181,10 +182,10 @@ impl Eq for Solution {}
 /// use rustigc::{Log, Scorer};
 ///
 /// let log = Log::new(&std::fs::read("flight.igc")?)?;
-/// let scorer = Scorer::new(&log.track, 125, 25425).expect("unusable window");
+/// let scorer = Scorer::new(&log.track, 125, 25425)?;
 ///
 /// for league in rustigc::league_names() {
-///     println!("{league}: {:?}", scorer.solve(league).map(|r| r.score));
+///     println!("{league}: {:?}", scorer.solve(league)?.map(|r| r.score));
 /// }
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -198,6 +199,29 @@ pub struct Scorer {
     pub(super) caches: Caches,
     band: Band,
     offset: usize,
+}
+
+/// Rejects a table that cannot be searched.
+///
+/// A NaN would poison the heap's `total_cmp` ordering, and a longitude past 180 would make
+/// `crosses_antimeridian` misfire. Points reaching [`Scorer::new`] come from the B-record parser,
+/// which bounds both degrees already; these come from outside.
+fn check_points<P: PointCoords<f64>>(track: &[P]) -> Result<(), TrackError> {
+    if track.len() < 2 {
+        return Err(TrackError::TooFewPoints {
+            points: track.len(),
+        });
+    }
+
+    match track.iter().position(|p| {
+        !(p.y().is_finite()
+            && p.y().abs() <= 90.0
+            && p.x().is_finite()
+            && p.x().abs() <= 180.0)
+    }) {
+        Some(index) => Err(TrackError::BadCoordinate { index }),
+        None => Ok(()),
+    }
 }
 
 impl Scorer {
@@ -386,19 +410,32 @@ impl Scorer {
 
     /// Prepares the fixes in `[start, stop]` for searching.
     ///
-    /// `None` when the window is empty, inverted, or reaches past `track`.
+    /// The window is the caller's, and checked. The coordinates are this crate's own — they reach
+    /// here from the B-record parser, which bounds both degrees — and are taken on trust;
+    /// [`Scorer::from_slice`] is the entry for a table from outside.
+    ///
+    /// # Errors
+    ///
+    /// [`TrackError::InvalidWindow`] when `start` is at or past `stop`,
+    /// [`TrackError::FixOutOfRange`] when `stop` reaches past `track`.
     pub fn new<P: PointCoords<f64>>(
         track: &[P],
         start: usize,
         stop: usize,
-    ) -> Option<Self> {
-        if start >= stop || stop >= track.len() {
-            return None;
+    ) -> Result<Self, TrackError> {
+        if start >= stop {
+            return Err(TrackError::InvalidWindow { start, stop });
+        }
+        if stop >= track.len() {
+            return Err(TrackError::FixOutOfRange {
+                index: stop,
+                len: track.len(),
+            });
         }
 
         let fixes = &track[start..=stop];
 
-        Some(Self::build(
+        Ok(Self::build(
             fixes.iter().map(|fix| [fix.y(), fix.x()]).collect(),
             start,
         ))
@@ -406,33 +443,30 @@ impl Scorer {
 
     /// Prepares the whole of `track`, [`Scorer::new`] without a window.
     ///
-    /// Coordinates are taken on trust, as they are by [`Scorer::new`];.
-    pub fn from_slice<P: PointCoords<f64>>(track: &[P]) -> Option<Self> {
-        Self::new(track, 0, track.len().checked_sub(1)?)
+    /// # Errors
+    ///
+    /// [`TrackError::TooFewPoints`] for fewer than two points,
+    /// [`TrackError::BadCoordinate`] for one that is not a finite degree pair.
+    pub fn from_slice<P: PointCoords<f64>>(track: &[P]) -> Result<Self, TrackError> {
+        check_points(track)?;
+
+        Self::new(track, 0, track.len() - 1)
     }
 
     /// Prepares an owned table of `[latitude, longitude]` points, in decimal degrees and in flight
     /// order.
     ///
     /// Keeps the allocation it is given, so a binding can hand over the buffer it copied across its
-    /// FFI without a second pass. `None` for fewer than two points, or a coordinate that is not
-    /// finite or out of range.
-    pub fn from_vec(track: Vec<[f64; 2]>) -> Option<Self> {
-        if track.len() < 2 {
-            return None;
-        }
+    /// FFI without a second pass.
+    ///
+    /// # Errors
+    ///
+    /// [`TrackError::TooFewPoints`] for fewer than two points,
+    /// [`TrackError::BadCoordinate`] for one that is not a finite degree pair.
+    pub fn from_vec(track: Vec<[f64; 2]>) -> Result<Self, TrackError> {
+        check_points(&track)?;
 
-        // Unlike `new`, whose points come from the B-record parser (`decode/utils.rs` bounds both
-        // degrees), this table is arbitrary. A NaN would silently poison the heap's `total_cmp`
-        // ordering, and an out-of-range longitude would make `crosses_antimeridian` misfire.
-        let sane = track.iter().all(|p| {
-            p.y().is_finite()
-                && p.y().abs() <= 90.0
-                && p.x().is_finite()
-                && p.x().abs() <= 180.0
-        });
-
-        sane.then(|| Self::build(track, 0))
+        Ok(Self::build(track, 0))
     }
 
     /// Sets up the caches and the latitude band over `track`, `offset` fixes into the caller's own
@@ -458,15 +492,18 @@ impl Scorer {
 
     /// Scores the window against every rule of `league` and reports the best.
     ///
-    /// `None` when `league` is not one of [`league_names`], or when no rule could score the
-    /// window.
+    /// `None` when no rule could score the window — a real answer, not a failure.
+    ///
+    /// # Errors
+    ///
+    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`].
     ///
     /// Main B&B loop. Evaluating the rules together is important to quickly discard the least
     /// performing ones.
     ///
     /// [`league_names`]: crate::league_names
-    pub fn solve(&self, league: &str) -> Option<ScoringResult> {
-        let rules = league_rules(league)?;
+    pub fn solve(&self, league: &str) -> Result<Option<ScoringResult>, ScoreError> {
+        let rules = league_rules(league).ok_or(ScoreError::UnknownLeague)?;
 
         let (solutions, mut floor) = self.seed(rules);
         let mut heap: BinaryHeap<Solution> = solutions
@@ -512,7 +549,7 @@ impl Scorer {
             );
         };
 
-        result
+        Ok(result)
     }
 }
 
@@ -520,33 +557,84 @@ impl Scorer {
 mod tests {
     use super::*;
 
+    fn from_vec_err(track: Vec<[f64; 2]>) -> TrackError {
+        Scorer::from_vec(track).unwrap_err()
+    }
+
     #[test]
     fn from_vec_rejects_short() {
-        assert!(Scorer::from_vec(vec![[45.0, 6.0]]).is_none());
+        assert_eq!(
+            from_vec_err(vec![[45.0, 6.0]]),
+            TrackError::TooFewPoints { points: 1 }
+        );
     }
 
     #[test]
     fn from_vec_rejects_nan() {
-        assert!(Scorer::from_vec(vec![[45.0, 6.0], [f64::NAN, 6.1]]).is_none());
+        assert_eq!(
+            from_vec_err(vec![[45.0, 6.0], [f64::NAN, 6.1]]),
+            TrackError::BadCoordinate { index: 1 }
+        );
     }
 
     #[test]
     fn from_vec_rejects_infinite() {
-        assert!(Scorer::from_vec(vec![[45.0, 6.0], [45.1, f64::INFINITY]]).is_none());
+        assert_eq!(
+            from_vec_err(vec![[45.0, 6.0], [45.1, f64::INFINITY]]),
+            TrackError::BadCoordinate { index: 1 }
+        );
     }
 
     #[test]
     fn from_vec_rejects_out_of_band() {
-        assert!(Scorer::from_vec(vec![[45.0, 6.0], [90.5, 6.1]]).is_none());
+        assert_eq!(
+            from_vec_err(vec![[45.0, 6.0], [90.5, 6.1]]),
+            TrackError::BadCoordinate { index: 1 }
+        );
     }
 
     #[test]
     fn from_slice_rejects_empty() {
-        assert!(Scorer::from_slice::<SPoint>(&[]).is_none());
+        assert_eq!(
+            Scorer::from_slice::<SPoint>(&[]).unwrap_err(),
+            TrackError::TooFewPoints { points: 0 }
+        );
     }
 
     #[test]
     fn from_slice_rejects_short() {
-        assert!(Scorer::from_slice(&[[45.0, 6.0]]).is_none());
+        assert_eq!(
+            Scorer::from_slice(&[[45.0, 6.0]]).unwrap_err(),
+            TrackError::TooFewPoints { points: 1 }
+        );
+    }
+
+    #[test]
+    fn from_slice_rejects_bad_coordinate() {
+        assert_eq!(
+            Scorer::from_slice(&[[45.0, 6.0], [f64::NAN, 6.1]]).unwrap_err(),
+            TrackError::BadCoordinate { index: 1 }
+        );
+    }
+
+    #[test]
+    fn new_rejects_inverted_window() {
+        let track = [[45.0, 6.0], [45.1, 6.1], [45.2, 6.2]];
+
+        assert_eq!(
+            Scorer::new(&track, 2, 1).unwrap_err(),
+            TrackError::InvalidWindow { start: 2, stop: 1 }
+        );
+        assert_eq!(
+            Scorer::new(&track, 0, 3).unwrap_err(),
+            TrackError::FixOutOfRange { index: 3, len: 3 }
+        );
+    }
+
+    #[test]
+    fn solve_rejects_unknown_league() {
+        let scorer = Scorer::from_vec(vec![[45.0, 6.0], [45.1, 6.1]]).unwrap();
+
+        assert_eq!(scorer.solve("nope").unwrap_err(), ScoreError::UnknownLeague);
     }
 }

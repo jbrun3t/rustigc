@@ -40,7 +40,10 @@ class Scorer:
             league: One of `league_names()`.
 
         Returns:
-            The best scoring result, or None when the league is unknown or nothing scored.
+            The best scoring result, or None when no rule could score the table.
+
+        Raises:
+            ValueError: `league` is not one of `league_names()`.
         """
         scored = self._scorer.score(league)
         if scored is None:
