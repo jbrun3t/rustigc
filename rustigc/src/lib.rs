@@ -46,6 +46,21 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
+//! [`Scorer`] needs no [`Log`]: it reads coordinates through [`PointCoords`], so a table of bare
+//! `[latitude, longitude]` pairs scores too.
+//!
+//! ```
+//! use rustigc::Scorer;
+//!
+//! let points = vec![[45.00, 6.00], [45.05, 6.10], [45.20, 6.30],
+//!                   [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]];
+//!
+//! let scorer = Scorer::new(&points, 0, points.len() - 1).expect("unusable window");
+//! let result = scorer.solve("xcontest").expect("nothing scored");
+//!
+//! assert_eq!(result.description, "closed free triangle");
+//! ```
+//!
 //! # Feature flags
 //!
 //! - `serde`: `Serialize`/`Deserialize` on the parsed records and on [`ScoringResult`].
@@ -73,3 +88,4 @@ pub use score::{league_names, Scorer, ScoringResult};
 #[cfg(feature = "geojson")]
 #[cfg_attr(docsrs, doc(cfg(feature = "geojson")))]
 pub use utils::export::{GeoJson, TrackLine};
+pub use utils::geometry::{PointCoords, PointNew, PointSetCoords};

@@ -174,6 +174,9 @@ impl Eq for Solution {}
 /// [`Log::score`] does both steps in one call. Build a `Scorer` to score one window under several
 /// leagues: the fix layout, the caches and the latitude band are then set up once.
 ///
+/// Any [`PointCoords`] slice will do, no [`Log`] needed. `x` is longitude, `y` latitude, decimal
+/// degrees, in flight order.
+///
 /// ```no_run
 /// use rustigc::{Log, Scorer};
 ///
@@ -187,6 +190,8 @@ impl Eq for Solution {}
 /// ```
 ///
 /// [`Log::score`]: crate::Log::score
+/// [`Log`]: crate::Log
+/// [`PointCoords`]: crate::PointCoords
 #[derive(Debug)]
 pub struct Scorer {
     pub(super) track: Vec<SPoint>,

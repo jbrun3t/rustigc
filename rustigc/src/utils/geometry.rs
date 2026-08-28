@@ -42,7 +42,7 @@ pub trait PointBearing<T: Float> {
 
 /// Constructible 2D point from coordinates
 pub trait PointNew<T: Float>: PointCoords<T> + Copy {
-    /// Create a point from coordinates [x, y]
+    /// Create a point from coordinates (x, y)
     fn new(x: T, y: T) -> Self;
 }
 
