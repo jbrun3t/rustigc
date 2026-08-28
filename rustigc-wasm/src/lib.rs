@@ -2,9 +2,8 @@
 
 //! WASM bindings for rustigc.
 //!
-//! Everything crosses as plain data: there is no handle to keep alive and nothing to free.
-//! Field names come from the core's serde derives, so they stay `snake_case` — `distance_m`,
-//! `baro_alt` — and the method names follow them.
+//! Values cross as plain data. Field names come from the core's serde derives, so they stay
+//! `snake_case` — `distance_m`, `baro_alt` — and the method names follow them.
 //!
 //! Nothing crosses as a Rust map. `serde_wasm_bindgen` renders one as a `Map`, which
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
@@ -275,6 +274,56 @@ impl Log {
                 self.inner.track.len()
             ))
         })
+    }
+}
+
+/// A scoring window over a table of coordinates, needing no `Log`.
+#[wasm_bindgen]
+pub struct Scorer {
+    inner: rustigc::Scorer,
+}
+
+#[wasm_bindgen]
+impl Scorer {
+    /// Prepare `coords`, interleaved latitude and longitude in decimal degrees, in flight order.
+    ///
+    /// Throws unless it holds at least two whole pairs of coordinates that are all in range.
+    #[wasm_bindgen(constructor)]
+    pub fn new(coords: Box<[f64]>) -> Result<Scorer, JsError> {
+        if coords.len() % 2 != 0 {
+            return Err(JsError::new(&format!(
+                "{} coordinates is not a whole number of latitude, longitude pairs",
+                coords.len()
+            )));
+        }
+
+        let points = coords.len() / 2;
+        // SAFETY: a Box<[f64]> of even length and a Box<[[f64; 2]]> of half that length describe
+        // the same allocation — 8-byte align, identical size — so retyping it keeps the layout it
+        // will be dropped through. A boxed slice carries no capacity of its own to reconcile.
+        let table = unsafe {
+            let ptr = Box::into_raw(coords) as *mut [f64; 2];
+            Box::from_raw(std::slice::from_raw_parts_mut(ptr, points))
+        };
+
+        let inner = rustigc::Scorer::from_vec(table.into_vec()).ok_or_else(|| {
+            JsError::new(&format!(
+                "{points} points are not scorable: fewer than two, or a coordinate out of range"
+            ))
+        })?;
+
+        Ok(Scorer { inner })
+    }
+
+    /// Score the table against every rule of `league` and report the best.
+    ///
+    /// Every fix of the result is an index into the table. `undefined` when nothing could be
+    /// scored; throws when `league` is not one of `league_names()`.
+    #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
+    pub fn solve(&self, league: &str) -> Result<JsValue, JsError> {
+        known_league(league)?;
+
+        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(league))?)
     }
 }
 

@@ -97,6 +97,21 @@ The layout is 32 bytes per fix, little-endian, matching `Fix`:
 |---|---|---|---|---|---|---|
 | | `u32` timestamp | *pad* | `f64` lat | `f64` lon | `i32` baro_alt | `i32` gnss_alt |
 
+## Scoring without a log
+
+`Scorer` scores a table of coordinates, so a track that never came from an IGC file scores the same
+way. It takes one `Float64Array` of interleaved latitude and longitude, decimal degrees, in flight
+order — that is `[f64; 2]`'s own layout, so the buffer crosses once and is adopted rather than
+converted.
+
+```ts
+const scorer = new Scorer(Float64Array.of(45.00, 6.00, 45.05, 6.10, 45.20, 6.30));
+
+scorer.solve("xcontest")   // Score | undefined; every fix an index into the table
+```
+
+The whole table is the window, and at least two pairs of coordinates are required.
+
 ## Local times
 
 `Log.datetime` is UTC and `Log.tzn` is whatever offset the recorder declared.
