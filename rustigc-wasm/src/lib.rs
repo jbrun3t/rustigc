@@ -203,7 +203,7 @@ impl Log {
         league: &str,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
-        Self::known_league(league)?;
+        known_league(league)?;
 
         let given: Option<rustigc::Flight> = match window {
             Some(value) => serde_wasm_bindgen::from_value(value.into())?,
@@ -252,21 +252,21 @@ impl Log {
     /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
     /// score are already at hand.
     pub fn describe(&self, league: &str) -> Result<String, JsError> {
-        Self::known_league(league)?;
+        known_league(league)?;
 
         Ok(serde_json::to_string(&self.inner.describe(league))?)
     }
 }
 
-impl Log {
-    /// Reject a league the registry does not hold.
-    fn known_league(league: &str) -> Result<(), JsError> {
-        rustigc::league_names()
-            .any(|name| name == league)
-            .then_some(())
-            .ok_or_else(|| JsError::new(&format!("unknown league {league:?}")))
-    }
+/// Reject a league the registry does not hold.
+fn known_league(league: &str) -> Result<(), JsError> {
+    rustigc::league_names()
+        .any(|name| name == league)
+        .then_some(())
+        .ok_or_else(|| JsError::new(&format!("unknown league {league:?}")))
+}
 
+impl Log {
     /// Fix `index`, as an error rather than the panic indexing would raise.
     fn get(&self, index: usize) -> Result<&rustigc::Fix, JsError> {
         self.inner.track.get(index).ok_or_else(|| {
