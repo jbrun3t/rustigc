@@ -7,6 +7,7 @@
 use std::fmt::Debug;
 
 use super::shapes::{ShapeBuilder, ShapeKind};
+#[cfg(feature = "geojson")]
 use crate::ScoreError;
 
 pub mod cfd;
@@ -299,6 +300,7 @@ pub(crate) fn league_rules(name: &str) -> Option<Ruleset> {
 /// reach [`Scorer::solve`].
 ///
 /// [`Scorer::solve`]: crate::Scorer::solve
+#[cfg(feature = "geojson")]
 pub fn known_league(name: &str) -> Result<(), ScoreError> {
     league_rules(name)
         .map(|_| ())
