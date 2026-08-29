@@ -165,7 +165,7 @@ fn main() -> io::Result<()> {
         Format::Geojson => {
             let flight = window.map(|(start, stop)| Flight { start, stop });
             let collection = log
-                .export_flight(flight, scored.as_ref(), TrackLine::Draw)
+                .export(flight, scored.as_ref(), TrackLine::Draw)
                 .unwrap_or_else(|e| {
                     eprintln!("Could not draw: {e}");
                     std::process::exit(1);

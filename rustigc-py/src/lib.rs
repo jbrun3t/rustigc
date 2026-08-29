@@ -216,7 +216,7 @@ impl PyLog {
         py.allow_threads(|| {
             let collection = self
                 .inner
-                .export_flight(flight, score.as_ref(), line)
+                .export(flight, score.as_ref(), line)
                 .map_err(|e| e.to_string())?;
 
             serde_json::to_string(&collection)

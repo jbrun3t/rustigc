@@ -347,20 +347,12 @@ impl Log {
         })
     }
 
-    /// Draws `layers` over this log, including the trackline
-    pub fn export(
-        &self,
-        layers: &[&dyn GeoJson],
-    ) -> Result<FeatureCollection, TrackError> {
-        self.export_with(layers, TrackLine::Draw)
-    }
-
     /// Draws `window` and the task `scored` found in it, each when there is one.
     ///
     /// # Errors
     ///
     /// [`TrackError::FixOutOfRange`] when either was produced from a longer track.
-    pub fn export_flight(
+    pub fn export(
         &self,
         window: Option<Flight>,
         scored: Option<&ScoringResult>,
@@ -402,7 +394,7 @@ impl Log {
         // Nothing here comes from the caller: an out-of-range index would be a bug in detection
         // or scoring, not a failure to report.
         Ok(self
-            .export_flight(window, scored.as_ref(), TrackLine::Draw)
+            .export(window, scored.as_ref(), TrackLine::Draw)
             .expect("detection and scoring index this log's own track"))
     }
 }

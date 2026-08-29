@@ -245,7 +245,7 @@ impl Log {
             false => TrackLine::Skip,
         };
 
-        let collection = self.inner.export_flight(window, scored.as_ref(), line)?;
+        let collection = self.inner.export(window, scored.as_ref(), line)?;
 
         Ok(serde_json::to_string(&collection)?)
     }

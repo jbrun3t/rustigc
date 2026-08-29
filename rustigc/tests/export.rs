@@ -99,7 +99,7 @@ fn export_layer_out_of_range() {
     };
 
     let err = shorter
-        .export_flight(Some(window), scored.as_ref(), TrackLine::Draw)
+        .export(Some(window), scored.as_ref(), TrackLine::Draw)
         .unwrap_err();
 
     assert_eq!(
@@ -111,6 +111,6 @@ fn export_layer_out_of_range() {
     );
     // its own layers still draw
     assert!(log
-        .export_flight(Some(window), scored.as_ref(), TrackLine::Draw)
+        .export(Some(window), scored.as_ref(), TrackLine::Draw)
         .is_ok());
 }
