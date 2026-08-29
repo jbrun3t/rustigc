@@ -1,8 +1,27 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Corpus fixture list shared by `tests/scoring.rs` and `tests/parsing.rs`, so the two test files
-//! can't drift apart on which fixtures under `test_data/real/` they check.
+//! IGC fixtures for the rustigc test suites, and the list of which of them the corpus tests sweep.
 
+use std::path::PathBuf;
+
+/// Corpus root.
+pub fn dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
+
+/// Directory of the real-flight fixtures and their reference pins.
+pub fn real() -> PathBuf {
+    dir().join("real")
+}
+
+/// The file stem a fixture's identifier names: `problem_small_gap` is `problem-small-gap.igc`.
+pub fn stem_of(name: &str) -> String {
+    name.replace('_', "-")
+}
+
+/// The fixtures every corpus sweep covers, applied to a caller-supplied macro taking one
+/// identifier.
+#[macro_export]
 macro_rules! for_each_fixture {
     ($test:ident) => {
         $test!(fai_01);
@@ -35,9 +54,4 @@ macro_rules! for_each_fixture {
         $test!(problem_small_gap);
         $test!(problem_time_gaps);
     };
-}
-pub(crate) use for_each_fixture;
-
-pub(crate) fn stem_of(name: &str) -> String {
-    name.replace('_', "-")
 }

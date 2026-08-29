@@ -16,6 +16,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
+default = ["serde", "geojson"]
 crazy-test = []
 geojson = ["dep:geojson"]
 
@@ -35,9 +36,20 @@ winnow = "0.7"
 [dev-dependencies]
 pretty_assertions = "1"
 criterion = "0.5"
-rustigc = { path = ".", features = ["serde", "geojson"] }
+rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.0" }
 serde_json = "1"
 
+
+# `scoring` and `export` read the library through its optional serializers. Those are on by
+# default, so this only bites a `--no-default-features` run, which skips the two suites rather
+# than failing to compile them.
+[[test]]
+name = "scoring"
+required-features = ["serde"]
+
+[[test]]
+name = "export"
+required-features = ["serde", "geojson"]
 
 [[bench]]
 name = "benches"

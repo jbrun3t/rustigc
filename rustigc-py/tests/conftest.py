@@ -5,8 +5,8 @@ import pytest
 
 @pytest.fixture
 def test_data_dir():
-    """Path to test_data directory"""
-    return Path(__file__).parent.parent.parent / "test_data"
+    """Path to the rustigc-test-data corpus"""
+    return Path(__file__).parent.parent.parent / "rustigc-test-data"
 
 
 @pytest.fixture

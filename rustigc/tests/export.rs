@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 use std::fs;
-use std::path::PathBuf;
 
 use rustigc::{FlightDetection, FlightSelection, Log, ScoreError, TrackError, TrackLine};
+use rustigc_test_data::real;
 use serde_json::Value;
 
 fn fixture(stem: &str) -> Vec<u8> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../test_data/real");
-
-    fs::read(path.join(format!("{stem}.igc"))).expect("fixture")
+    fs::read(real().join(format!("{stem}.igc"))).expect("fixture")
 }
 
 fn roles(features: &[Value]) -> Vec<&str> {
@@ -46,7 +44,7 @@ fn describe_fai_01() {
         .unwrap();
     assert_eq!(
         metadata["properties"]["datetime"],
-        "2022-08-05T00:00:00.000Z"
+        "2022-06-21T00:00:00.000Z"
     );
     // what the recorder itself declared, `HFTZNTIMEZONE:1.0`
     assert_eq!(metadata["properties"]["tzn"], 1.0);

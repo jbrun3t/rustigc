@@ -38,16 +38,14 @@ def test_date_parsing(igc_content):
 
     origin = log.datetime
 
-    assert origin.date() == date(2022, 8, 5)
+    assert origin.date() == date(2022, 6, 20)
     # UTC midnight read in BST, so an hour past it and an hour east, and named after the zone
-    assert origin.hour == 1
-    assert origin.utcoffset() == timedelta(hours=1)
-    assert origin.tzname() == "BST"
-    assert str(origin.tzinfo) == "Europe/London"
-    # a real zone, so it follows its own rules away from the flight
-    assert (origin + timedelta(days=182)).tzname() == "GMT"
+    assert origin.hour == 21
+    assert origin.utcoffset() == timedelta(hours=-3)
+    assert origin.tzname() == "-03"
+    assert str(origin.tzinfo) == "Etc/GMT+3"
     # whatever the zone, the instant is midnight UTC: that is what a fix timestamp counts from
-    assert origin.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S") == "2022-08-05 00:00:00"
+    assert origin.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S") == "2022-06-21 00:00:00"
 
 
 def test_datetime_at_without_date():

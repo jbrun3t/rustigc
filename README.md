@@ -11,7 +11,8 @@ rustigc/
 ├── rustigc/             - Core Rust library
 ├── rustigc-py/          - Python bindings
 ├── rustigc-wasm/        - WASM bindings
-└── rustigc-tools/       - CLI tools
+├── rustigc-tools/       - CLI tools
+└── rustigc-test-data/   - Shared IGC test files and their scoring references
 ```
 
 Each has its API documented in its own language's format: rustdoc for the core

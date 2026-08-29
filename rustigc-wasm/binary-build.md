@@ -45,7 +45,7 @@ The sources stay ESM; esbuild emits CommonJS because a SEA main must be one unti
 hands over the bundled bytes themselves — `getAsset` would copy the megabyte first.
 
 The result is ~127 MB, essentially all of it node: the blob is 1.1 MB and 1.1 MB of *that* is the
-wasm. Its output matches `rustigc-xc-score` over `test_data/real/`, the same 104 comparisons the
+wasm. Its output matches `rustigc-xc-score` over `rustigc-test-data/real/`, the same 104 comparisons the
 CLI itself is held to.
 
 The same recipe builds a comparable `igc-xc-score` binary from

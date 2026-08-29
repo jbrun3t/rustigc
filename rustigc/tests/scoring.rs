@@ -1,22 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Scoring regression pins: `test_data/real/<fixture>.xcontest.json` holds the plain serde dump of
-//! `log.score("xcontest", ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
+//! Scoring regression pins: `rustigc-test-data`'s `real/<fixture>.xcontest.json` holds the plain
+//! serde dump of `log.score("xcontest", ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
 //! mismatch here means scoring math moved, not flight detection.
 //! Re-bless with `rustigc-xc-score --format json` if the move was intended.
 
-mod common;
-
 use std::fs;
-use std::path::PathBuf;
 
-use common::{for_each_fixture, stem_of};
 use rustigc::{FlightDetection, FlightSelection, Log, Scorer, ScoringResult};
+use rustigc_test_data::{for_each_fixture, real, stem_of};
 use serde_json::Value;
-
-fn corpus_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../test_data/real")
-}
 
 /// `(takeoff, landing)` from the reference's own fields, when it has any — a blessed "no XC" carries
 /// no window, so falling back to our own detection is the best this can do for that case.
@@ -31,12 +24,12 @@ fn window_of(expected: &Value, log: &Log) -> Option<(usize, usize)> {
 
 fn check_fixture(name: &str) {
     let stem = stem_of(name);
-    let igc_path = corpus_dir().join(format!("{stem}.igc"));
+    let igc_path = real().join(format!("{stem}.igc"));
     let content =
         fs::read(&igc_path).unwrap_or_else(|e| panic!("read {igc_path:?}: {e}"));
     let log = Log::new(&content).unwrap_or_else(|e| panic!("parse {igc_path:?}: {e}"));
 
-    let ref_path = corpus_dir().join(format!("{stem}.xcontest.json"));
+    let ref_path = real().join(format!("{stem}.xcontest.json"));
     let expected_text = fs::read_to_string(&ref_path)
         .unwrap_or_else(|e| panic!("read {ref_path:?}: {e}"));
     let expected: Value = serde_json::from_str(&expected_text)
@@ -81,7 +74,7 @@ for_each_fixture!(xcontest_test);
 
 /// triangle-01 as a `[latitude, longitude]` table, with what `Log::score` makes of it.
 fn coord_table() -> (Vec<[f64; 2]>, ScoringResult) {
-    let path = corpus_dir().join("triangle-01.igc");
+    let path = real().join("triangle-01.igc");
     let content = fs::read(&path).unwrap_or_else(|e| panic!("read {path:?}: {e}"));
     let log = Log::new(&content).unwrap_or_else(|e| panic!("parse {path:?}: {e}"));
 

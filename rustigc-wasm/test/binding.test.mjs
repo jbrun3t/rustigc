@@ -12,7 +12,7 @@ import { fixes, STRIDE } from "rustigc-utils";
 
 initSync({ module: readFileSync(new URL("rustigc_bg.wasm", import.meta.resolve("rustigc-wasm"))) });
 
-const CORPUS = new URL("../../test_data/real/", import.meta.url);
+const CORPUS = new URL("../../rustigc-test-data/real/", import.meta.url);
 
 /** A blessed fixture, with the score `rustigc/tests/scoring.rs` pins for it. */
 const FIXTURES = {

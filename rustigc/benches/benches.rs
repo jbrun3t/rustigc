@@ -2,14 +2,16 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rustigc::{Flight, FlightDetection, FlightSelection, Log};
+use rustigc_test_data::real;
 use std::time::Duration;
 
 fn load_test_files(files: &[(&'static str, &str)]) -> Vec<(&'static str, Vec<u8>)> {
     files
         .iter()
-        .map(|(name, path)| {
-            let content =
-                std::fs::read(path).unwrap_or_else(|_| panic!("Failed to read {}", path));
+        .map(|(name, file)| {
+            let path = real().join(file);
+            let content = std::fs::read(&path)
+                .unwrap_or_else(|_| panic!("Failed to read {path:?}"));
             (*name, content)
         })
         .collect()
@@ -23,10 +25,10 @@ fn parse_logs(files: &[(&'static str, Vec<u8>)]) -> Vec<(&'static str, Log)> {
 }
 
 const PARSING_FILES: &[(&str, &str)] = &[
-    ("plouf", "../test_data/real/free-06.igc"),
-    ("local", "../test_data/real/triangle-02.igc"),
-    ("complex", "../test_data/real/fai-01.igc"),
-    ("long-fai", "../test_data/real/fai-02.igc"),
+    ("plouf", "free-06.igc"),
+    ("local", "triangle-02.igc"),
+    ("complex", "fai-01.igc"),
+    ("long-fai", "fai-02.igc"),
 ];
 
 fn bench_log_parsing(c: &mut Criterion) {
@@ -61,11 +63,11 @@ fn bench_analysis(c: &mut Criterion) {
 }
 
 const SCORING_FILES: &[(&str, &str)] = &[
-    ("plouf", "../test_data/real/free-06.igc"),
-    ("local", "../test_data/real/triangle-02.igc"),
-    ("long-3pt", "../test_data/real/free-05.igc"),
-    ("long-fai", "../test_data/real/fai-02.igc"),
-    ("closing", "../test_data/real/fai-01.igc"),
+    ("plouf", "free-06.igc"),
+    ("local", "triangle-02.igc"),
+    ("long-3pt", "free-05.igc"),
+    ("long-fai", "fai-02.igc"),
+    ("closing", "fai-01.igc"),
 ];
 
 fn bench_score(c: &mut Criterion) {

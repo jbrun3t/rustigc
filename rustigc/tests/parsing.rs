@@ -2,18 +2,11 @@
 
 //! Integration tests with real IGC files
 
-mod common;
-
 use rustigc::{FlightDetection, FlightSelection, Log};
+use rustigc_test_data::{for_each_fixture, real, stem_of};
 
-use common::{for_each_fixture, stem_of};
 use std::fs;
 use std::path::PathBuf;
-
-/// Get path to test fixture
-fn fixture_test_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../test_data")
-}
 
 fn fixture_parse_file(path: &PathBuf) -> Log {
     let content =
@@ -25,7 +18,7 @@ fn fixture_parse_file(path: &PathBuf) -> Log {
 /// Test parsing a test file
 #[test]
 fn test_parse_plouf() {
-    let path = fixture_test_dir().join("real/free-06.igc");
+    let path = real().join("free-06.igc");
     let log = fixture_parse_file(&path);
 
     assert_eq!(log.track.len(), 1095);
@@ -54,7 +47,7 @@ fn assert_increasing_timestamps(log: &Log, path: &PathBuf) {
 /// `problem-time-gaps.igc` has 3 big gaps, check we identify them correctly
 #[test]
 fn flight_window_stops_at_time_gap() {
-    let path = fixture_test_dir().join("real/problem-time-gaps.igc");
+    let path = real().join("problem-time-gaps.igc");
     let log = fixture_parse_file(&path);
 
     let flights = log.track.flights();
@@ -71,7 +64,7 @@ fn flight_window_stops_at_time_gap() {
 /// fai-01 is the fixture the bindings and their READMEs quote, so pin what they quote.
 #[test]
 fn flight_window_of_fai_01() {
-    let path = fixture_test_dir().join("real/fai-01.igc");
+    let path = real().join("fai-01.igc");
     let log = fixture_parse_file(&path);
 
     assert_eq!(log.track.len(), 25459);
@@ -86,7 +79,7 @@ fn flight_window_of_fai_01() {
 
 fn check_fixture(name: &str) {
     let stem = stem_of(name);
-    let path = fixture_test_dir().join("real").join(format!("{stem}.igc"));
+    let path = real().join(format!("{stem}.igc"));
     let log = fixture_parse_file(&path);
     assert!(!log.track.is_empty());
     assert_increasing_timestamps(&log, &path);
