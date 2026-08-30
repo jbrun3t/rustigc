@@ -21,21 +21,21 @@ crazy-test = []
 geojson = ["dep:geojson"]
 
 [dependencies]
-btoi = "0.4"
+btoi = "0.5"
 geographiclib-rs = "0.2"
 geojson = { version = "1.0", default-features = false, optional = true }
 log = "0.4"
 num-traits = "0.2"
 rstar = "0.12"
-rustc-hash = "1.1"
-serde = { version = "1.0", features = ["derive"], optional = true }
-smallvec = "1.15"
-thiserror = "2.0"
+rustc-hash = "1"
+serde = { version = "1", features = ["derive"], optional = true }
+smallvec = "1"
+thiserror = "2"
 winnow = "0.7"
 
 [dev-dependencies]
 pretty_assertions = "1"
-criterion = "0.5"
+criterion = "0.8"
 rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.0" }
 serde_json = "1"
 
