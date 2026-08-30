@@ -2,6 +2,8 @@
 
 #![allow(clippy::useless_conversion)]
 
+use std::sync::Mutex;
+
 use ::rustigc;
 use numpy::{PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
@@ -23,11 +25,9 @@ impl PyLog {
     #[staticmethod]
     #[pyo3(text_signature = "(content)")]
     fn from_bytes(py: Python<'_>, content: &[u8]) -> PyResult<Self> {
-        let inner = py
-            .allow_threads(|| rustigc::Log::new(content))
-            .map_err(|e| {
-                PyValueError::new_err(format!("Failed to parse IGC file: {e}"))
-            })?;
+        let inner = py.detach(|| rustigc::Log::new(content)).map_err(|e| {
+            PyValueError::new_err(format!("Failed to parse IGC file: {e}"))
+        })?;
 
         Ok(PyLog { inner })
     }
@@ -45,7 +45,7 @@ impl PyLog {
                 self.inner.track.len() * std::mem::size_of::<rustigc::Fix>(),
             )
         };
-        PyBytes::new_bound(py, bytes)
+        PyBytes::new(py, bytes)
     }
 
     /// This log over `data` as a track, laid out for `FIX_DTYPE`: same recorder, headers, task.
@@ -66,7 +66,7 @@ impl PyLog {
         }
 
         let count = data.len() / stride;
-        let track: Vec<rustigc::Fix> = py.allow_threads(|| {
+        let track: Vec<rustigc::Fix> = py.detach(|| {
             let mut track = Vec::<rustigc::Fix>::with_capacity(count);
             // SAFETY: reinterpreting `data` as `Fix`es is safe because:
             // - Fix is repr(C), so its layout is still guaranteed
@@ -137,7 +137,7 @@ impl PyLog {
     /// Detect the flight sections, as one JSON array, empty when none was detected.
     #[pyo3(text_signature = "($self)")]
     fn flights(&self, py: Python<'_>) -> PyResult<String> {
-        let flights = py.allow_threads(|| self.inner.track.flights());
+        let flights = py.detach(|| self.inner.track.flights());
 
         serde_json::to_string(&flights).map_err(|e| {
             PyValueError::new_err(format!("Failed to serialize flights: {e}"))
@@ -158,7 +158,7 @@ impl PyLog {
         stop: usize,
     ) -> PyResult<Option<String>> {
         let result = py
-            .allow_threads(|| self.inner.score(league, start, stop))
+            .detach(|| self.inner.score(league, start, stop))
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         result
@@ -172,7 +172,7 @@ impl PyLog {
     /// Detects the longest flight and scores it. Raises ValueError for an unknown league.
     #[pyo3(text_signature = "($self, league)")]
     fn describe(&self, py: Python<'_>, league: &str) -> PyResult<String> {
-        py.allow_threads(|| {
+        py.detach(|| {
             let collection = self.inner.describe(league).map_err(|e| e.to_string())?;
 
             serde_json::to_string(&collection)
@@ -213,7 +213,7 @@ impl PyLog {
             rustigc::TrackLine::Skip
         };
 
-        py.allow_threads(|| {
+        py.detach(|| {
             let collection = self
                 .inner
                 .export(flight, score.as_ref(), line)
@@ -236,7 +236,7 @@ impl PyLog {
 /// The raw binding behind `rustigcpy.Scorer`, which is the interface to use.
 #[pyclass(name = "RustScorer")]
 struct PyScorer {
-    inner: rustigc::Scorer,
+    inner: Mutex<rustigc::Scorer>,
 }
 
 #[pymethods]
@@ -269,7 +269,9 @@ impl PyScorer {
         let inner = rustigc::Scorer::from_vec(table.to_vec())
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
-        Ok(Self { inner })
+        Ok(Self {
+            inner: Mutex::new(inner),
+        })
     }
 
     /// Score the table against every rule of `league` and report the best.
@@ -277,16 +279,15 @@ impl PyScorer {
     /// `None` when no rule could score the table; raises ValueError for an unknown league. Every
     /// fix of the result is an index into the table.
     #[pyo3(text_signature = "($self, league)")]
-    fn score(&mut self, py: Python<'_>, league: &str) -> PyResult<Option<String>> {
-        // `&mut`, not `&`: a `Scorer` is `Send` but not `Sync` — its caches are `RefCell` — so a
-        // shared reference cannot cross `allow_threads` and an exclusive one can.
-        let scorer: &mut rustigc::Scorer = &mut self.inner;
-
-        py.allow_threads(move || scorer.solve(league))
-            .map_err(|e| PyValueError::new_err(e.to_string()))?
-            .map(|scored| serde_json::to_string(&scored))
-            .transpose()
-            .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
+    fn score(&self, py: Python<'_>, league: &str) -> PyResult<Option<String>> {
+        py.detach(|| {
+            let scorer = self.inner.lock().unwrap();
+            scorer.solve(league)
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))?
+        .map(|scored| serde_json::to_string(&scored))
+        .transpose()
+        .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
     }
 }
 
@@ -310,22 +311,22 @@ fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(league_names, m)?)?;
 
     // Export FIX_DTYPE as numpy dtype
-    Python::with_gil(|py| {
-        let numpy = py.import_bound("numpy")?;
+    Python::attach(|py| {
+        let numpy = py.import("numpy")?;
 
         // Create dtype matching Fix layout:
         // timestamp first, then padding, then coordinates/altitudes
-        let dtype_spec = PyList::new_bound(
+        let dtype_spec = PyList::new(
             py,
             &[
-                PyTuple::new_bound(py, ["timestamp", "u4"]),
-                PyTuple::new_bound(py, ["_pad", "u4"]),
-                PyTuple::new_bound(py, ["latitude", "f8"]),
-                PyTuple::new_bound(py, ["longitude", "f8"]),
-                PyTuple::new_bound(py, ["baro_altitude", "i4"]),
-                PyTuple::new_bound(py, ["gnss_altitude", "i4"]),
+                PyTuple::new(py, ["timestamp", "u4"])?,
+                PyTuple::new(py, ["_pad", "u4"])?,
+                PyTuple::new(py, ["latitude", "f8"])?,
+                PyTuple::new(py, ["longitude", "f8"])?,
+                PyTuple::new(py, ["baro_altitude", "i4"])?,
+                PyTuple::new(py, ["gnss_altitude", "i4"])?,
             ],
-        );
+        )?;
 
         let dtype = numpy.getattr("dtype")?.call1((dtype_spec,))?;
         m.add("FIX_DTYPE", dtype)?;
