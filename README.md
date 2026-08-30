@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jbrun3t/rustigc/actions/workflows/ci.yml/badge.svg)](https://github.com/jbrun3t/rustigc/actions/workflows/ci.yml)
 
-Fast IGC toolbox for aviation sports written in Rust.
+An IGC toolbox for aviation sports written in Rust.
 
 ## Components
 
@@ -14,10 +14,6 @@ rustigc/
 ├── rustigc-tools/       - CLI tools
 └── rustigc-test-data/   - Shared IGC test files and their scoring references
 ```
-
-Each has its API documented in its own language's format: rustdoc for the core
-([docs.rs](https://docs.rs/rustigc)), docstrings for Python (`help(rustigcpy.Log)`), and
-`pkg/rustigc.d.ts` for TypeScript. The READMEs below cover installing and building.
 
 ## Features
 
@@ -32,7 +28,7 @@ Each has its API documented in its own language's format: rustdoc for the core
   - Generic scoring over a configurable number of turnpoints
   - Optimized for fast searches
   - Supports XContest, FFVL's CFD, and more
-- 🏗️ Python bindings with numpy support
+- ✅ Python bindings with numpy support
 - ✅ WASM bindings
 - ✅ GeoJSON export
 - ✅ CLI tools
