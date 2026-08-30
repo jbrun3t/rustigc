@@ -15,8 +15,8 @@ use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
-use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 use super::Record;
+use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

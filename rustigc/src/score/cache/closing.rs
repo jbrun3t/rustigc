@@ -9,7 +9,7 @@
 
 use rstar::primitives::GeomWithData;
 use rstar::{
-    PointDistance as _, RStarInsertionStrategy, RTree, RTreeObject, RTreeParams, AABB,
+    AABB, PointDistance as _, RStarInsertionStrategy, RTree, RTreeObject, RTreeParams,
 };
 
 use crate::utils::geometry::{BBox, Fcc, PointDistance, SPoint};

@@ -38,9 +38,9 @@ use winnow::prelude::*;
 use winnow::stream::AsChar;
 use winnow::token::{take, take_while};
 
+use super::Record;
 use super::utils::{latitude, longitude, robust_ending_eof, till_robust_ending};
 use super::utils::{latitude_to_igc, longitude_to_igc};
-use super::Record;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

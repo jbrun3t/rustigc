@@ -21,15 +21,15 @@ use crate::utils::geometry::{
 };
 use crate::{ScoreError, TrackError};
 use log::{debug, info};
-use std::cmp::{max, min, Ordering};
+use std::cmp::{Ordering, max, min};
 use std::collections::BinaryHeap;
 
 use crate::utils::round_km;
 
 use super::cache::{Caches, Leg, Terminals};
-use super::rules::{league_rules, Rule};
+use super::rules::{Rule, league_rules};
 use super::shapes::margin::Band;
-use super::{round_mm, ScoringResult};
+use super::{ScoringResult, round_mm};
 
 // How much larger a range's box must be to take the split from the widest range.
 // There is not much to back this number over another, other than a slightly better

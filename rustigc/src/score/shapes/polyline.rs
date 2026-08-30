@@ -2,7 +2,7 @@
 
 //! Open-distance shape.
 
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 use crate::score::cache::Leg;
 use crate::utils::geometry::{BBox, Fcc, Geodesic, PointDistance, SPoint};
@@ -27,11 +27,7 @@ impl<const POINTS: usize> ShapeKind for OpenPolyline<POINTS> {
     // on the terminal legs instead of being searched.
     const CARDINALITY: usize = {
         assert!(POINTS >= 2);
-        if Self::TERMINALS {
-            POINTS - 2
-        } else {
-            POINTS
-        }
+        if Self::TERMINALS { POINTS - 2 } else { POINTS }
     };
 }
 

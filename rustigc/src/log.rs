@@ -4,8 +4,8 @@
 
 use std::collections::HashMap;
 
-use crate::{decode::*, ScoreError, Scorer, ScoringResult};
 use crate::{DecodeError, RawLog};
+use crate::{ScoreError, Scorer, ScoringResult, decode::*};
 
 use log::warn;
 #[cfg(feature = "serde")]

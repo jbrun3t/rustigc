@@ -85,7 +85,7 @@ pub use decode::{
 pub use error::{DecodeError, ScoreError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
-pub use score::{league_names, Scorer, ScoringResult};
+pub use score::{Scorer, ScoringResult, league_names};
 #[cfg(feature = "geojson")]
 #[cfg_attr(docsrs, doc(cfg(feature = "geojson")))]
 pub use utils::export::{GeoJson, TrackLine};

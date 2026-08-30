@@ -9,7 +9,7 @@
 use crate::utils::projector::lon_round;
 use geographiclib_rs::InverseGeodesic;
 use num_traits::Float;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec, smallvec};
 
 // ============= Traits =============
 

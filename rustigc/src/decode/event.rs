@@ -39,9 +39,9 @@ use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
+use super::Record;
 use super::utils::{robust_ending_eof, till_robust_ending};
 use super::utils::{ts_to_igc, ts_to_ms};
-use super::Record;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

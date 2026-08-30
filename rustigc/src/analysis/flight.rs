@@ -9,9 +9,9 @@ use log::{debug, warn};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use crate::Fix;
 use crate::utils::geometry::{Flat, PointDistance};
 use crate::utils::projector::CheapProjection;
-use crate::Fix;
 
 /// Minimal flight speed
 const FGSLIM: f64 = 4.2; // ~15kph

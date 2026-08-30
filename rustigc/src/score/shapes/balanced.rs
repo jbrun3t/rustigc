@@ -7,7 +7,7 @@ use std::iter::once;
 use crate::utils::geometry::{Fcc, PointDistance};
 use crate::utils::iter::pairs;
 
-use super::circuit::{circuit_dynamic_search, Circuit};
+use super::circuit::{Circuit, circuit_dynamic_search};
 use super::common::{candidate_to_path, transition_matrices};
 use super::{Candidate, Scorer, ShapeBound, ShapePeek};
 

@@ -18,11 +18,11 @@ use winnow::combinator::delimited;
 use winnow::error::Result as PResult;
 use winnow::prelude::*;
 
+use super::Record;
 use super::utils::robust_ending_eof;
 use super::utils::till_robust_ending;
 use super::utils::{latitude, longitude, n_digits, ts_to_ms};
 use super::utils::{latitude_to_igc, longitude_to_igc, ts_to_igc};
-use super::Record;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

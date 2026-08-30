@@ -284,7 +284,7 @@ impl Scorer {
     /// Throws unless it holds at least two whole pairs of coordinates that are all in range.
     #[wasm_bindgen(constructor)]
     pub fn new(coords: Box<[f64]>) -> Result<Scorer, JsError> {
-        if coords.len() % 2 != 0 {
+        if !coords.len().is_multiple_of(2) {
             return Err(JsError::new(&format!(
                 "{} coordinates is not a whole number of latitude, longitude pairs",
                 coords.len()
@@ -297,7 +297,7 @@ impl Scorer {
         // will be dropped through. A boxed slice carries no capacity of its own to reconcile.
         let table = unsafe {
             let ptr = Box::into_raw(coords) as *mut [f64; 2];
-            Box::from_raw(std::slice::from_raw_parts_mut(ptr, points))
+            Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, points))
         };
 
         let inner = rustigc::Scorer::from_vec(table.into_vec())?;

@@ -13,8 +13,8 @@ pub mod polyline;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
-use crate::score::engine::Candidate;
 use crate::score::Scorer;
+use crate::score::engine::Candidate;
 use crate::utils::geometry::{SPoint, Vertices};
 use common::TransitionMatrix;
 

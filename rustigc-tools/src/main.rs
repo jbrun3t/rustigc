@@ -32,14 +32,13 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     });
 
-    if !args.quiet {
-        if let Err(e) = write_output(&log) {
+    if !args.quiet
+        && let Err(e) = write_output(&log) {
             // Broken pipe is expected when piping to head, less, etc.
             // Exit silently in that case
             if e.kind() != io::ErrorKind::BrokenPipe {
                 return Err(e);
             }
-        }
     }
 
     Ok(())

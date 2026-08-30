@@ -110,7 +110,8 @@ fn export_layer_out_of_range() {
         }
     );
     // its own layers still draw
-    assert!(log
-        .export(Some(window), scored.as_ref(), TrackLine::Draw)
-        .is_ok());
+    assert!(
+        log.export(Some(window), scored.as_ref(), TrackLine::Draw)
+            .is_ok()
+    );
 }
