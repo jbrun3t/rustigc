@@ -4,10 +4,15 @@ build-backend = "maturin"
 
 [project]
 name = "rustigc-py"
-version = "0.1.0"
+version = "0.0.3"
+authors = [
+  { name="Jerome Brunet", email="jbrun3t@gmail.com" },
+]
 description = "Python bindings for the rustigc library"
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "GPL-2.0-or-later WITH Classpath-exception-2.0" }
+license-files = ["LICENSE"]
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20", "timezonefinder>=6.5", "tzdata; sys_platform == 'win32'"]
 classifiers = [
@@ -28,6 +33,10 @@ dev = [
     "pytest-cov>=4.0.0",
     "ruff>=0.8.0"
 ]
+
+[project.urls]
+Homepage = "https://github.com/jbrun3t/rustigc"
+Issues = "https://github.com/jbrun3t/rustigc/issues"
 
 [tool.maturin]
 python-source = "python"

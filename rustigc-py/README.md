@@ -3,8 +3,6 @@
 Python bindings for [rustigc](../rustigc): parsing and cross-country scoring of IGC flight
 recorder files.
 
-⚠️ Work in Progress ⚠️
-
 ## Installation
 
 ```bash
