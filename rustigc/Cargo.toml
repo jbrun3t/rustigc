@@ -27,7 +27,7 @@ geojson = { version = "1.0", default-features = false, optional = true }
 log = "0.4"
 num-traits = "0.2"
 rstar = "0.13"
-rustc-hash = "1"
+rustc-hash = "2"
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = "1"
 thiserror = "2"
