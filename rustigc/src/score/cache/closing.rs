@@ -47,7 +47,7 @@ impl ClosingCache {
 
     fn get(&self, entry_stop: usize, exit_start: usize) -> Option<&ClosingCacheEntry> {
         let point = AABB::from_point([entry_stop as i32, exit_start as i32]);
-        self.0.locate_in_envelope_intersecting(&point).next()
+        self.0.locate_in_envelope_intersecting(point).next()
     }
 
     fn insert(&mut self, entry: [usize; 2], exit: [usize; 2], dist: f64) {
@@ -102,7 +102,7 @@ fn nearest_under(tree: &Tree, point: &SPoint, radius: f64) -> Option<(usize, f64
     if radius.is_infinite() {
         // A radius query would walk the whole tree, so let the first one be a plain nearest
         return tree
-            .nearest_neighbor(point)
+            .nearest_neighbor(*point)
             .map(|o| (o.data as usize, o.distance_2(point)));
     }
 
