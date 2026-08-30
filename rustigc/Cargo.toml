@@ -31,7 +31,7 @@ rustc-hash = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = "1"
 thiserror = "2"
-winnow = "0.7"
+winnow = "1"
 
 [dev-dependencies]
 pretty_assertions = "1"

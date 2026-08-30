@@ -37,9 +37,10 @@ impl<'a> RawLog<'a> {
         let mut lastts: u32 = 0;
         let records = repeat(
             1..,
+            // winnow's `Alt` tuple impl tops out at 10 elements, so 13 record kinds need splitting.
             alt((
-                b_record, k_record, e_record, f_record, h_record, l_record, g_record,
-                d_record, a_record, i_record, j_record, c_record, bad_record,
+                alt((b_record, k_record, e_record, f_record, h_record, l_record)),
+                alt((g_record, d_record, a_record, i_record, j_record, c_record, bad_record)),
             ))
             .map(|r| r.fix_timestamp(&mut offset, &mut lastts)),
         )
