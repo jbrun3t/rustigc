@@ -33,12 +33,13 @@ fn main() -> io::Result<()> {
     });
 
     if !args.quiet
-        && let Err(e) = write_output(&log) {
-            // Broken pipe is expected when piping to head, less, etc.
-            // Exit silently in that case
-            if e.kind() != io::ErrorKind::BrokenPipe {
-                return Err(e);
-            }
+        && let Err(e) = write_output(&log)
+    {
+        // Broken pipe is expected when piping to head, less, etc.
+        // Exit silently in that case
+        if e.kind() != io::ErrorKind::BrokenPipe {
+            return Err(e);
+        }
     }
 
     Ok(())

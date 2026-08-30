@@ -121,9 +121,10 @@ impl FurthestCache {
         // extension below to stretch it over the range just scanned
         let upper = list.partition_point(|e| e.start <= stop);
         if let Some(prefix) = list[..upper].last()
-            && prefix.distance > distance {
-                start = prefix.start;
-                distance = prefix.distance;
+            && prefix.distance > distance
+        {
+            start = prefix.start;
+            distance = prefix.distance;
         }
 
         // Same fix found means the same distance, so only the bound reached can have grown
