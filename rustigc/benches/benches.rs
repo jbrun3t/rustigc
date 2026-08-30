@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rustigc::{Flight, FlightDetection, FlightSelection, Log};
 use rustigc_test_data::real;
+use std::hint::black_box;
 use std::time::Duration;
 
 fn load_test_files(files: &[(&'static str, &str)]) -> Vec<(&'static str, Vec<u8>)> {
