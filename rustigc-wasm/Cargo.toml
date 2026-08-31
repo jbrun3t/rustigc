@@ -13,7 +13,7 @@ readme = "README.md"
 publish = false
 
 [lib]
-name = "rustigc"
+name = "rustigc_wasm"
 crate-type = ["cdylib"]
 
 [dependencies]

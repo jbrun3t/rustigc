@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import { initSync, league_names, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
-import { Log } from "rustigc-utils/log";
+import { Log } from "rustigc-wasm-utils/log";
 
 const FORMATS = ["human", "geojson"];
 

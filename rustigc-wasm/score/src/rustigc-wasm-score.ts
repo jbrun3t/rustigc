@@ -10,4 +10,4 @@ import { main } from "./cli.js";
 // `import.meta.resolve` names the package entry, never a subpath: a package that declares
 // `exports` encapsulates its subpaths, and the bindings' manifest is generated, not ours to hold
 // still. The wasm sits beside that entry either way.
-main(readFileSync(new URL("rustigc_bg.wasm", import.meta.resolve("rustigc-wasm"))));
+main(readFileSync(new URL("rustigc_wasm_bg.wasm", import.meta.resolve("rustigc-wasm"))));

@@ -1,4 +1,4 @@
-# rustigc-utils
+# rustigc-wasm-utils
 
 Decoder for the raw fix array [`rustigc-wasm`](https://www.npmjs.com/package/rustigc-wasm) hands
 over as `Log.track_bytes`.
@@ -9,11 +9,11 @@ having `serde_wasm_bindgen` build the same objects from inside wasm, which cross
 per field where this crosses once per track.
 
 ```sh
-npm install rustigc-wasm rustigc-utils
+npm install rustigc-wasm rustigc-wasm-utils
 ```
 
 ```ts
-import { fixes } from "rustigc-utils";
+import { fixes } from "rustigc-wasm-utils";
 
 log.track                // Fix[], straight from the binding
 fixes(log.track_bytes)   // the same Fix[], 10x faster

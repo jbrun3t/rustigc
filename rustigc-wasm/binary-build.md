@@ -29,7 +29,7 @@ esbuild score/src/sea.ts --bundle --platform=node --format=cjs --minify --outfil
 # Add the wasm lib to the configuration
 cat > sea-config.json <<'JSON'
 { "main": "bundle.js", "output": "sea.blob",
-  "assets": { "wasm": "pkg/rustigc_bg.wasm" },
+  "assets": { "wasm": "pkg/rustigc_wasm_bg.wasm" },
   "disableExperimentalSEAWarning": true }
 JSON
 "$NODE" --experimental-sea-config sea-config.json

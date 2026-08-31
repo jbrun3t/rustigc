@@ -8,9 +8,9 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { initSync, league_names, Log, Scorer } from "rustigc-wasm";
-import { fixes, STRIDE } from "rustigc-utils";
+import { fixes, STRIDE } from "rustigc-wasm-utils";
 
-initSync({ module: readFileSync(new URL("rustigc_bg.wasm", import.meta.resolve("rustigc-wasm"))) });
+initSync({ module: readFileSync(new URL("rustigc_wasm_bg.wasm", import.meta.resolve("rustigc-wasm"))) });
 
 const CORPUS = new URL("../../rustigc-test-data/real/", import.meta.url);
 

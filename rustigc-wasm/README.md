@@ -5,7 +5,7 @@ WASM bindings for [rustigc](../rustigc), as the `rustigc-wasm` npm package.
 | directory | package | |
 |---|---|---|
 | `pkg/` | `rustigc-wasm` | the bindings: wasm, ESM glue and types, all generated |
-| `utils/` | `rustigc-utils` | optional helpers: `Log` with local times, `track_bytes` decoder |
+| `utils/` | `rustigc-wasm-utils` | optional helpers: `Log` with local times, `track_bytes` decoder |
 | `score/` | — | example CLI, not published |
 
 ## Prerequisites
@@ -55,7 +55,7 @@ log.describe("xcontest")                        // GeoJSON: detects, scores and 
 league_names()                                  // what score and describe accept
 ```
 
-Documentation is in `pkg/rustigc.d.ts`, generated from the doc comments in
+Documentation is in `pkg/rustigc_wasm.d.ts`, generated from the doc comments in
 `src/lib.rs` along with interfaces for `Fix`, `Flight`, `Header` and `Score`.
 
 GeoJSON crosses as a string rather than an object: a track would otherwise become as many arrays,
@@ -82,10 +82,10 @@ wasm and calls back out per fix: `Object::new` and an array append each time, ag
 copy for `track_bytes`.
 
 `track` needs nothing of the caller; `track_bytes` is for a caller who will decode, and
-`rustigc-utils` ships a decoder so that caller does not have to write one:
+`rustigc-wasm-utils` ships a decoder so that caller does not have to write one:
 
 ```ts
-import { fixes } from "rustigc-utils";
+import { fixes } from "rustigc-wasm-utils";
 
 log.track                // Fix[], straight from the binding
 fixes(log.track_bytes)   // the same Fix[], 10x faster
@@ -119,12 +119,12 @@ The whole table is the window, and at least two pairs of coordinates are require
 `TZN` is the pilot's instrument setting and can simply be stale — a caller holding a real tz
 dataset should shift `Log.datetime` itself instead.
 
-`rustigc-utils/datetime` does that shift: `LocalTime.of(log)`, then `.at(timestamp)` for a
+`rustigc-wasm-utils/datetime` does that shift: `LocalTime.of(log)`, then `.at(timestamp)` for a
 `{ date, time }` and `.zone` for how it reads.
 
 ## A friendlier `Log`
 
-`rustigc-utils/log` extends the binding's `Log` rather than wrapping it, so everything it already
+`rustigc-wasm-utils/log` extends the binding's `Log` rather than wrapping it, so everything it already
 does is still there. It adds text input, `datetimeAt(timestamp)` and `zone`. Text is converted one
 character to one byte.
 

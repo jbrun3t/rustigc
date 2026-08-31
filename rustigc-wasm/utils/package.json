@@ -1,5 +1,5 @@
 {
-  "name": "rustigc-utils",
+  "name": "rustigc-wasm-utils",
   "version": "0.0.3",
   "type": "module",
   "description": "Decoder for the raw fix array rustigc-wasm hands over as bytes",
