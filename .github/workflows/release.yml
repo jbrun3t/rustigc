@@ -79,7 +79,7 @@ jobs:
 
   crates-io:
     name: crates.io
-    needs: [preflight, build]
+    needs: [preflight, build, github-release]
     if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
@@ -109,7 +109,7 @@ jobs:
 
   pypi:
     name: PyPI
-    needs: [preflight, build]
+    needs: [preflight, build, github-release]
     if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
@@ -131,7 +131,7 @@ jobs:
 
   npm:
     name: npm
-    needs: [preflight, build]
+    needs: [preflight, build, github-release]
     if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
