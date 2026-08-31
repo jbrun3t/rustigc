@@ -67,10 +67,11 @@ jobs:
           path: assets
           merge-multiple: true
 
-      # A rehearsal gets a release too, marked as one, so its artifacts can be inspected.
+      # An RC gets a release too, marked as one, so its artifacts can be inspected.
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$GITHUB_REF_NAME" --generate-notes \
             ${{ needs.preflight.outputs.prerelease == 'true' && '--prerelease' || '--latest' }} \
