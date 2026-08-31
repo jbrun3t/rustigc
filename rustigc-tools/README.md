@@ -1,4 +1,4 @@
-# Rustigc - CLI Tools
+# rustigc-tools
 
 Command-line toolbox for IGC files
 
