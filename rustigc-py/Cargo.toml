@@ -10,6 +10,7 @@ keywords.workspace = true
 categories.workspace = true
 description = "Python bindings for rustigc IGC parser"
 readme = "README.md"
+publish = false
 
 [lib]
 name = "rustigcpy"
