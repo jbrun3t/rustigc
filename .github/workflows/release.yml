@@ -1,0 +1,69 @@
+name: Release
+
+# A tag runs the normal build, then publishes what it produced. Everything is built, tested and
+# packaged by `build.yml`, exactly as it is on any other ref; this workflow only checks the tag
+# makes sense, then collects the artifacts and uploads them.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'      # a release
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # a rehearsal, e.g. v0.0.4-rc1
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Classify the tag
+        id: tag
+        run: echo "prerelease=${{ contains(github.ref_name, '-') }}" >> "$GITHUB_OUTPUT"
+
+      # The four copies kept by hand.
+      - name: Version and Tag Check
+        run: |
+          version=${GITHUB_REF_NAME#v}   # the trigger admits only vX.Y.Z and vX.Y.Z-<suffix>
+          version=${version%%-*}
+          status=0
+
+          check() {
+            if [ "$2" = "$version" ]; then
+              echo "ok      $1"
+            else
+              echo "::error file=$1::declares $2, tag says $version"
+              status=1
+            fi
+          }
+
+          check Cargo.toml "$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml)"
+          for manifest in rustigc-wasm/package.json \
+                          rustigc-wasm/utils/package.json \
+                          rustigc-wasm/score/package.json; do
+            check "$manifest" "$(jq -r .version "$manifest")"
+          done
+
+          exit "$status"
+
+      # `Cargo.lock` is force-committed just before a release tag so the build is reproducible.
+      - name: Cargo.lock file present
+        if: steps.tag.outputs.prerelease == 'false'
+        run: |
+          if ! git ls-files --error-unmatch Cargo.lock >/dev/null 2>&1; then
+            echo "::error::a release tag must commit Cargo.lock; it is gitignored on main and dev"
+            exit 1
+          fi
+          cargo metadata --locked --format-version 1 >/dev/null
+
+  build:
+    needs: preflight
+    uses: ./.github/workflows/build.yml
