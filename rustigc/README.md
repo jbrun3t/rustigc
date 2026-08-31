@@ -4,9 +4,8 @@ Parsing and cross-country scoring of IGC flight recorder files, for free-flying 
 
 ## Usage
 
-```toml
-[dependencies]
-rustigc = "0.1"
+```sh
+cargo add rustigc
 ```
 
 ```rust
