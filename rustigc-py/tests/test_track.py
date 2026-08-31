@@ -3,7 +3,7 @@
 """Test Track wrapper"""
 import numpy
 import pytest
-from rustigcpy import Log
+from rustigc_py import Log
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

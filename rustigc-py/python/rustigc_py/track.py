@@ -3,7 +3,7 @@
 """The position fixes of a log."""
 import numpy
 
-from rustigcpy._bindings import FIX_DTYPE
+from rustigc_py._bindings import FIX_DTYPE
 
 from .fix import Fix
 

@@ -6,7 +6,7 @@ Whether the scores themselves are right is `rustigc`'s own business, so nothing 
 """
 import numpy
 import pytest
-from rustigcpy import Log, Scorer
+from rustigc_py import Log, Scorer
 
 TRIANGLE = numpy.array([[45.00, 6.00], [45.05, 6.10], [45.20, 6.30],
                         [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]])

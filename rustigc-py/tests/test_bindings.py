@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""Test rustigcpy Rust extension (minimal low-level API)"""
+"""Test rustigc_py Rust extension (minimal low-level API)"""
 import json
 
 import numpy
 import pytest
-import rustigcpy._bindings as rib
+import rustigc_py._bindings as rib
 
 FIX_DTYPE = rib.FIX_DTYPE
 

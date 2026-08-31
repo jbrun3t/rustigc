@@ -4,25 +4,22 @@ build-backend = "maturin"
 
 [project]
 name = "rustigc-py"
-version = "0.0.3"
+dynamic = ["version"]
 authors = [
   { name="Jerome Brunet", email="jbrun3t@gmail.com" },
 ]
 description = "Python bindings for the rustigc library"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "GPL-2.0-or-later WITH Classpath-exception-2.0" }
+license = "GPL-2.0-or-later WITH Classpath-exception-2.0"
 license-files = ["LICENSE"]
 keywords = ["igc", "gliding", "paragliding", "parser"]
 dependencies = ["numpy>=1.20", "timezonefinder>=6.5", "tzdata; sys_platform == 'win32'"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
 ]
 
 [project.optional-dependencies]
@@ -40,7 +37,7 @@ Issues = "https://github.com/jbrun3t/rustigc/issues"
 
 [tool.maturin]
 python-source = "python"
-module-name = "rustigcpy._bindings"
+module-name = "rustigc_py._bindings"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -49,7 +46,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--strict-markers",
-    "--cov=rustigcpy",
+    "--cov=rustigc_py",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",

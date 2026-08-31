@@ -6,13 +6,13 @@ recorder files.
 ## Installation
 
 ```bash
-pip install rustigcpy
+pip install rustigc-py
 ```
 
 ## Usage
 
 ```python
-from rustigcpy import Log
+from rustigc_py import Log
 
 log = Log.from_file("flight.igc")
 print(log.pilot_name, log.glider_type, len(log.track))
@@ -25,7 +25,7 @@ if score:
 open("flight.geojson", "w").write(log.export(flight, score))
 ```
 
-`Log` is the entry point. The API is documented in the docstrings — `help(rustigcpy.Log)`, or hover
+`Log` is the entry point. The API is documented in the docstrings — `help(rustigc_py.Log)`, or hover
 in any editor; the package ships `py.typed`, so type checkers see the annotations too.
 
 A track is a numpy structured array underneath, copied once from Rust and then read entirely in
@@ -45,7 +45,7 @@ The array is read-only, so it always matches what Rust holds. A `Log` never chan
 way. It takes an `(N, 2)` array of `[latitude, longitude]` in degrees, in flight order:
 
 ```python
-from rustigcpy import Scorer
+from rustigc_py import Scorer
 
 score = Scorer(points).score("xcontest")
 ```

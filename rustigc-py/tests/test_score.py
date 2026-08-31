@@ -2,7 +2,7 @@
 
 """Test Python Score wrapper"""
 import pytest
-from rustigcpy import Fix, Log
+from rustigc_py import Fix, Log
 
 # Window of fai-01.xcontest.json, the blessed reference's own, not our detection
 FAI01_WINDOW = (125, 25457)

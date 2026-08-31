@@ -13,7 +13,7 @@ use rustigc::FlightDetection;
 
 /// A parsed IGC log, as Rust holds it.
 ///
-/// The raw binding behind `rustigcpy.Log`, which is the interface to use.
+/// The raw binding behind `rustigc_py.Log`, which is the interface to use.
 #[pyclass(name = "RustLog")]
 struct PyLog {
     inner: rustigc::Log,
@@ -233,7 +233,7 @@ impl PyLog {
 
 /// A scoring window over a table of coordinates, needing no log.
 ///
-/// The raw binding behind `rustigcpy.Scorer`, which is the interface to use.
+/// The raw binding behind `rustigc_py.Scorer`, which is the interface to use.
 #[pyclass(name = "RustScorer")]
 struct PyScorer {
     inner: Mutex<rustigc::Scorer>,
@@ -300,7 +300,7 @@ fn league_names() -> Vec<&'static str> {
 
 /// Raw bindings to the rustigc library.
 ///
-/// Not the interface to use: `rustigcpy` wraps this with numpy tracks and Python objects. It holds
+/// Not the interface to use: `rustigc_py` wraps this with numpy tracks and Python objects. It holds
 /// `RustLog`, `RustScorer`, `league_names` and `FIX_DTYPE`. Flights and scores cross as JSON.
 #[pymodule]
 #[pyo3(name = "_bindings")]

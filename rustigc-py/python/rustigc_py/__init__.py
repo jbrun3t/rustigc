@@ -5,7 +5,7 @@
 `Log` is the entry point. It parses an IGC file, exposes its metadata and its `Track`, detects
 the flights in it, scores them against a league, and draws the result as GeoJSON:
 
-    from rustigcpy import Log
+    from rustigc_py import Log
 
     log = Log.from_file("flight.igc")
     print(log.pilot_name, len(log.track))
@@ -22,15 +22,15 @@ Python. Parsing, detection and scoring release the GIL.
 
 `Scorer` scores a table of coordinates on its own, with no IGC file behind it:
 
-    from rustigcpy import Scorer
+    from rustigc_py import Scorer
 
     score = Scorer(points).score("xcontest")   # points is an (N, 2) [lat, lon] array
 
-`rustigcpy._bindings` is the raw extension module this package is built on, not an interface to use
+`rustigc_py._bindings` is the raw extension module this package is built on, not an interface to use
 directly.
 """
 
-from rustigcpy._bindings import league_names
+from rustigc_py._bindings import league_names
 
 from .fix import Fix
 from .flight import Flight, Flights

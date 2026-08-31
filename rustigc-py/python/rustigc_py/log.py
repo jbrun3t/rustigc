@@ -24,8 +24,8 @@ def _finder():
 
 import numpy
 
-import rustigcpy._bindings as rib
-from rustigcpy._bindings import FIX_DTYPE
+import rustigc_py._bindings as rib
+from rustigc_py._bindings import FIX_DTYPE
 
 from .fix import Fix
 from .flight import Flight, Flights

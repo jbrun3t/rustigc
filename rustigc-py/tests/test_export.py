@@ -4,7 +4,7 @@
 import json
 
 import pytest
-from rustigcpy import Log
+from rustigc_py import Log
 
 
 def roles(geojson: str) -> list[str]:

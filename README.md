@@ -55,7 +55,7 @@ See [rustigc/README.md](rustigc/README.md)
 ### Python
 
 ```python
-from rustigcpy import Log
+from rustigc_py import Log
 
 log = Log.from_file("flight.igc")
 

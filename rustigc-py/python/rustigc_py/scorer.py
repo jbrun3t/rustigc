@@ -5,7 +5,7 @@ import json
 
 import numpy
 
-import rustigcpy._bindings as rib
+import rustigc_py._bindings as rib
 
 from .score import Score
 
