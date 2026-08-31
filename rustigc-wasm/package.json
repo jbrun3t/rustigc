@@ -1,6 +1,6 @@
 {
   "name": "rustigc-wasm-workspace",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "description": "Workspace root for the rustigc wasm bindings and the packages built beside them",
   "license": "GPL-2.0-or-later WITH Classpath-exception-2.0",
