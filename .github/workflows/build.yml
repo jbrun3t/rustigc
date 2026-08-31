@@ -87,7 +87,7 @@ jobs:
       # Replaying the pin's own window makes the report reproduce the pin byte for byte
       - name: Smoke test the CLI against the blessed pin
         run: |
-          window=$(python -c 'import json, os; d = json.load(open(os.environ["SMOKE_PIN"])); print("%d,%d" % (d["takeoff"], d["landing"]))')
+          window=$(jq -r '"\(.takeoff),\(.landing)"' "$SMOKE_PIN")
           target/${{ matrix.target }}/release/rustigc-xc-score${{ matrix.ext }} \
             --league xcontest --window "$window" --format json \
             < "$SMOKE_FIXTURE" | diff - "$SMOKE_PIN"
