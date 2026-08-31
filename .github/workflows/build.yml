@@ -1,0 +1,200 @@
+name: Build
+
+# Tests running on Linux x86, Linux ARM64, MacOS ARM64 and Windows X86.
+# Packaging done only tags
+
+on:
+  workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+  RELEASING: ${{ startsWith(github.ref, 'refs/tags/') }}
+  SMOKE_FIXTURE: rustigc-test-data/real/fai-01.igc
+  SMOKE_PIN: rustigc-test-data/real/fai-01.xcontest.json
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-24.04,     target: x86_64-unknown-linux-gnu,  ext: '',     glibc: '2.28', sdist: true  }
+          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, ext: '',     glibc: '2.28', sdist: false }
+          - { runner: macos-14,         target: aarch64-apple-darwin,      ext: '',     sdist: false }
+          - { runner: windows-latest,   target: x86_64-pc-windows-msvc,    ext: '.exe', sdist: false }
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Let git create symlinks
+        if: runner.os == 'Windows'
+        run: git config --global core.symlinks true
+
+      - uses: actions/checkout@v7
+
+      # rustup ships on every runner image, so the official installer is already here. It also
+      # pins one toolchain across the matrix: the preinstalled Rust differs between images.
+      - name: Setup Rust
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      # Every runner is native
+      - name: Runner sanity check
+        run: |
+          host=$(rustc -vV | sed -n 's/^host: //p')
+          if [ "$host" != "${{ matrix.target }}" ]; then
+            echo "::error::${{ matrix.runner }} is $host, matrix says ${{ matrix.target }}"
+            exit 1
+          fi
+
+      # main and dev do not track Cargo.lock; a release tag does, and must build from it.
+      - name: Resolve the lockfile policy
+        run: |
+          if git ls-files --error-unmatch Cargo.lock >/dev/null 2>&1; then
+            echo "LOCKED=--locked" >> "$GITHUB_ENV"
+          else
+            echo "LOCKED=" >> "$GITHUB_ENV"
+          fi
+
+      # A release builds clean; only branch and PR runs take the cache.
+      - uses: Swatinem/rust-cache@v2
+        if: env.RELEASING != 'true'
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install the Python build tools
+        run: pip install 'maturin[zig]' cargo-zigbuild
+
+      - name: Run tests
+        run: |
+          read -ra locked <<< "$LOCKED"
+          cargo test --workspace "${locked[@]}"
+
+      # Linux links against `glibc` rather than the runner's
+      - name: Build rustigc-xc-score
+        run: |
+          read -ra locked <<< "$LOCKED"
+          if [ -n "${{ matrix.glibc }}" ]; then
+            cargo zigbuild --release "${locked[@]}" -p rustigc-tools \
+              --target ${{ matrix.target }}.${{ matrix.glibc }}
+          else
+            cargo build --release "${locked[@]}" -p rustigc-tools --target ${{ matrix.target }}
+          fi
+
+      # Replaying the pin's own window makes the report reproduce the pin byte for byte
+      - name: Smoke test the CLI against the blessed pin
+        run: |
+          window=$(python -c 'import json, os; d = json.load(open(os.environ["SMOKE_PIN"])); print("%d,%d" % (d["takeoff"], d["landing"]))')
+          target/${{ matrix.target }}/release/rustigc-xc-score${{ matrix.ext }} \
+            --league xcontest --window "$window" --format json \
+            < "$SMOKE_FIXTURE" | diff - "$SMOKE_PIN"
+
+      - name: Archive the binary
+        if: env.RELEASING == 'true'
+        run: |
+          mkdir -p artifacts
+          name=rustigc-xc-score-${{ matrix.target }}
+          dir=target/${{ matrix.target }}/release
+          if [ "$RUNNER_OS" = Windows ]; then
+            7z a "artifacts/$name.zip" "./$dir/rustigc-xc-score${{ matrix.ext }}"
+          else
+            tar -czf "artifacts/$name.tar.gz" -C "$dir" rustigc-xc-score
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: env.RELEASING == 'true'
+        with:
+          name: rustigc-xc-score-${{ matrix.target }}
+          path: artifacts/
+
+      - name: Build the wheel
+        run: |
+          args=(--release --target ${{ matrix.target }})
+          if [ -n "${{ matrix.glibc }}" ]; then
+            args+=(--zig --manylinux "$(echo '${{ matrix.glibc }}' | tr . _)")
+          fi
+          if [ "${{ matrix.sdist }}" = true ]; then
+            args+=(--sdist)
+          fi
+          maturin build "${args[@]}" -m rustigc-py/Cargo.toml -o dist
+
+      # Against the built wheel rather than the source tree
+      - name: Test the wheel
+        run: |
+          python -m venv "$RUNNER_TEMP/wheeltest"
+          if [ "$RUNNER_OS" = Windows ]; then
+            PY="$RUNNER_TEMP/wheeltest/Scripts/python"
+          else
+            PY="$RUNNER_TEMP/wheeltest/bin/python"
+          fi
+          "$PY" -m pip install --quiet dist/*.whl pytest pytest-cov
+          cd rustigc-py && "$PY" -m pytest -q
+
+      - uses: actions/upload-artifact@v7
+        if: env.RELEASING == 'true'
+        with:
+          name: wheel-${{ matrix.target }}
+          path: dist/
+
+  # wasm32 is one target built on one runner: the artifact is architecture-independent.
+  wasm:
+    name: wasm32-unknown-unknown
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        if: env.RELEASING != 'true'
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # wasm-pack publishes a prebuilt binary to npm, which node is already here to fetch.
+      # `cargo install wasm-pack` builds it from source and would dominate the job.
+      - name: Install wasm-pack
+        run: npm install --global wasm-pack
+
+      - name: Build the wasm bindings
+        run: wasm-pack build rustigc-wasm --target web
+
+      - name: Build the npm packages
+        run: |
+          cd rustigc-wasm
+          npm install
+          npm run build
+
+      - name: Smoke test the example CLI
+        run: |
+          node rustigc-wasm/score/dist/rustigc-wasm-score.js --league xcontest \
+            < "$SMOKE_FIXTURE" | grep -q 'points,'
+
+      - name: Test the bindings
+        run: cd rustigc-wasm && npm test
+
+      # score/ is private and stays unpublished.
+      - name: Pack the npm packages
+        if: env.RELEASING == 'true'
+        run: |
+          mkdir -p npm
+          npm pack --pack-destination npm ./rustigc-wasm/pkg ./rustigc-wasm/utils
+
+      - uses: actions/upload-artifact@v7
+        if: env.RELEASING == 'true'
+        with:
+          name: npm-packages
+          path: npm/
