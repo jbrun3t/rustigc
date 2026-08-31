@@ -21,13 +21,9 @@ jobs:
       run:
         shell: bash
     outputs:
-      prerelease: ${{ steps.tag.outputs.prerelease }}
+      prerelease: ${{ contains(github.ref_name, '-') }}
     steps:
       - uses: actions/checkout@v7
-
-      - name: Classify the tag
-        id: tag
-        run: echo "prerelease=${{ contains(github.ref_name, '-') }}" >> "$GITHUB_OUTPUT"
 
       # The four copies kept by hand.
       - name: Version and Tag Check
@@ -53,16 +49,6 @@ jobs:
           done
 
           exit "$status"
-
-      # `Cargo.lock` is force-committed just before a release tag so the build is reproducible.
-      - name: Cargo.lock file present
-        if: steps.tag.outputs.prerelease == 'false'
-        run: |
-          if ! git ls-files --error-unmatch Cargo.lock >/dev/null 2>&1; then
-            echo "::error::a release tag must commit Cargo.lock; it is gitignored on main and dev"
-            exit 1
-          fi
-          cargo metadata --locked --format-version 1 >/dev/null
 
   build:
     needs: preflight

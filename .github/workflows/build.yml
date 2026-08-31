@@ -48,15 +48,6 @@ jobs:
             exit 1
           fi
 
-      # main and dev do not track Cargo.lock; a release tag does, and must build from it.
-      - name: Resolve the lockfile policy
-        run: |
-          if git ls-files --error-unmatch Cargo.lock >/dev/null 2>&1; then
-            echo "LOCKED=--locked" >> "$GITHUB_ENV"
-          else
-            echo "LOCKED=" >> "$GITHUB_ENV"
-          fi
-
       # A release builds clean; only branch and PR runs take the cache.
       - uses: Swatinem/rust-cache@v2
         if: github.ref_type != 'tag'
@@ -69,19 +60,16 @@ jobs:
         run: pip install 'maturin[zig]' cargo-zigbuild
 
       - name: Run tests
-        run: |
-          read -ra locked <<< "$LOCKED"
-          cargo test --workspace "${locked[@]}"
+        run: cargo test --workspace --locked
 
       # Linux links against `glibc` rather than the runner's
       - name: Build rustigc-xc-score
         run: |
-          read -ra locked <<< "$LOCKED"
           if [ -n "${{ matrix.glibc }}" ]; then
-            cargo zigbuild --release "${locked[@]}" -p rustigc-tools \
+            cargo zigbuild --release --locked -p rustigc-tools \
               --target ${{ matrix.target }}.${{ matrix.glibc }}
           else
-            cargo build --release "${locked[@]}" -p rustigc-tools --target ${{ matrix.target }}
+            cargo build --release --locked -p rustigc-tools --target ${{ matrix.target }}
           fi
 
       # Replaying the pin's own window makes the report reproduce the pin byte for byte
