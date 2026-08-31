@@ -94,7 +94,11 @@ jobs:
           rustup default stable
 
       - name: Install cargo-release
-        run: cargo install cargo-release --locked
+        env:
+          CARGO_RELEASE_VERSION: '1.1.5'
+        run: |
+          curl -fsSL "https://github.com/crate-ci/cargo-release/releases/download/v$CARGO_RELEASE_VERSION/cargo-release-v$CARGO_RELEASE_VERSION-x86_64-unknown-linux-musl.tar.gz" \
+            | tar xz -C "$HOME/.cargo/bin" ./cargo-release
 
       - uses: rust-lang/crates-io-auth-action@v1
         id: auth
