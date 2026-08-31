@@ -30,6 +30,8 @@ Python. Parsing, detection and scoring release the GIL.
 directly.
 """
 
+from importlib.metadata import version
+
 from rustigc_py._bindings import league_names
 
 from .fix import Fix
@@ -39,5 +41,5 @@ from .score import Score
 from .scorer import Scorer
 from .track import Track
 
-__version__ = "0.1.0"
+__version__ = version("rustigc-py")
 __all__ = ["Log", "Scorer", "Track", "Fix", "Flight", "Flights", "Score", "league_names"]
