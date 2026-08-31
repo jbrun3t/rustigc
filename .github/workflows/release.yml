@@ -150,6 +150,6 @@ jobs:
 
       - name: Publish
         run: |
-          for tarball in npm/*.tgz; do
+          for tarball in ./npm/*.tgz; do
             npm publish "$tarball"
           done
