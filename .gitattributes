@@ -1,3 +1,4 @@
 # Do not modify tracklog
 *.igc -crlf
 *.IGC -crlf
+*.json -crlf
