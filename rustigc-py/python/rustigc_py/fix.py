@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """One position fix of a track."""
+
 import numpy
 
 
@@ -24,27 +25,27 @@ class Fix:
     @property
     def latitude(self) -> float:
         """Latitude in decimal degrees"""
-        return float(self._data['latitude'])
+        return float(self._data["latitude"])
 
     @property
     def longitude(self) -> float:
         """Longitude in decimal degrees"""
-        return float(self._data['longitude'])
+        return float(self._data["longitude"])
 
     @property
     def baro_altitude(self) -> int:
         """Barometric altitude in meters"""
-        return int(self._data['baro_altitude'])
+        return int(self._data["baro_altitude"])
 
     @property
     def gnss_altitude(self) -> int:
         """GNSS altitude in meters"""
-        return int(self._data['gnss_altitude'])
+        return int(self._data["gnss_altitude"])
 
     @property
     def timestamp(self) -> int:
         """Milliseconds from the instant `Log.datetime` reports."""
-        return int(self._data['timestamp'])
+        return int(self._data["timestamp"])
 
     def __eq__(self, other) -> bool:
         """Compare Fix objects by their underlying data"""

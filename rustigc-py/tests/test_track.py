@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test Track wrapper"""
+
 import numpy
 import pytest
 from rustigc_py import Log
@@ -29,10 +30,11 @@ def test_track_indexing(igc_content):
 
     fix = track[0]
     assert fix is not None
-    assert hasattr(fix, 'latitude')
+    assert hasattr(fix, "latitude")
 
     subset = track._npdata[0:100]
     assert len(subset) == 100
+
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_fix_object(igc_content):
@@ -82,7 +84,7 @@ def test_track_iteration(igc_content):
 
     count = 0
     for fix in track:
-        assert hasattr(fix, 'latitude')
+        assert hasattr(fix, "latitude")
         count += 1
         if count >= 10:
             break

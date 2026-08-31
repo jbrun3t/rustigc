@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test Python Log wrapper"""
+
 from datetime import UTC, date, timedelta
 
 import pytest
@@ -52,7 +53,7 @@ def test_datetime_at_without_date():
     """No date header, nothing to date a fix against"""
     log = Log.from_bytes(b"AFLA1BX\n"
                          b"B0000004449144N00643725EA0058700558\n"
-                         b"B1000004449144N00643725EA0058700558\n")
+                         b"B1000004449144N00643725EA0058700558\n")  # fmt: skip
     assert log.datetime is None
     assert log.datetime_at(3600) is None
 

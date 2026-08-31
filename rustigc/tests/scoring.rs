@@ -35,9 +35,9 @@ fn check_fixture(name: &str) {
     let expected: Value = serde_json::from_str(&expected_text)
         .unwrap_or_else(|e| panic!("parse {ref_path:?}: {e}"));
 
-    let result = window_of(&expected, &log)
-        .map(|(start, stop)| log.score("xcontest", start, stop).expect("scorable window"))
-        .flatten();
+    let result = window_of(&expected, &log).and_then(|(start, stop)| {
+        log.score("xcontest", start, stop).expect("scorable window")
+    });
     let actual = serde_json::to_value(&result).unwrap();
 
     pretty_assertions::assert_eq!(actual, expected, "{stem}: xcontest result moved");

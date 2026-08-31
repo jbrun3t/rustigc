@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test Python Score wrapper"""
+
 import pytest
 from rustigc_py import Fix, Log
 
@@ -42,7 +43,7 @@ def test_score_without_a_detected_flight():
     """No flight means no default window, which is refused like any other bad window"""
     tiny = (b"AFLA1BX\nHFDTE150120\n"
             b"B1101355206343N00006198WA005870055801005\n"
-            b"B1101365206345N00006200WA005890056004208\n")
+            b"B1101365206345N00006200WA005890056004208\n")  # fmt: skip
     log = Log.from_bytes(tiny)
     assert len(log.flights()) == 0
 

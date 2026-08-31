@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test GeoJSON output"""
+
 import json
 
 import pytest
@@ -21,8 +22,12 @@ def test_describe(igc_content):
         counts[role] = counts.get(role, 0) + 1
 
     assert counts == {
-        "track": 1, "metadata": 1, "score": 1,
-        "leg": 3, "closing": 3, "marker": 7,
+        "track": 1,
+        "metadata": 1,
+        "score": 1,
+        "leg": 3,
+        "closing": 3,
+        "marker": 7,
     }
 
     scored = next(f for f in described["features"] if f["properties"]["role"] == "score")

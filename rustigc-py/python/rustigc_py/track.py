@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """The position fixes of a log."""
+
 import numpy
 
 from rustigc_py._bindings import FIX_DTYPE
@@ -34,27 +35,27 @@ class Track:
     @property
     def _latitude(self) -> numpy.ndarray:
         """Latitudes in decimal degrees"""
-        return self._npdata['latitude']
+        return self._npdata["latitude"]
 
     @property
     def _longitude(self) -> numpy.ndarray:
         """Longitudes in decimal degrees"""
-        return self._npdata['longitude']
+        return self._npdata["longitude"]
 
     @property
     def _baro_altitude(self) -> numpy.ndarray:
         """Barometric altitudes in meters"""
-        return self._npdata['baro_altitude']
+        return self._npdata["baro_altitude"]
 
     @property
     def _gnss_altitude(self) -> numpy.ndarray:
         """GNSS altitudes in meters"""
-        return self._npdata['gnss_altitude']
+        return self._npdata["gnss_altitude"]
 
     @property
     def _timestamp(self) -> numpy.ndarray:
         """Timestamps, in milliseconds from the instant `Log.datetime` reports."""
-        return self._npdata['timestamp']
+        return self._npdata["timestamp"]
 
     def __len__(self) -> int:
         return len(self._npdata)

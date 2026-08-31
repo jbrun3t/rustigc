@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Scoring a table of coordinates, with no IGC file behind it."""
+
 import json
 
 import numpy

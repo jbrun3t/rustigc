@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Flight sections detected in a track."""
+
 from typing import TYPE_CHECKING
 
 from .track import Track
@@ -28,12 +29,12 @@ class Flight:
             raise AttributeError(name) from None
 
     @property
-    def takeoff(self) -> 'Fix':
+    def takeoff(self) -> "Fix":
         """First fix of the section."""
         return self._track[self._data["start"]]
 
     @property
-    def landing(self) -> 'Fix':
+    def landing(self) -> "Fix":
         """Last fix of the section."""
         return self._track[self._data["stop"]]
 

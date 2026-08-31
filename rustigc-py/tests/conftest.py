@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 from pathlib import Path
+
 import pytest
+
 
 @pytest.fixture
 def test_data_dir():

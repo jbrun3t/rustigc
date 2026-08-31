@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Python bindings for the rustigc library"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "GPL-2.0-or-later WITH Classpath-exception-2.0"
 license-files = ["LICENSE"]
 keywords = ["igc", "gliding", "paragliding", "parser"]
@@ -51,6 +51,16 @@ addopts = [
     "--cov-report=html",
     "--cov-report=xml",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["python"]
+
+# A compiled extension module: pyo3 emits no stubs, so its surface is checked at the boundary
+# by the wrappers in this package rather than by mypy.
+[[tool.mypy.overrides]]
+module = "rustigc_py._bindings"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

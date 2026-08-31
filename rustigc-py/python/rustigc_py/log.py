@@ -1,11 +1,25 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """The parsed IGC log and everything derived from it."""
+
 from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+import numpy
+
+import rustigc_py._bindings as rib
+from rustigc_py._bindings import FIX_DTYPE
+
+from .fix import Fix
+from .flight import Flight, Flights
+from .score import Score
+from .track import Track
+
+# `Log.datetime` shadows the stdlib name inside the class body, so annotations there need this.
+_DateTime = datetime
 
 _TIMEZONE_FINDER = None
 
@@ -22,17 +36,6 @@ def _finder():
     return _TIMEZONE_FINDER
 
 
-import numpy
-
-import rustigc_py._bindings as rib
-from rustigc_py._bindings import FIX_DTYPE
-
-from .fix import Fix
-from .flight import Flight, Flights
-from .score import Score
-from .track import Track
-
-
 def _json(item) -> str | None:
     """A layer's scalars, for Rust to read back into the struct that draws it"""
     return None if item is None else json.dumps(item._data)
@@ -42,14 +45,14 @@ def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
     """Fix indices of a scoring window, given as indices or as fixes"""
     start, stop = bounds
 
-    if isinstance(start, Fix) != isinstance(stop, Fix):
+    if isinstance(start, Fix) and isinstance(stop, Fix):
+        if start.index is None or stop.index is None:
+            raise ValueError("fix has no position in a track")
+        return start.index, stop.index
+    if isinstance(start, Fix) or isinstance(stop, Fix):
         raise TypeError("window bounds must both be indices or both be fixes")
-    if not isinstance(start, Fix):
-        return start, stop
-    if start.index is None or stop.index is None:
-        raise ValueError("fix has no position in a track")
 
-    return start.index, stop.index
+    return start, stop
 
 
 class Log:
@@ -64,7 +67,7 @@ class Log:
         self._log = log
         self._track: Track | None = None
 
-    def with_track(self, track: numpy.ndarray) -> 'Log':
+    def with_track(self, track: numpy.ndarray) -> Log:
         """A new log over `track`, carrying everything else this one holds.
 
         The track is read-only, so editing means working on a copy:
@@ -87,7 +90,7 @@ class Log:
         return Log(self._log.with_track_bytes(track.tobytes()))
 
     @classmethod
-    def from_bytes(cls, content: bytes) -> 'Log':
+    def from_bytes(cls, content: bytes) -> Log:
         """Parse an IGC file held in memory.
 
         Args:
@@ -99,14 +102,14 @@ class Log:
         return cls(rib.RustLog.from_bytes(content))
 
     @classmethod
-    def from_file(cls, path: str) -> 'Log':
+    def from_file(cls, path: str) -> Log:
         """Parse the IGC file at `path`.
 
         Raises:
             OSError: The file could not be read.
             ValueError: Its content is not usable IGC.
         """
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             return cls.from_bytes(f.read())
 
     @property
@@ -129,7 +132,7 @@ class Log:
         return header[0] if header else None
 
     @property
-    def datetime(self) -> datetime | None:
+    def datetime(self) -> _DateTime | None:
         """Instant this log's fix timestamps count from, as an aware datetime.
 
         UTC midnight of the flight's date, read in the zone the track starts in. West of
@@ -165,7 +168,7 @@ class Log:
 
         return timezone(timedelta(hours=tzn)) if tzn is not None else None
 
-    def datetime_at(self, timestamp: int) -> datetime | None:
+    def datetime_at(self, timestamp: int) -> _DateTime | None:
         """When the fix carrying `timestamp` was recorded, as an aware datetime.
 
         Args:
@@ -175,7 +178,9 @@ class Log:
         if origin is None:
             return None
 
-        return (origin.astimezone(UTC) + timedelta(milliseconds=timestamp)).astimezone(origin.tzinfo)
+        return (origin.astimezone(UTC) + timedelta(milliseconds=timestamp)).astimezone(
+            origin.tzinfo
+        )
 
     def flights(self) -> Flights:
         """Detect the flight sections in the track.
@@ -185,12 +190,11 @@ class Log:
         Returns:
             A `Flights` list, empty when nothing was detected.
         """
-        return Flights(
-            Flight(self.track, data) for data in json.loads(self._log.flights())
-        )
+        return Flights(Flight(self.track, data) for data in json.loads(self._log.flights()))
 
-    def score(self, league: str,
-              window: tuple[int, int] | tuple[Fix, Fix] | None = None) -> Score | None:
+    def score(
+        self, league: str, window: tuple[int, int] | tuple[Fix, Fix] | None = None
+    ) -> Score | None:
         """Score a window of the track against every rule of a league, reporting the best.
 
         Args:
@@ -233,8 +237,9 @@ class Log:
         """
         return self._log.describe(league)
 
-    def export(self, flight: Flight | None = None, score: Score | None = None,
-               track: bool = True) -> str:
+    def export(
+        self, flight: Flight | None = None, score: Score | None = None, track: bool = True
+    ) -> str:
         """This log, `flight` and `score`, as a GeoJSON string.
 
         Args:

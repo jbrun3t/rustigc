@@ -4,12 +4,14 @@
 
 Whether the scores themselves are right is `rustigc`'s own business, so nothing here pins one.
 """
+
 import numpy
 import pytest
 from rustigc_py import Log, Scorer
 
-TRIANGLE = numpy.array([[45.00, 6.00], [45.05, 6.10], [45.20, 6.30],
-                        [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]])
+TRIANGLE = numpy.array(
+    [[45.00, 6.00], [45.05, 6.10], [45.20, 6.30], [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]]
+)
 
 
 @pytest.mark.parametrize("igc_content", ["triangle-01.igc"], indirect=True)
@@ -41,13 +43,16 @@ def test_unknown_league():
         Scorer(TRIANGLE).score("xkontest")
 
 
-@pytest.mark.parametrize("table, message", [
-    (numpy.zeros(4), "2-dimensional"),
-    (numpy.zeros((4, 3)), r"\(N, 2\)"),
-    (numpy.zeros((1, 2)), "2 are the minimum"),
-    (numpy.array([[45.0, 6.0], [numpy.nan, 6.1]]), "point 1 is not a finite coordinate"),
-    (numpy.array([[45.0, 6.0], [90.5, 6.1]]), "point 1 is not a finite coordinate"),
-])
+@pytest.mark.parametrize(
+    "table, message",
+    [
+        (numpy.zeros(4), "2-dimensional"),
+        (numpy.zeros((4, 3)), r"\(N, 2\)"),
+        (numpy.zeros((1, 2)), "2 are the minimum"),
+        (numpy.array([[45.0, 6.0], [numpy.nan, 6.1]]), "point 1 is not a finite coordinate"),
+        (numpy.array([[45.0, 6.0], [90.5, 6.1]]), "point 1 is not a finite coordinate"),
+    ],
+)
 def test_rejects_unusable_tables(table, message):
     """The shape checks are this binding's; the rest is the core naming what is wrong"""
     with pytest.raises(ValueError, match=message):

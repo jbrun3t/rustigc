@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 """Test rustigc_py Rust extension (minimal low-level API)"""
+
 import json
 
 import numpy
@@ -73,9 +74,21 @@ def test_score_shape(igc_content):
     scored = log.score("xcontest", *FAI01_WINDOW)
 
     assert set(json.loads(scored)) == {
-        "league", "description", "distance_m", "distance_km", "gap_km", "threshold_m",
-        "penalty", "score", "multiplier", "takeoff", "entry", "turnpoints",
-        "exit", "landing", "circuit",
+        "league",
+        "description",
+        "distance_m",
+        "distance_km",
+        "gap_km",
+        "threshold_m",
+        "penalty",
+        "score",
+        "multiplier",
+        "takeoff",
+        "entry",
+        "turnpoints",
+        "exit",
+        "landing",
+        "circuit",
     }
 
 
