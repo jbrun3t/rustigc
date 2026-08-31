@@ -8,4 +8,5 @@ authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
+readme = "README.md"
 description = "IGC fixtures and scoring pins used by the rustigc test suites"
