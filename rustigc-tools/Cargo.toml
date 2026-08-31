@@ -26,7 +26,7 @@ path = "src/score.rs"
 [dependencies]
 log = "0.4"
 env_logger = "0.11"
-rustigc = { path = "../rustigc", version = "0.0.4", features = ["serde", "geojson"] }
+rustigc = { path = "../rustigc", version = "0.0.5", features = ["serde", "geojson"] }
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
 jiff = "0.2"
