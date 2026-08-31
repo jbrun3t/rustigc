@@ -53,3 +53,102 @@ jobs:
   build:
     needs: preflight
     uses: ./.github/workflows/build.yml
+
+
+  github-release:
+    name: GitHub release
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: assets
+          merge-multiple: true
+
+      # A rehearsal gets a release too, marked as one, so its artifacts can be inspected.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --generate-notes \
+            ${{ needs.preflight.outputs.prerelease == 'true' && '--prerelease' || '--latest' }} \
+            assets/*
+
+  crates-io:
+    name: crates.io
+    needs: [preflight, build]
+    if: needs.preflight.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+
+      - name: Install cargo-release
+        run: cargo install cargo-release --locked
+
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          cargo release publish --workspace \
+            --exclude rustigc-py --exclude rustigc-wasm \
+            --allow-branch HEAD --no-confirm --execute
+
+  pypi:
+    name: PyPI
+    needs: [preflight, build]
+    if: needs.preflight.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          pattern: wheel-*
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          name: sdist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  npm:
+    name: npm
+    needs: [preflight, build]
+    if: needs.preflight.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: npm
+          name: npm-packages
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish
+        run: |
+          for tarball in npm/*.tgz; do
+            npm publish "$tarball"
+          done
