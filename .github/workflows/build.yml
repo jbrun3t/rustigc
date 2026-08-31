@@ -135,7 +135,14 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.target }}
-          path: dist/
+          path: dist/*.whl
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: matrix.sdist
+        with:
+          name: sdist
+          path: dist/*.tar.gz
           retention-days: 7
 
   # wasm32 is one target built on one runner: the artifact is architecture-independent.
