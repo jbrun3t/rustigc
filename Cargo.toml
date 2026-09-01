@@ -19,9 +19,13 @@ categories = ["parser-implementations", "aerospace"]
 # Important so LLVM properly re-partition inlining
 [profile.release]
 codegen-units = 1
+lto = true
+strip = true
+panic = "abort"
 
 [profile.profiling]
 inherits = "release"
 lto = "thin"
-debug = true             # Full debug info for symbols
-strip = false           # Don't strip symbols
+strip = false
+panic = "unwind"
+debug = true
