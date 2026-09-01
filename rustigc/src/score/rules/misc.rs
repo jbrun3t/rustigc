@@ -95,7 +95,7 @@ impl Oar {
 }
 
 impl League for Oar {
-    const NAME: &'static str = "oar";
+    const NAME: &'static str = "out-and-return";
     const RULES: Ruleset = &[&OutAndReturn];
 }
 
