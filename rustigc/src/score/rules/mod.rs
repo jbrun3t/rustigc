@@ -14,6 +14,9 @@ pub mod cfd;
 pub mod misc;
 pub mod xcontest;
 
+#[cfg(feature = "cfd-preview")]
+pub mod cfd_preview;
+
 #[cfg(feature = "crazy-test")]
 pub mod crazy;
 
@@ -288,6 +291,8 @@ static LEAGUES: &[&'static dyn LeagueInfo] = &[
     &misc::TwoTurnpoints,
     &misc::Line,
     &misc::Oar,
+    #[cfg(feature = "cfd-preview")]
+    &cfd_preview::CfdPreview,
     #[cfg(feature = "crazy-test")]
     &crazy::Crazy,
 ];

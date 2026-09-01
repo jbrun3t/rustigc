@@ -16,7 +16,8 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["serde", "geojson"]
+default = ["serde", "geojson", "cfd-preview" ]
+cfd-preview = []
 crazy-test = []
 geojson = ["dep:geojson"]
 
