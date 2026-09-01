@@ -903,7 +903,7 @@ dependencies = [
 
 [[package]]
 name = "rustigc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "btoi",
  "criterion",
@@ -924,7 +924,7 @@ dependencies = [
 
 [[package]]
 name = "rustigc-py"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "numpy",
  "pyo3",
@@ -934,11 +934,11 @@ dependencies = [
 
 [[package]]
 name = "rustigc-test-data"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "rustigc-tools"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "env_logger",
@@ -951,7 +951,7 @@ dependencies = [
 
 [[package]]
 name = "rustigc-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rustigc",
  "serde-wasm-bindgen",

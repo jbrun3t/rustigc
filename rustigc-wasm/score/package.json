@@ -1,6 +1,6 @@
 {
   "name": "rustigc-wasm-score",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "private": true,
   "description": "Example CLI over the rustigc wasm bindings",
@@ -13,8 +13,8 @@
     "rustigc-wasm-score": "./dist/rustigc-wasm-score.js"
   },
   "dependencies": {
-    "rustigc-wasm": "^0.1.0",
-    "rustigc-wasm-utils": "^0.1.0"
+    "rustigc-wasm": "^0.1.1",
+    "rustigc-wasm-utils": "^0.1.1"
   },
   "scripts": {
     "build": "tsc"

@@ -1,6 +1,6 @@
 {
   "name": "rustigc-wasm-utils",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Decoder for the raw fix array rustigc-wasm hands over as bytes",
   "license": "GPL-2.0-or-later WITH Classpath-exception-2.0",
@@ -29,7 +29,7 @@
     "dist/"
   ],
   "peerDependencies": {
-    "rustigc-wasm": "^0.1.0"
+    "rustigc-wasm": "^0.1.1"
   },
   "scripts": {
     "build": "tsc"
