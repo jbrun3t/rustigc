@@ -35,7 +35,7 @@ impl CfdPreview {
 }
 
 impl League for CfdPreview {
-    const NAME: &'static str = "cfd preview";
+    const NAME: &'static str = "cfd-preview";
     const RULES: Ruleset =
         &[&Distance3Points, &TrianglePlat, &TriangleFai, &Quadrilatere];
 
