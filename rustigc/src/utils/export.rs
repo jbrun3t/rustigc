@@ -137,7 +137,7 @@ fn score(result: &ScoringResult) -> Feature {
     props.insert("score".into(), result.score.into());
     props.insert("distance_km".into(), result.distance_km.into());
     props.insert("distance_m".into(), result.distance_m.into());
-    props.insert("gap_km".into(), result.gap_km.into());
+    props.insert("gap_m".into(), result.gap_m.into());
     props.insert("threshold_m".into(), result.threshold_m.into());
     props.insert("penalty".into(), result.penalty.into());
     props.insert("multiplier".into(), result.multiplier.into());

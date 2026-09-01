@@ -79,7 +79,8 @@ function humanOutput(log: Log, result: Score): void {
 	}
 	if (result.circuit) {
 		const max = Math.round(result.threshold_m);
-		report += ` [ closing distance: ${result.gap_km} km, max ${max} m ]`;
+		const gap = Math.round(result.gap_m);
+		report += ` [ closing distance: ${gap} / ${max} m ]`;
 	}
 	console.log(report);
 }

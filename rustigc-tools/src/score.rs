@@ -121,8 +121,8 @@ fn human_output(log: &Log, result: &ScoringResult) {
     }
     if result.circuit {
         print!(
-            " [ closing distance: {} km, max {:.0} m ]",
-            result.gap_km, result.threshold_m
+            " [ closing distance: {:.0} / {:.0} m ]",
+            result.gap_m, result.threshold_m
         );
     }
     println!();

@@ -394,7 +394,7 @@ impl Scorer {
             description: scored.description.to_string(),
             distance_km: distance,
             distance_m: round_mm(scored.distance),
-            gap_km: round_km(task.gap),
+            gap_m: round_mm(task.gap),
             threshold_m: round_mm(scored.threshold),
             penalty: round_km(scored.penalty),
             score: round_km(scored.score),

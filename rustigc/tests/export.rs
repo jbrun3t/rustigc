@@ -58,7 +58,7 @@ fn describe_fai_01() {
     assert_eq!(scored["properties"]["rule"], "closed fai triangle");
     assert_eq!(scored["properties"]["distance_km"], 622.85);
     assert_eq!(scored["properties"]["score"], 996.56);
-    assert_eq!(scored["properties"]["gap_km"], 0.07);
+    assert_eq!(scored["properties"]["gap_m"], 67.275);
 
     // every leg names its ends after markers that are actually there
     let markers: Vec<&str> = features

@@ -70,16 +70,16 @@ export interface Score {
     description: string;
     /** Scored distance in meters, to the nearest millimeter. */
     distance_m: number;
-    /** The same distance in kilometers, as the rule presents it. */
-    distance_km: number;
-    /** Closing leg of a circuit, in kilometers; 0 for an open task. */
-    gap_km: number;
+    /** Closing leg of a circuit, in meters; 0 for an open task. */
+    gap_m: number;
     /** Largest gap the rule would still accept, in meters; 0 for an open task. */
     threshold_m: number;
-    /** What the rule charged for that gap, in points. */
-    penalty: number;
+    /** Distance in kilometers, as the rule presents it. */
+    distance_km: number;
     /** Final score, in league points. */
     score: number;
+    /** What the rule charged for that gap, in points. */
+    penalty: number;
     /** Multiplier the rule scored at. */
     multiplier: number;
     /** Start of the scored window. */

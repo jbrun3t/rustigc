@@ -78,7 +78,7 @@ def test_score_shape(igc_content):
         "description",
         "distance_m",
         "distance_km",
-        "gap_km",
+        "gap_m",
         "threshold_m",
         "penalty",
         "score",

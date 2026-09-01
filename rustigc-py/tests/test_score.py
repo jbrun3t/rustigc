@@ -18,7 +18,7 @@ def test_score_output(igc_content):
     assert score.description == "closed fai triangle"
     assert score.distance_km == 622.85
     assert score.distance_m == 622852.252
-    assert score.gap_km == 0.07
+    assert score.gap_m == 67.275
     assert score.penalty == 0.07
     assert score.score == 996.56
     assert score.multiplier == 1.6
