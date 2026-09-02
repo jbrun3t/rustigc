@@ -48,7 +48,7 @@ impl PyLog {
         PyBytes::new(py, bytes)
     }
 
-    /// This log over `data` as a track, laid out for `FIX_DTYPE`: same recorder, headers, task.
+    /// Create a log over `data` as a track, laid out for `FIX_DTYPE`: same recorder, headers, task.
     ///
     /// A new log: this one is untouched, so anything detected or scored in it still refers to the
     /// track it was built from. `data` need not hold as many fixes.
