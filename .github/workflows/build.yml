@@ -60,16 +60,16 @@ jobs:
         run: pip install 'maturin[zig]' cargo-zigbuild
 
       - name: Run tests
-        run: cargo test --workspace --locked
+        run: cargo test --workspace
 
       # Linux links against `glibc` rather than the runner's
       - name: Build rustigc-xc-score
         run: |
           if [ -n "${{ matrix.glibc }}" ]; then
-            cargo zigbuild --release --locked -p rustigc-tools \
+            cargo zigbuild --release -p rustigc-tools \
               --target ${{ matrix.target }}.${{ matrix.glibc }}
           else
-            cargo build --release --locked -p rustigc-tools --target ${{ matrix.target }}
+            cargo build --release -p rustigc-tools --target ${{ matrix.target }}
           fi
 
       # Replaying the pin's own window makes the report reproduce the pin byte for byte
