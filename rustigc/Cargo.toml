@@ -36,7 +36,7 @@ winnow = "1"
 [dev-dependencies]
 pretty_assertions = "1"
 criterion = "0.8"
-rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.0" }
+rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.1" }
 serde_json = "1"
 
 
