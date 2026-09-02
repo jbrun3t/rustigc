@@ -33,7 +33,7 @@ pub struct ScoringResult {
     pub description: String,
     /// Scored distance in meters, rounded to the nearest millimeter.
     pub distance_m: f64,
-    /// Closing leg of a circuit, in meteres; 0 for an open polyline.
+    /// Closing leg of a circuit, in metres; 0 for an open polyline.
     pub gap_m: f64,
     /// Largest gap the reported rule and variant would still hold at, in meters.
     pub threshold_m: f64,
@@ -41,7 +41,7 @@ pub struct ScoringResult {
     pub distance_km: f64,
     /// Final score, in league points.
     pub score: f64,
-    /// What the rule charged for that gap, in point.
+    /// What the rule charged for that gap, in points.
     pub penalty: f64,
     /// Multiplier the rule scored at.
     pub multiplier: f64,
