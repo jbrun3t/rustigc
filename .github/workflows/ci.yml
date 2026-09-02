@@ -51,5 +51,13 @@ jobs:
         working-directory: rustigc-py
         run: mypy
 
+      # Don't like having locks checked in
+      # Let's just record it in case we need it later
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Cargo.lock
+          path: Cargo.lock
+          retention-days: 7
+
   build:
     uses: ./.github/workflows/build.yml

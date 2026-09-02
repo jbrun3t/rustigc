@@ -189,3 +189,9 @@ jobs:
           name: npm-packages
           path: npm/
           retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-lock.json
+          path: rustigc-wasm/package-lock.json
+          retention-days: 7
