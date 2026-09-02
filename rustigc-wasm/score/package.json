@@ -13,8 +13,8 @@
     "rustigc-wasm-score": "./dist/rustigc-wasm-score.js"
   },
   "dependencies": {
-    "rustigc-wasm": "^0.1.1",
-    "rustigc-wasm-utils": "^0.1.1"
+    "rustigc-wasm": "^0.1.2",
+    "rustigc-wasm-utils": "^0.1.2"
   },
   "scripts": {
     "build": "tsc"
