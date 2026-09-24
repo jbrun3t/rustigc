@@ -14,9 +14,6 @@ pub mod cfd;
 pub mod misc;
 pub mod xcontest;
 
-#[cfg(feature = "cfd-preview")]
-pub mod cfd_preview;
-
 pub use super::shapes::balanced::BalancedCircuit;
 pub use super::shapes::closed::ClosedCircuit;
 pub use super::shapes::polyline::OpenPolyline;
@@ -288,8 +285,6 @@ static LEAGUES: &[&'static dyn LeagueInfo] = &[
     &misc::TwoTurnpoints,
     &misc::Line,
     &misc::Oar,
-    #[cfg(feature = "cfd-preview")]
-    &cfd_preview::CfdPreview,
 ];
 
 pub(crate) fn league_rules(name: &str) -> Option<Ruleset> {
