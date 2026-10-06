@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
+use serde::Deserialize;
+
 /// How far a circuit may stay open, and whether the gap is charged.
 ///
 /// One closing answers both what a gap costs and how large it may get, so a charged penalty and a
 /// reported threshold cannot drift apart. A rulebook pricing one gap two ways states two variants.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Closing {
     /// Closes out to a gap of `distance_m` meters.
     Distance { distance_m: f64, penalized: bool },

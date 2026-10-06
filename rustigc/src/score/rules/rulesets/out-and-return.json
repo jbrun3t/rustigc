@@ -1,0 +1,15 @@
+{
+  "name": "out-and-return",
+  "rules": [
+    {
+      "shape": { "type": "closed_circuit", "turnpoints": 2 },
+      "variants": [
+        {
+          "name": "out and return",
+          "multiplier": 1.0,
+          "closing": { "type": "ratio", "ratio": 0.1, "penalized": true }
+        }
+      ]
+    }
+  ]
+}

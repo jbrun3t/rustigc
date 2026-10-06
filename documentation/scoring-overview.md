@@ -109,8 +109,8 @@ separately and comparing the results afterwards would run around 3× longer.
 
 This split is why adding a scoring rule to an existing shape (a new multiplier scheme, say) does not
 touch the search, and why the same `ClosedCircuit` geometry backs triangle rules for several
-rulesets. A rule is data: one function per ruleset builds it from plain values, so adding a ruleset
-that needs no new geometry touches nothing but its own file.
+rulesets. A rule is data: one JSON file per ruleset, embedded in the binary or read by
+`Ruleset::from_json`, so adding a ruleset that needs no new geometry is not a code change at all.
 
 See [`add-a-ruleset.md`](add-a-ruleset.md) for a walkthrough of adding a new ruleset or rule.
 

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
+use serde::Deserialize;
+
 use super::variant::Scored;
 
 /// One threshold a variant requires.
 ///
 /// Listed rather than combined into the kinds of variant that exist, so a further condition is one
 /// more arm and never a product of the others. A variant requires all of them at once.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Constraint {
     /// Earns nothing below this score, in points on the metre scale a multiplier applies to,
     /// so CFD's 15 points is `15000.0`.

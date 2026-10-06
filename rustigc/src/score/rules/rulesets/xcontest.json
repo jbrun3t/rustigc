@@ -1,0 +1,41 @@
+{
+  "name": "xcontest",
+  "rules": [
+    {
+      "shape": { "type": "open_polyline", "points": 5 },
+      "variants": [
+        { "name": "free flight", "multiplier": 1.0 }
+      ]
+    },
+    {
+      "shape": { "type": "closed_circuit", "turnpoints": 3 },
+      "variants": [
+        {
+          "name": "closed free triangle",
+          "multiplier": 1.4,
+          "closing": { "type": "ratio", "ratio": 0.05, "penalized": true }
+        },
+        {
+          "name": "free triangle",
+          "multiplier": 1.2,
+          "closing": { "type": "ratio", "ratio": 0.2, "penalized": true }
+        }
+      ]
+    },
+    {
+      "shape": { "type": "balanced_circuit", "turnpoints": 3, "min_side": 280 },
+      "variants": [
+        {
+          "name": "closed fai triangle",
+          "multiplier": 1.6,
+          "closing": { "type": "ratio", "ratio": 0.05, "penalized": true }
+        },
+        {
+          "name": "fai triangle",
+          "multiplier": 1.4,
+          "closing": { "type": "ratio", "ratio": 0.2, "penalized": true }
+        }
+      ]
+    }
+  ]
+}

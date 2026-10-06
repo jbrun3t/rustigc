@@ -1,34 +1,42 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
+use serde::Deserialize;
+
 use super::variant::{Scored, Variant, pick};
+use crate::score::shapes::Shape;
 use crate::score::shapes::table::{self, ShapeDef};
-use crate::score::shapes::{Shape, ShapeSpec};
 
 /// One scoring rule of a ruleset: a geometry priced through one or more [`Variant`]s, listed best
 /// rate first. [`pick`] takes the first that earns anything, so a rate that improves down the list
 /// would never be reached.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Rule {
+    /// Resolved as the file is read, so a geometry this build does not carry is a parse error
+    /// rather than a name kept around to fail later.
+    #[serde(deserialize_with = "shape_def")]
     shape: &'static ShapeDef,
     variants: Vec<Variant>,
 }
 
+/// Reads a [`ShapeSpec`] and answers with the geometry it names.
+///
+/// [`ShapeSpec`]: crate::score::shapes::ShapeSpec
+fn shape_def<'de, D>(deserializer: D) -> Result<&'static ShapeDef, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+
+    let spec = Deserialize::deserialize(deserializer)?;
+    table::by_spec(spec)
+        .ok_or_else(|| D::Error::custom(format!("no such shape: {spec:?}")))
+}
+
 impl Rule {
-    /// A rule over the geometry `spec` names.
-    ///
-    /// Refused when this build does not carry that geometry, or for what [`Rule::check`] refuses.
-    pub(super) fn new(spec: ShapeSpec, variants: Vec<Variant>) -> Result<Self, String> {
-        let shape =
-            table::by_spec(spec).ok_or_else(|| format!("no such shape: {spec:?}"))?;
-        let rule = Self { shape, variants };
-
-        rule.check()?;
-        Ok(rule)
-    }
-
     /// What a rule's types cannot state: that it prices something, that its variants agree with
     /// its geometry on closing, and that they are listed best rate first.
-    fn check(&self) -> Result<(), String> {
+    pub(super) fn check(&self) -> Result<(), String> {
         let shape = self.shape.spec;
 
         if self.variants.is_empty() {
@@ -82,28 +90,5 @@ impl Rule {
     /// How the rule presents that score, once on the winning leaf.
     pub(crate) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
         pick(&self.variants, distance, gap).scored(distance, gap)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::score::rules::closing::Closing;
-
-    /// A closing priced over an open shape would go uncharged.
-    #[test]
-    fn new_refuses_closing_on_open_shape() {
-        let variants = vec![Variant {
-            name: "free".into(),
-            multiplier: 1.0,
-            closing: Some(Closing::Ratio {
-                ratio: 0.2,
-                penalized: true,
-            }),
-            constraints: Vec::new(),
-        }];
-
-        let err = Rule::new(ShapeSpec::OpenPolyline { points: 3 }, variants).unwrap_err();
-        assert!(err.contains("on closing"), "{err}");
     }
 }

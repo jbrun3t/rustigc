@@ -11,6 +11,7 @@ pub mod margin;
 pub mod polyline;
 pub mod table;
 
+use serde::Deserialize;
 use smallvec::SmallVec;
 use std::fmt::Debug;
 
@@ -64,7 +65,8 @@ impl<T: ShapeCommon + ShapePeek + ShapeBound + Sync> Shape for T {}
 /// Not the Rust type's spelling — renaming a shape would then rewrite every ruleset — and not
 /// [`ShapeKind::CARDINALITY`] either, which an open polyline computes rather than states, so two
 /// different polylines share one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ShapeSpec {
     /// Points of the polyline, the two ends included.
     OpenPolyline {
