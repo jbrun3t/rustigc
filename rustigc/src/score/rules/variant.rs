@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
+use serde::Deserialize;
+
 use super::closing::Closing;
 use super::constraint::Constraint;
 
 /// One way a rule prices a geometry: what it requires, and what the price is worth.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Variant {
     pub name: String,
     pub multiplier: f64,
     /// `None` over an open geometry, which has no closing leg and reports no gap.
+    #[serde(default)]
     pub closing: Option<Closing>,
+    #[serde(default)]
     pub constraints: Vec<Constraint>,
 }
 

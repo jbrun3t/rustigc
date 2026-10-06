@@ -2,14 +2,13 @@
 
 //! Rules: what a ruleset scores, and over which shape.
 //!
-//! One file per embedded ruleset, under `rulesets/`. A ruleset's numbers belong in that file and
-//! nowhere else.
+//! One JSON file per embedded ruleset, under `rulesets/`. A ruleset's numbers belong in that file
+//! and nowhere else; this module is what reads them, and reads a caller's own the same way.
 
 mod closing;
 mod constraint;
 mod rule;
 mod ruleset;
-mod rulesets;
 mod variant;
 
 pub use rule::Rule;

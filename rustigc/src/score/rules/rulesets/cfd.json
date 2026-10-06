@@ -1,0 +1,59 @@
+{
+  "name": "cfd",
+  "rules": [
+    {
+      "shape": { "type": "open_polyline", "points": 5 },
+      "variants": [
+        {
+          "name": "distance 3 points",
+          "multiplier": 1.0,
+          "constraints": [
+            { "type": "min_score", "points": 15000.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": { "type": "closed_circuit", "turnpoints": 3 },
+      "variants": [
+        {
+          "name": "triangle plat",
+          "multiplier": 1.2,
+          "closing": { "type": "distance", "distance_m": 3000.0, "penalized": false },
+          "constraints": [
+            { "type": "min_score", "points": 15000.0 }
+          ]
+        },
+        {
+          "name": "triangle plat",
+          "multiplier": 1.2,
+          "closing": { "type": "ratio", "ratio": 0.05, "penalized": true },
+          "constraints": [
+            { "type": "min_score", "points": 15000.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "shape": { "type": "balanced_circuit", "turnpoints": 3, "min_side": 280 },
+      "variants": [
+        {
+          "name": "triangle fai",
+          "multiplier": 1.4,
+          "closing": { "type": "distance", "distance_m": 3000.0, "penalized": false },
+          "constraints": [
+            { "type": "min_score", "points": 15000.0 }
+          ]
+        },
+        {
+          "name": "triangle fai",
+          "multiplier": 1.4,
+          "closing": { "type": "ratio", "ratio": 0.05, "penalized": true },
+          "constraints": [
+            { "type": "min_score", "points": 15000.0 }
+          ]
+        }
+      ]
+    }
+  ]
+}

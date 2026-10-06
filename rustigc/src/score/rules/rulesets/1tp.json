@@ -1,0 +1,11 @@
+{
+  "name": "1tp",
+  "rules": [
+    {
+      "shape": { "type": "open_polyline", "points": 3 },
+      "variants": [
+        { "name": "1 turnpoint free distance", "multiplier": 1.0 }
+      ]
+    }
+  ]
+}
