@@ -18,7 +18,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["serde"]
 # The rules are data, so serde itself is not optional. This gates only the derives on the public
-# `ScoringResult`, which a caller may not want.
+# types — parsed records, flights, `ScoringResult` — which a caller may not want.
 serde = []
 geojson = ["dep:geojson"]
 

@@ -125,8 +125,7 @@ fn load() -> Vec<Ruleset> {
     registry
 }
 
-/// The parsed rulesets. A `static` `OnceLock` hands back `&'static`, so nothing has to be leaked to
-/// outlive the call that first asked for a ruleset.
+/// The embedded rulesets, parsed on first use.
 fn registry() -> &'static [Ruleset] {
     REGISTRY.get_or_init(load)
 }

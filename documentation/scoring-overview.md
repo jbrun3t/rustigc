@@ -90,7 +90,7 @@ costs, and keeps the best of those runs.
 
 ## Scoring every rule in one pass
 
-A ruleset is a set of rules (e.g. XContest's free distance and its two triangle variants). Rather than
+A ruleset is a set of rules (e.g. XContest's free distance and its two triangles). Rather than
 run the search once per rule, every rule of a ruleset shares one heap and one floor: a strong candidate
 for one rule raises the floor for all of them, so weak rules get pruned early by a floor that candidates
 of other rules set. `Scorer::solve` runs exactly one pass over the whole ruleset — scoring the whole
@@ -182,7 +182,7 @@ heap instead, since the floor was never raised above what a re-measure can withd
 Once a leaf wins, the solution is recomputed once against the WGS84 reference: the exact geodesic distance
 of every leg, which fixes are turnpoints vs. entry/exit, the closing gap. The rule then turns that
 raw `(distance, gap)` into what gets reported — applies the closing penalty, the variant's
-multiplier, checks its thresholds, and rounds.
+multiplier, and checks its thresholds — and `Scorer::report` rounds the result.
 
 ## More details
 

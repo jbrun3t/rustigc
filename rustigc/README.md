@@ -9,7 +9,7 @@ cargo add rustigc
 ```
 
 ```rust
-use rustigc::{FlightDetection, FlightSelection, Log};
+use rustigc::{FlightDetection, FlightSelection, Log, Ruleset};
 
 let log = Log::new(&std::fs::read("flight.igc")?)?;
 
@@ -18,7 +18,7 @@ println!("{} — {} fixes", log.headers["PLT"].text, log.track.len());
 let flights = log.track.flights();
 let flight = flights.longest().expect("no flight detected");
 
-if let Some(result) = log.score("xcontest", flight.start, flight.stop) {
+if let Some(result) = log.score(Ruleset::named("xcontest")?, flight.start, flight.stop)? {
     println!("{}: {} points over {} km", result.description, result.score, result.distance_km);
 }
 ```

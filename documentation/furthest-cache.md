@@ -49,7 +49,7 @@ at this layer. §2 covers the layer above, which bundles them.
 ## 2. Users
 
 Only `OpenPolyline` uses this, and only when `TERMINALS` is true (`POINTS > 3`, so `<4>` and `<5>` in
-the current rule set, plus `<6>` behind the `crazy-test` feature). `OpenPolyline<3>` and `<2>` search
+the shape table). `OpenPolyline<3>` and `<2>` search
 their end legs as two extra branch-and-bound dimensions instead, and never touch this cache. At low
 cardinality the pure B&B is faster.
 

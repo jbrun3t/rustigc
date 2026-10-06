@@ -66,7 +66,7 @@ export interface Header {
 export interface Score {
     /** Name of the scoring ruleset, `"xcontest"`. */
     ruleset: string;
-    /** The rule that won, `"closed fai triangle"`. */
+    /** Name of the winning variant, `"closed fai triangle"`. */
     description: string;
     /** Scored distance in meters, to the nearest millimeter. */
     distance_m: number;
@@ -78,7 +78,7 @@ export interface Score {
     distance_km: number;
     /** Final score, in the ruleset's points. */
     score: number;
-    /** What the rule charged for that gap, in points. */
+    /** What the rule charged for that gap, in kilometers off the distance. */
     penalty: number;
     /** Multiplier the rule scored at. */
     multiplier: number;
