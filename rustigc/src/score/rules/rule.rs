@@ -84,7 +84,11 @@ impl Rule {
     /// distance against the smallest gap an upper bound of the subtree. [`Rule::check`] holds the
     /// variants to the order that keeps it so.
     pub(crate) fn score(&self, distance: f64, gap: f64) -> f64 {
-        self.scored(distance, gap).score
+        self.variants
+            .iter()
+            .map(|v| v.scored(distance, gap).score)
+            .find(|&score| score > 0.0)
+            .unwrap_or(0.0)
     }
 
     /// How the rule presents that score, once on the winning leaf.
