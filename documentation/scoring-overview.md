@@ -108,8 +108,9 @@ separately and comparing the results afterwards would run around 3× longer.
   the distance and gap a shape hands it.
 
 This split is why adding a scoring rule to an existing shape (a new multiplier scheme, say) does not
-touch the search, and keeps the process of adding one simple — and why the same `ClosedCircuit`
-geometry backs triangle rules for several rulesets.
+touch the search, and why the same `ClosedCircuit` geometry backs triangle rules for several
+rulesets. A rule is data: one function per ruleset builds it from plain values, so adding a ruleset
+that needs no new geometry touches nothing but its own file.
 
 See [`add-a-ruleset.md`](add-a-ruleset.md) for a walkthrough of adding a new ruleset or rule.
 
@@ -180,8 +181,8 @@ heap instead, since the floor was never raised above what a re-measure can withd
 
 Once a leaf wins, the solution is recomputed once against the WGS84 reference: the exact geodesic distance
 of every leg, which fixes are turnpoints vs. entry/exit, the closing gap. The rule then turns that
-raw `(distance, gap)` into what gets reported — applies the closing penalty, the ruleset's
-multiplier, checks the minimum, and rounds.
+raw `(distance, gap)` into what gets reported — applies the closing penalty, the variant's
+multiplier, checks its thresholds, and rounds.
 
 ## More details
 

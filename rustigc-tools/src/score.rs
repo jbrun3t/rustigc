@@ -145,11 +145,14 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     });
 
+    // The parser only lets an embedded name through.
+    let ruleset = Ruleset::named(&args.ruleset).expect("ruleset accepted by clap");
+
     let window = args
         .window
         .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
     let scored = window.and_then(|(start, stop)| {
-        log.score(&args.ruleset, start, stop).unwrap_or_else(|e| {
+        log.score(ruleset, start, stop).unwrap_or_else(|e| {
             eprintln!("Could not score: {e}");
             std::process::exit(1);
         })

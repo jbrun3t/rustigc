@@ -9,6 +9,7 @@ pub mod balanced;
 pub mod closed;
 pub mod margin;
 pub mod polyline;
+pub mod table;
 
 use smallvec::SmallVec;
 use std::fmt::Debug;
@@ -53,26 +54,51 @@ pub trait ShapeCommon: Debug {
     fn report(&self, scorer: &Scorer, c: &Candidate) -> Option<Task>;
 }
 
-pub trait Shape: ShapeCommon + ShapePeek + ShapeBound {}
-impl<T: ShapeCommon + ShapePeek + ShapeBound> Shape for T {}
+/// `Sync` so [`table::SHAPES`] can hold `&'static dyn Shape` in a `static`.
+pub trait Shape: ShapeCommon + ShapePeek + ShapeBound + Sync {}
+impl<T: ShapeCommon + ShapePeek + ShapeBound + Sync> Shape for T {}
+
+/// A geometry as a rule names it: the parameters that pick one monomorphisation, and nothing the
+/// search derives from them.
+///
+/// Not the Rust type's spelling — renaming a shape would then rewrite every ruleset — and not
+/// [`ShapeKind::CARDINALITY`] either, which an open polyline computes rather than states, so two
+/// different polylines share one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShapeSpec {
+    /// Points of the polyline, the two ends included.
+    OpenPolyline {
+        points: usize,
+    },
+    ClosedCircuit {
+        turnpoints: usize,
+    },
+    /// `min_side` is the shortest leg's share of the total in per mille, so 280 is the FAI 28 %.
+    BalancedCircuit {
+        turnpoints: usize,
+        min_side: u32,
+    },
+}
 
 /// A geometry a rule can name, e.g. `ClosedCircuit<3>`.
 ///
 /// A cardinality floor is asserted inside `CARDINALITY`. Being post-monomorphization, it fails
 /// `cargo build` but not `cargo check`.
-pub trait ShapeKind: Shape + Sized + Default + 'static {
+pub trait ShapeKind: Shape + Sized + 'static {
     /// Fix-index ranges the search branches on. Needed to size the root candidate, before any
     /// shape exists.
     const CARDINALITY: usize;
 
-    /// Shapes are stateless ZSTs, so the box never reaches the allocator.
-    fn create() -> Box<dyn Shape> {
-        Box::new(Self::default())
-    }
-}
+    /// Whether the geometry has a closing leg for a rule to charge.
+    const CLOSES: bool;
 
-/// Each geometry's `create`, e.g. `ClosedCircuit::<3>::create`.
-pub type ShapeBuilder = fn() -> Box<dyn Shape>;
+    /// How a rule names this geometry, stated from the type's own parameters.
+    const SPEC: ShapeSpec;
+
+    /// The one instance of this geometry, a stateless ZST. A `const` rather than [`Default`] so a
+    /// `static` can be declared from it, which `Default::default()` cannot.
+    const NEW: Self;
+}
 
 /// The legs of a shape, one matrix each. At most 4.
 pub type Transitions = SmallVec<[TransitionMatrix; 4]>;

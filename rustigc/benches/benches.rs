@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use rustigc::{Flight, FlightDetection, FlightSelection, Log};
+use rustigc::{Flight, FlightDetection, FlightSelection, Log, Ruleset};
 use rustigc_test_data::real;
 use std::hint::black_box;
 use std::time::Duration;
@@ -75,6 +75,7 @@ fn bench_score(c: &mut Criterion) {
     let files = load_test_files(SCORING_FILES);
     let logs = parse_logs(&files);
 
+    let xcontest = Ruleset::named("xcontest").unwrap();
     let mut group = c.benchmark_group("score");
     for (name, log) in &logs {
         // Resolved outside the loop: the bench measures scoring, not flight detection
@@ -84,7 +85,7 @@ fn bench_score(c: &mut Criterion) {
         };
 
         group.bench_with_input(BenchmarkId::from_parameter(name), log, |b, log| {
-            b.iter(|| black_box(log).score("xcontest", start, stop));
+            b.iter(|| black_box(log).score(xcontest, start, stop));
         });
     }
 

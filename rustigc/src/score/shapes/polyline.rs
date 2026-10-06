@@ -10,11 +10,12 @@ use crate::utils::iter::pairs;
 
 use super::common::{dynamic_search, transition_matrices};
 use super::{
-    Candidate, Path, Scorer, ShapeBound, ShapeCommon, ShapeKind, ShapePeek, Task,
+    Candidate, Path, Scorer, ShapeBound, ShapeCommon, ShapeKind, ShapePeek, ShapeSpec,
+    Task,
 };
 
 /// Open free-distance polyline of `POINTS` points, entry and exit included
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct OpenPolyline<const POINTS: usize> {}
 
 impl<const POINTS: usize> OpenPolyline<POINTS> {
@@ -29,6 +30,9 @@ impl<const POINTS: usize> ShapeKind for OpenPolyline<POINTS> {
         assert!(POINTS >= 2);
         if Self::TERMINALS { POINTS - 2 } else { POINTS }
     };
+    const CLOSES: bool = false;
+    const SPEC: ShapeSpec = ShapeSpec::OpenPolyline { points: POINTS };
+    const NEW: Self = Self {};
 }
 
 impl<const POINTS: usize> ShapeBound for OpenPolyline<POINTS> {
