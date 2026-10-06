@@ -26,8 +26,8 @@ class Score:
     def __getattr__(self, name):
         """Scalars of the result.
 
-        `description` names the winning rule, `score` is the ruleset's points, `distance_km` the
-        scored distance as the rule presents it and `distance_m` the same in meters. `gap_km` is
+        `description` names the winning variant, `score` is the ruleset's points, `distance_km` the
+        scored distance as the rule presents it and `distance_m` the same in meters. `gap_m` is
         a circuit's closing leg, `threshold_m` the largest gap the rule would still have accepted,
         `penalty` what the rule charged for the gap, `multiplier` the rate it scored at, and
         `circuit` whether the task closes on itself.

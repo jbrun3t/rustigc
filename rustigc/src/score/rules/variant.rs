@@ -42,7 +42,7 @@ impl Variant {
 }
 
 /// The variant a rule prices a geometry at: the first, listed best rate first, that earns anything
-/// — the loosest one if none do, which then scores 0.
+/// — the last one if none do, which then scores 0.
 pub(super) fn pick(variants: &[Variant], distance: f64, gap: f64) -> &Variant {
     variants
         .iter()

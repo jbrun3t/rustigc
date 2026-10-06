@@ -1,7 +1,7 @@
 # Adding a ruleset or rule
 
 An embedded ruleset is a JSON file in `rustigc/src/score/rules/rulesets/`, listed in the `rulesets!`
-call in `rules/mod.rs` — with its rulebook's URL as a comment there, since JSON takes none. Adding
+call in `rules/ruleset.rs` — with its rulebook's URL as a comment there, since JSON takes none. Adding
 one is writing that file; no Rust changes unless it needs a geometry that does not exist yet. A
 caller can also score against its own file without rebuilding, through `Ruleset::from_json`.
 

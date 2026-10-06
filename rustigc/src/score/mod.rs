@@ -27,7 +27,7 @@ fn round_mm(meters: f64) -> f64 {
 pub struct ScoringResult {
     /// Name of the scoring ruleset, e.g. "xcontest"
     pub ruleset: String,
-    /// Identity of the rule, e.g. `"triangle plat"`.
+    /// Name of the winning variant, e.g. `"triangle plat"`.
     pub description: String,
     /// Scored distance in meters, rounded to the nearest millimeter.
     pub distance_m: f64,
@@ -39,7 +39,7 @@ pub struct ScoringResult {
     pub distance_km: f64,
     /// Final score, in the ruleset's points.
     pub score: f64,
-    /// What the rule charged for that gap, in points.
+    /// What the rule charged for that gap, in kilometers off the distance.
     pub penalty: f64,
     /// Multiplier the rule scored at.
     pub multiplier: f64,
