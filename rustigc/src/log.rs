@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use crate::{DecodeError, RawLog};
-use crate::{ScoreError, Scorer, ScoringResult, decode::*};
+use crate::{Ruleset, ScoreError, Scorer, ScoringResult, decode::*};
 
 use log::warn;
 #[cfg(feature = "serde")]
@@ -135,17 +135,14 @@ impl Log {
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`],
     /// [`ScoreError::Track`] when the window is not one this log's track holds.
-    ///
-    /// [`ruleset_names`]: crate::ruleset_names
     pub fn score(
         &self,
-        ruleset: &str,
+        ruleset: &Ruleset,
         start: usize,
         stop: usize,
     ) -> Result<Option<ScoringResult>, ScoreError> {
-        Scorer::new(&self.track, start, stop)?.solve(ruleset)
+        Ok(Scorer::new(&self.track, start, stop)?.solve(ruleset))
     }
 }
 

@@ -9,20 +9,30 @@ use crate::utils::iter::pairs;
 
 use super::circuit::{Circuit, circuit_dynamic_search};
 use super::common::{candidate_to_path, transition_matrices};
-use super::{Candidate, Scorer, ShapeBound, ShapePeek};
+use super::{Candidate, Scorer, ShapeBound, ShapeKind, ShapePeek, ShapeSpec};
 
 /// Balanced circuit: a closed circuit whose shortest leg must reach a given share of the total,
 /// the FAI triangle's 28 % rule.
 ///
 /// `MINSIDE` is that share in per mille, so 280 is the 28 % rule. Carrying it on the type rather
 /// than in a field keeps the struct empty, and a boxed ZST costs no allocation.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BalancedCircuit<const TP: usize, const MINSIDE: u32> {}
 
 impl<const TP: usize, const MINSIDE: u32> BalancedCircuit<TP, MINSIDE> {
     fn ratio(&self) -> f64 {
         MINSIDE as f64 / 1000.0
     }
+}
+
+impl<const TP: usize, const MINSIDE: u32> ShapeKind for BalancedCircuit<TP, MINSIDE> {
+    const CARDINALITY: usize = <Self as Circuit>::CARDINALITY;
+    const CLOSES: bool = true;
+    const SPEC: ShapeSpec = ShapeSpec::BalancedCircuit {
+        turnpoints: TP,
+        min_side: MINSIDE,
+    };
+    const NEW: Self = Self {};
 }
 
 impl<const TP: usize, const MINSIDE: u32> Circuit for BalancedCircuit<TP, MINSIDE> {

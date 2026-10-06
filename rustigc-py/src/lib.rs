@@ -9,7 +9,7 @@ use numpy::{PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
-use rustigc::FlightDetection;
+use rustigc::{FlightDetection, Ruleset};
 
 /// A parsed IGC log, as Rust holds it.
 ///
@@ -157,6 +157,7 @@ impl PyLog {
         start: usize,
         stop: usize,
     ) -> PyResult<Option<String>> {
+        let ruleset = named(ruleset)?;
         let result = py
             .detach(|| self.inner.score(ruleset, start, stop))
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
@@ -172,6 +173,7 @@ impl PyLog {
     /// Detects the longest flight and scores it. Raises ValueError for an unknown ruleset.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn describe(&self, py: Python<'_>, ruleset: &str) -> PyResult<String> {
+        let ruleset = named(ruleset)?;
         py.detach(|| {
             let collection = self.inner.describe(ruleset).map_err(|e| e.to_string())?;
 
@@ -280,15 +282,20 @@ impl PyScorer {
     /// fix of the result is an index into the table.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn score(&self, py: Python<'_>, ruleset: &str) -> PyResult<Option<String>> {
+        let ruleset = named(ruleset)?;
         py.detach(|| {
             let scorer = self.inner.lock().unwrap();
             scorer.solve(ruleset)
         })
-        .map_err(|e| PyValueError::new_err(e.to_string()))?
         .map(|scored| serde_json::to_string(&scored))
         .transpose()
         .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
     }
+}
+
+/// The embedded ruleset `name` refers to; ValueError when there is none.
+fn named(name: &str) -> PyResult<&'static Ruleset> {
+    Ruleset::named(name).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 /// Every ruleset name `score` and `describe` accept.

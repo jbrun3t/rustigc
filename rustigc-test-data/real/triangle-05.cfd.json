@@ -3,7 +3,7 @@
   "description": "triangle plat",
   "distance_m": 89485.103,
   "gap_m": 2251.201,
-  "threshold_m": 4474.255,
+  "threshold_m": 3000.0,
   "distance_km": 89.49,
   "score": 107.38,
   "penalty": 0.0,

@@ -9,7 +9,7 @@
 //! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
 //! `headers` map.
 
-use rustigc::{FlightDetection, FlightSelection, TrackLine};
+use rustigc::{FlightDetection, FlightSelection, Ruleset, TrackLine};
 use wasm_bindgen::prelude::*;
 
 /// Shapes that cross as plain data, declared for the generated `.d.ts`.
@@ -203,6 +203,7 @@ impl Log {
         ruleset: &str,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
+        let ruleset = Ruleset::named(ruleset)?;
         let given: Option<rustigc::Flight> = match window {
             Some(value) => serde_wasm_bindgen::from_value(value.into())?,
             None => None,
@@ -255,6 +256,7 @@ impl Log {
     /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
     /// score are already at hand.
     pub fn describe(&self, ruleset: &str) -> Result<String, JsError> {
+        let ruleset = Ruleset::named(ruleset)?;
         Ok(serde_json::to_string(&self.inner.describe(ruleset)?)?)
     }
 }
@@ -311,7 +313,8 @@ impl Scorer {
     /// scored; throws when `ruleset` is not one of `ruleset_names()`.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn solve(&self, ruleset: &str) -> Result<JsValue, JsError> {
-        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(ruleset)?)?)
+        let ruleset = Ruleset::named(ruleset)?;
+        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(ruleset))?)
     }
 }
 

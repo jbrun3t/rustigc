@@ -3,7 +3,7 @@
   "description": "triangle fai",
   "distance_m": 66122.405,
   "gap_m": 925.779,
-  "threshold_m": 3306.12,
+  "threshold_m": 3000.0,
   "distance_km": 66.12,
   "score": 92.57,
   "penalty": 0.0,

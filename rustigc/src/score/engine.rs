@@ -16,10 +16,10 @@
 //!
 //! **Floor.** The highest score found so far, all rules included.
 
+use crate::TrackError;
 use crate::utils::geometry::{
     AntimeridianCheck, AntimeridianUnwrap, BBox, PointCoords, SPoint, Vertices,
 };
-use crate::{ScoreError, TrackError};
 use log::{debug, info};
 use std::cmp::{Ordering, max, min};
 use std::collections::BinaryHeap;
@@ -27,7 +27,7 @@ use std::collections::BinaryHeap;
 use crate::utils::round_km;
 
 use super::cache::{Caches, Leg, Terminals};
-use super::rules::{Rule, ruleset_rules};
+use super::rules::{Rule, Ruleset};
 use super::shapes::margin::Band;
 use super::{ScoringResult, round_mm};
 
@@ -138,37 +138,37 @@ impl Candidate {
 }
 
 #[derive(Debug, Clone)]
-struct Solution {
+struct Solution<'r> {
     bound: f64,
     candidate: Candidate,
-    rule: &'static dyn Rule,
+    rule: &'r Rule,
 }
 
-impl Solution {
+impl Solution<'_> {
     fn is_leaf(&self) -> bool {
         self.candidate.is_leaf()
     }
 }
 
-impl Ord for Solution {
+impl Ord for Solution<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bound.total_cmp(&other.bound)
     }
 }
 
-impl PartialOrd for Solution {
+impl PartialOrd for Solution<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl PartialEq for Solution {
+impl PartialEq for Solution<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.bound == other.bound
     }
 }
 
-impl Eq for Solution {}
+impl Eq for Solution<'_> {}
 
 /// A scoring window, prepared once and searched by [`Scorer::solve`].
 ///
@@ -179,13 +179,14 @@ impl Eq for Solution {}
 /// degrees, in flight order.
 ///
 /// ```no_run
-/// use rustigc::{Log, Scorer};
+/// use rustigc::{Log, Ruleset, Scorer};
 ///
 /// let log = Log::new(&std::fs::read("flight.igc")?)?;
 /// let scorer = Scorer::new(&log.track, 125, 25425)?;
 ///
-/// for ruleset in rustigc::ruleset_names() {
-///     println!("{ruleset}: {:?}", scorer.solve(ruleset)?.map(|r| r.score));
+/// for name in rustigc::ruleset_names() {
+///     let ruleset = Ruleset::named(name)?;
+///     println!("{name}: {:?}", scorer.solve(ruleset).map(|r| r.score));
 /// }
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -270,13 +271,13 @@ impl Scorer {
     }
 
     /// Evaluates a candidate, returning the `Solution` to push and its score.
-    fn eval(
+    fn eval<'r>(
         &self,
-        rule: &'static dyn Rule,
+        rule: &'r Rule,
         candidate: Candidate,
         floor: f64,
-    ) -> Option<(Solution, f64)> {
-        let shape = (rule.shape())();
+    ) -> Option<(Solution<'r>, f64)> {
+        let shape = rule.shape();
 
         let leaf = candidate.is_leaf();
         let bound = shape.bound(self, &candidate);
@@ -327,11 +328,11 @@ impl Scorer {
     }
 
     /// Seeds one initial solution per rule, and the best floor they provide.
-    fn seed(&self, rules: &[&'static dyn Rule]) -> (Vec<Solution>, f64) {
+    fn seed<'r>(&self, rules: &'r [Rule]) -> (Vec<Solution<'r>>, f64) {
         let mut floor = 0.0;
         let mut solutions = Vec::new();
 
-        for &rule in rules {
+        for rule in rules {
             let candidate = Candidate::initial(self.track.len(), rule.cardinality());
             if let Some(result) = self.eval(rule, candidate, floor) {
                 info!(
@@ -353,7 +354,11 @@ impl Scorer {
 
     /// Branching part of the B&B: evaluates both children and returns them with the floor they
     /// raise, if any.
-    fn split(&self, solution: Solution, floor: f64) -> ([Option<Solution>; 2], f64) {
+    fn split<'r>(
+        &self,
+        solution: Solution<'r>,
+        floor: f64,
+    ) -> ([Option<Solution<'r>>; 2], f64) {
         let rule = solution.rule;
         let mut highest = floor;
 
@@ -377,10 +382,10 @@ impl Scorer {
     /// shift the index space back out of the window to the track reference.
     ///
     /// `None` when the geodesic re-measure rejects what the FCC search accepted.
-    fn report(&self, solution: &Solution) -> Option<ScoringResult> {
+    fn report(&self, ruleset: &Ruleset, solution: &Solution) -> Option<ScoringResult> {
         let rule = solution.rule;
 
-        let shape = (rule.shape())();
+        let shape = rule.shape();
         let task = shape.report(self, &solution.candidate)?;
         let scored = rule.scored(task.distance, task.gap);
 
@@ -390,7 +395,7 @@ impl Scorer {
         }
 
         Some(ScoringResult {
-            ruleset: scored.ruleset.to_string(),
+            ruleset: ruleset.name().to_string(),
             description: scored.description.to_string(),
             distance_km: distance,
             distance_m: round_mm(scored.distance),
@@ -494,25 +499,18 @@ impl Scorer {
     ///
     /// `None` when no rule could score the window — a real answer, not a failure.
     ///
-    /// # Errors
-    ///
-    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`].
-    ///
     /// Main B&B loop. Evaluating the rules together is important to quickly discard the least
     /// performing ones.
-    ///
-    /// [`ruleset_names`]: crate::ruleset_names
-    pub fn solve(&self, ruleset: &str) -> Result<Option<ScoringResult>, ScoreError> {
-        let rules = ruleset_rules(ruleset).ok_or(ScoreError::UnknownRuleset)?;
-
-        let (solutions, mut floor) = self.seed(rules);
+    #[must_use]
+    pub fn solve(&self, ruleset: &Ruleset) -> Option<ScoringResult> {
+        let (solutions, mut floor) = self.seed(ruleset.rules());
         let mut heap: BinaryHeap<Solution> = solutions
             .into_iter()
             .filter(|s| Self::retain(s.bound, floor))
             .collect();
 
         // Critical performance hot-path
-        let result = loop {
+        loop {
             let Some(solution) = heap.pop() else {
                 break None;
             };
@@ -521,7 +519,7 @@ impl Scorer {
                 // The geodesic re-measure can reject what the FCC search accepted. Take the next
                 // best leaf instead of giving up: this is not an error, and the floor was never
                 // raised above what a re-measure can withdraw, so the heap still holds the rest.
-                match self.report(&solution) {
+                match self.report(ruleset, &solution) {
                     Some(result) => {
                         info!("Best {:?}", solution);
                         break Some(result);
@@ -547,9 +545,7 @@ impl Scorer {
                     .flatten()
                     .filter(|s| Self::retain(s.bound, floor)),
             );
-        };
-
-        Ok(result)
+        }
     }
 }
 
@@ -628,16 +624,6 @@ mod tests {
         assert_eq!(
             Scorer::new(&track, 0, 3).unwrap_err(),
             TrackError::FixOutOfRange { index: 3, len: 3 }
-        );
-    }
-
-    #[test]
-    fn solve_rejects_unknown_ruleset() {
-        let scorer = Scorer::from_vec(vec![[45.0, 6.0], [45.1, 6.1]]).unwrap();
-
-        assert_eq!(
-            scorer.solve("nope").unwrap_err(),
-            ScoreError::UnknownRuleset
         );
     }
 }

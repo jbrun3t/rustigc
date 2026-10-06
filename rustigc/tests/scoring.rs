@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 //! Scoring regression pins: `rustigc-test-data`'s `real/<fixture>.xcontest.json` holds the plain
-//! serde dump of `log.score("xcontest", ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
+//! serde dump of `log.score(xcontest, ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
 //! mismatch here means scoring math moved, not flight detection.
 //! Re-bless with `rustigc-xc-score --format json` if the move was intended.
 
 use std::fs;
 
-use rustigc::{FlightDetection, FlightSelection, Log, Scorer, ScoringResult};
+use rustigc::{FlightDetection, FlightSelection, Log, Ruleset, Scorer, ScoringResult};
 use rustigc_test_data::{for_each_fixture, real, stem_of};
 use serde_json::Value;
 
@@ -20,6 +20,10 @@ fn window_of(expected: &Value, log: &Log) -> Option<(usize, usize)> {
         }
         _ => log.track.flights().longest().map(|f| (f.start, f.stop)),
     }
+}
+
+fn xcontest() -> &'static Ruleset {
+    Ruleset::named("xcontest").unwrap()
 }
 
 fn check_fixture(name: &str) {
@@ -36,7 +40,7 @@ fn check_fixture(name: &str) {
         .unwrap_or_else(|e| panic!("parse {ref_path:?}: {e}"));
 
     let result = window_of(&expected, &log).and_then(|(start, stop)| {
-        log.score("xcontest", start, stop).expect("scorable window")
+        log.score(xcontest(), start, stop).expect("scorable window")
     });
     let actual = serde_json::to_value(&result).unwrap();
 
@@ -80,7 +84,7 @@ fn coord_table() -> (Vec<[f64; 2]>, ScoringResult) {
 
     let last = log.track.len() - 1;
     let expected = log
-        .score("xcontest", 0, last)
+        .score(xcontest(), 0, last)
         .expect("scorable window")
         .expect("triangle-01 scores");
     let table = log.track.iter().map(|fix| [fix.lat, fix.lon]).collect();
@@ -93,10 +97,7 @@ fn scorer_new_over_a_coord_table() {
     let (table, expected) = coord_table();
     let last = table.len() - 1;
 
-    let result = Scorer::new(&table, 0, last)
-        .unwrap()
-        .solve("xcontest")
-        .unwrap();
+    let result = Scorer::new(&table, 0, last).unwrap().solve(xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }
@@ -105,10 +106,7 @@ fn scorer_new_over_a_coord_table() {
 fn scorer_from_slice_over_a_coord_table() {
     let (table, expected) = coord_table();
 
-    let result = Scorer::from_slice(&table)
-        .unwrap()
-        .solve("xcontest")
-        .unwrap();
+    let result = Scorer::from_slice(&table).unwrap().solve(xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }
@@ -117,7 +115,7 @@ fn scorer_from_slice_over_a_coord_table() {
 fn scorer_from_vec_over_a_coord_table() {
     let (table, expected) = coord_table();
 
-    let result = Scorer::from_vec(table).unwrap().solve("xcontest").unwrap();
+    let result = Scorer::from_vec(table).unwrap().solve(xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }

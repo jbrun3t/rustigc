@@ -9,15 +9,22 @@ use crate::utils::iter::pairs;
 
 use super::circuit::{Circuit, circuit_dynamic_search};
 use super::common::{candidate_to_path, transition_matrices};
-use super::{Candidate, Scorer, ShapeBound, ShapePeek};
+use super::{Candidate, Scorer, ShapeBound, ShapeKind, ShapePeek, ShapeSpec};
 
 /// Closed circuit: tp1 -> ... -> tpn -> tp1, the longest the turnpoint boxes allow, with the
 /// closing gap left for the rule to charge.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ClosedCircuit<const TP: usize> {}
 
 impl<const TP: usize> Circuit for ClosedCircuit<TP> {
     const TURNPOINTS: usize = TP;
+}
+
+impl<const TP: usize> ShapeKind for ClosedCircuit<TP> {
+    const CARDINALITY: usize = <Self as Circuit>::CARDINALITY;
+    const CLOSES: bool = true;
+    const SPEC: ShapeSpec = ShapeSpec::ClosedCircuit { turnpoints: TP };
+    const NEW: Self = Self {};
 }
 
 impl<const TP: usize> ShapeBound for ClosedCircuit<TP> {

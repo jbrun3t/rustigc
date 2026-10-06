@@ -5,7 +5,7 @@
 use crate::utils::geometry::{Geodesic, PointDistance};
 use crate::utils::iter::pairs;
 
-use super::{Candidate, Scorer, Shape, ShapeCommon, ShapeKind, Task, TransitionMatrix};
+use super::{Candidate, Scorer, ShapeCommon, Task, TransitionMatrix};
 
 use super::common::dynamic_search;
 
@@ -39,6 +39,13 @@ pub trait Circuit {
     /// Turnpoints the loop is defined on.
     const TURNPOINTS: usize;
 
+    /// [`ShapeKind::CARDINALITY`] for a circuit, with its floor asserted once for every circuit
+    /// shape. Each of them forwards this rather than restating it.
+    const CARDINALITY: usize = {
+        assert!(Self::TURNPOINTS >= 2);
+        Self::TURNPOINTS
+    };
+
     /// Whether the final geodesic legs still satisfy the circuit's own constraints.
     fn admissible(&self, _legs: &[f64]) -> bool {
         true
@@ -55,13 +62,6 @@ pub trait Circuit {
             scorer.closing(c.ranges[0][1], c.ranges[c.ranges.len() - 1][0])
         }
     }
-}
-
-impl<T: Circuit + Shape + Default + 'static> ShapeKind for T {
-    const CARDINALITY: usize = {
-        assert!(T::TURNPOINTS >= 2);
-        T::TURNPOINTS
-    };
 }
 
 impl<T: Circuit + Debug> ShapeCommon for T {

@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use rustigc::{FlightDetection, FlightSelection, Log, ScoreError, TrackError, TrackLine};
+use rustigc::{FlightDetection, FlightSelection, Log, Ruleset, TrackError, TrackLine};
 use rustigc_test_data::real;
 use serde_json::Value;
 
@@ -20,7 +20,9 @@ fn roles(features: &[Value]) -> Vec<&str> {
 #[test]
 fn describe_fai_01() {
     let log = Log::new(&fixture("fai-01")).unwrap();
-    let described = serde_json::to_value(log.describe("xcontest").unwrap()).unwrap();
+    let described =
+        serde_json::to_value(log.describe(Ruleset::named("xcontest").unwrap()).unwrap())
+            .unwrap();
 
     let features = described["features"].as_array().unwrap();
     let roles = roles(features);
@@ -75,23 +77,18 @@ fn describe_fai_01() {
     }
 }
 
-/// A ruleset name is the caller's, so a wrong one is refused rather than drawn without a score.
-#[test]
-fn describe_unknown_ruleset() {
-    let log = Log::new(&fixture("fai-01")).unwrap();
-
-    assert_eq!(
-        log.describe("xkontest").unwrap_err(),
-        ScoreError::UnknownRuleset
-    );
-}
-
 /// A layer produced from a longer track is refused, not drawn past the end.
 #[test]
 fn export_layer_out_of_range() {
     let log = Log::new(&fixture("fai-01")).unwrap();
     let window = log.track.flights().longest().copied().unwrap();
-    let scored = log.score("xcontest", window.start, window.stop).unwrap();
+    let scored = log
+        .score(
+            Ruleset::named("xcontest").unwrap(),
+            window.start,
+            window.stop,
+        )
+        .unwrap();
 
     let shorter = Log {
         track: log.track[20_000..].to_vec(),

@@ -9,10 +9,9 @@ use super::geometry::{
 };
 use super::iter::pairs;
 use super::round_km;
-use crate::score::known_ruleset;
 use crate::{
-    Fix, Flight, FlightDetection, FlightSelection, Log, ScoreError, ScoringResult,
-    TrackError,
+    Fix, Flight, FlightDetection, FlightSelection, Log, Ruleset, ScoreError,
+    ScoringResult, TrackError,
 };
 
 /// Header codes a log labels its flown line with.
@@ -378,13 +377,9 @@ impl Log {
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`].
-    ///
-    /// [`ruleset_names`]: crate::ruleset_names
-    pub fn describe(&self, ruleset: &str) -> Result<FeatureCollection, ScoreError> {
-        // Detection may find nothing to score, and the name is refused either way.
-        known_ruleset(ruleset)?;
-
+    /// [`ScoreError::Track`] only through a detected window this log's track does not hold, which
+    /// would be a bug in detection.
+    pub fn describe(&self, ruleset: &Ruleset) -> Result<FeatureCollection, ScoreError> {
         let window = self.track.flights().longest().copied();
         let scored = window
             .map(|w| self.score(ruleset, w.start, w.stop))

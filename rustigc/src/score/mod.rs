@@ -7,9 +7,7 @@ mod engine;
 mod rules;
 mod shapes;
 
-#[cfg(feature = "geojson")]
-pub(crate) use rules::known_ruleset;
-pub use rules::ruleset_names;
+pub use rules::{Ruleset, ruleset_names};
 
 pub use engine::Scorer;
 
