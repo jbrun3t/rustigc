@@ -137,7 +137,7 @@ impl Candidate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Solution<'r> {
     bound: f64,
     candidate: Candidate,

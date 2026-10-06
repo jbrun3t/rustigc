@@ -29,11 +29,10 @@ pub struct ShapeDef {
 /// Every field of an entry comes from the one type, so they cannot drift apart, and evaluating
 /// `CARDINALITY` here is what fires its post-monomorphisation assert at build time.
 macro_rules! shapes {
-    ($( $(#[$attr:meta])* $ty:ty ),* $(,)?) => {
+    ($( $ty:ty ),* $(,)?) => {
         /// Every geometry a rule may name.
         pub static SHAPES: &[ShapeDef] = &[
             $(
-                $(#[$attr])*
                 ShapeDef {
                     spec: <$ty as ShapeKind>::SPEC,
                     cardinality: <$ty as ShapeKind>::CARDINALITY,
