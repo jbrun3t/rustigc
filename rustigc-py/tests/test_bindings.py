@@ -55,7 +55,7 @@ def test_flights_shape(igc_content):
 
 
 def test_invalid_content():
-    """Test error handling"""
+    """A line of garbage is refused"""
     with pytest.raises(ValueError, match="Failed to parse IGC file"):
         rib.RustLog.from_bytes(b"INVALID")
 

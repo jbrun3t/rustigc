@@ -1,37 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Event and metadata record parsers
+//! Parsers for the records carrying text, with or without a time. Only the time is decoded; the
+//! rest of the line is kept as written.
 //!
-//! This module handles various IGC record types for events, comments, and metadata:
-//!
-//! - **D-record**: GPS datum and differential GPS information
-//!   - Format: D[2-digit qualifier]XXX... (qualifier + free text)
-//!   - Specifies GPS datum (e.g., D2100 for WGS84) and differential GPS station
-//!
-//! - **L-record**: Logbook/comment records
-//!   - Format: L[3-letter source code]XXX... (manufacturer code + text)
-//!   - Free-form comments, can be manufacturer-specific (e.g., LFLAFLIGHT NOTES)
-//!
-//! - **G-record**: Security/signature records for flight verification
-//!   - Format: GXXX... (cryptographic signature data)
-//!   - Used for tamper detection and authenticity verification
-//!   - Multi-line security data combining all G-records into signature
-//!
-//! - **E-record**: Pilot-initiated events with timestamp
-//!   - Format: EHHMMSS[3-letter code][text] (timestamp + event type + optional text)
-//!   - Event codes like PEV (pilot event), TST (task start), etc.
-//!   - Examples: E123456PEV, E154320TSTTAKEOFF
-//!
-//! - **F-record**: Satellite constellation with timestamp
-//!   - Format: FHHMMSS[sat1][sat2]... (timestamp + list of 2-digit satellite IDs)
-//!   - Records which satellites were used for position fix
-//!   - Example: F123456010305071113 (satellites 01, 03, 05, 07, 11, 13)
-//!
-//! - **K-record**: Extension data with timestamp
-//!   - Format: KHHMMSSXXX... (timestamp + extension data fields)
-//!   - Additional sensor data at lower frequency than B-records
-//!   - Fields defined by J-record extensions (similar to I-records for B-records)
-//!   - Example: K12345612345 with J-record defining field positions
+//! - `D`: GPS datum and differential GPS station, free text after `D`.
+//! - `L`: comment, free text after `L`, usually led by a 3-letter source code.
+//! - `G`: security signature data.
+//! - `E`: pilot event, `EHHMMSS` then a 3-letter code and optional text, e.g. `E154320PEV`.
+//! - `F`: satellites in use, `FHHMMSS` then 2-digit satellite ids, e.g. `F123456010305`.
+//! - `K`: sensor data, `KHHMMSS` then the fields the J-record lays out.
 
 use std::fmt;
 
@@ -81,6 +58,7 @@ impl fmt::Display for TimedEvent<'_> {
     }
 }
 
+/// The rest of the line as a [`TextEvent`].
 fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
     move |input: &mut &[u8]| {
         till_robust_ending
@@ -89,6 +67,7 @@ fn text_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TextEvent<'a>> {
     }
 }
 
+/// `HHMMSS` then the rest of the line, as a [`TimedEvent`].
 fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
     move |input: &mut &[u8]| {
         (ts_to_ms, till_robust_ending)
@@ -97,36 +76,42 @@ fn timed_event<'a>() -> impl Fn(&mut &'a [u8]) -> PResult<TimedEvent<'a>> {
     }
 }
 
+/// Parses one D-record.
 pub fn d_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'D', text_event(), robust_ending_eof)
         .map(Record::D)
         .parse_next(input)
 }
 
+/// Parses one L-record.
 pub fn l_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'L', text_event(), robust_ending_eof)
         .map(Record::L)
         .parse_next(input)
 }
 
+/// Parses one G-record.
 pub fn g_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'G', text_event(), robust_ending_eof)
         .map(Record::G)
         .parse_next(input)
 }
 
+/// Parses one E-record.
 pub fn e_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'E', timed_event(), robust_ending_eof)
         .map(Record::E)
         .parse_next(input)
 }
 
+/// Parses one F-record.
 pub fn f_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'F', timed_event(), robust_ending_eof)
         .map(Record::F)
         .parse_next(input)
 }
 
+/// Parses one K-record.
 pub fn k_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'K', timed_event(), robust_ending_eof)
         .map(Record::K)

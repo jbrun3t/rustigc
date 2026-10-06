@@ -1,12 +1,11 @@
 # rustigc-wasm-utils
 
-Decoder for the raw fix array [`rustigc-wasm`](https://www.npmjs.com/package/rustigc-wasm) hands
-over as `Log.track_bytes`.
+Optional helpers for [`rustigc-wasm`](https://www.npmjs.com/package/rustigc-wasm):
 
-Optional, and independent at runtime: it reads a `Uint8Array` and returns plain objects, so it
-imports nothing from the bindings but the `Fix` type. Decoding here is about 10x faster than
-having `serde_wasm_bindgen` build the same objects from inside wasm, which crosses the FFI once
-per field where this crosses once per track.
+- the package root decodes `Log.track_bytes` into `Fix` objects, about 10x faster than
+  `Log.track`;
+- `rustigc-wasm-utils/datetime` reads timestamps as local times from the log's `TZN` offset;
+- `rustigc-wasm-utils/log` extends `Log` with text input and those local times.
 
 ```sh
 npm install rustigc-wasm rustigc-wasm-utils
@@ -20,7 +19,7 @@ fixes(log.track_bytes)   // the same Fix[], 10x faster
 ```
 
 The byte layout it decodes is documented with the binding that produces it, in the
-[rustigc-wasm README](https://github.com/jbrun3t/rustigc/blob/main/rustigc/rustigc-wasm/README.md).
+[rustigc-wasm README](https://github.com/jbrun3t/rustigc/blob/main/rustigc-wasm/README.md).
 
 ## License
 

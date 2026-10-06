@@ -8,20 +8,20 @@ use winnow::error::{ContextError, ParseError};
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DecodeError {
-    /// Not one record could be read. Means an empty input. every other byte sequence
-    /// decodes, badly, as `Record::Bad`.
+    /// No record could be read, which only happens on empty input: any other line decodes, as
+    /// [`Record::Bad`] if nothing else.
+    ///
+    /// [`Record::Bad`]: crate::Record::Bad
     #[error("no record could be read at byte {offset}")]
     Parse { offset: usize },
 
-    /// Nothing to work from — a [`RawLog`] built or deserialized with no records.
+    /// A [`RawLog`] with no records.
     ///
     /// [`RawLog`]: crate::RawLog
     #[error("no records to decode")]
     Empty,
 
-    /// IGC-shaped, but at least 80% of its records are invalid.
-    ///
-    /// Carries no count: rejecting earlier, while parsing, would leave any total partial.
+    /// At least 80% of the records are invalid.
     #[error("too many invalid records")]
     TooManyBadRecords,
 }
@@ -38,7 +38,7 @@ impl From<ParseError<&[u8], ContextError>> for DecodeError {
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TrackError {
-    /// A fix index the track does not hold — it came from a longer one.
+    /// A fix index past the end of the track.
     #[error("fix {index} is out of range, the track holds {len}")]
     FixOutOfRange { index: usize, len: usize },
 
@@ -65,6 +65,7 @@ pub enum ScoreError {
     #[error("unknown ruleset")]
     UnknownRuleset,
 
+    /// The track or window cannot be scored.
     #[error(transparent)]
     Track(#[from] TrackError),
 }

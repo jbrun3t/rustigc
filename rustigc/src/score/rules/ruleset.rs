@@ -7,10 +7,9 @@ use serde::Deserialize;
 use super::rule::Rule;
 use crate::ScoreError;
 
-/// The rules a flight is scored against, the best of which is reported.
+/// A named set of rules; scoring reports the best result any of them finds.
 ///
-/// The embedded ones are reached by name through [`Ruleset::named`]; [`Ruleset::from_json`] reads a
-/// caller's own, in the same format.
+/// [`Ruleset::named`] returns an embedded one, [`Ruleset::from_json`] reads a caller's.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ruleset {
@@ -19,8 +18,7 @@ pub struct Ruleset {
     rules: Vec<Rule>,
 }
 
-/// Reads the rules a ruleset states and checks what their types cannot. A defect is a
-/// deserialization error, so it is reported against the text that holds it like any other.
+/// Deserializes the rule list and runs [`Rule::check`] on each rule. An empty list is an error.
 fn rules<'de, D>(deserializer: D) -> Result<Vec<Rule>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -40,7 +38,7 @@ where
 }
 
 impl Ruleset {
-    /// Reads a ruleset in the format of the embedded ones.
+    /// Reads a ruleset in the format of the files under `rulesets/`.
     ///
     /// # Errors
     ///
@@ -62,7 +60,7 @@ impl Ruleset {
             .ok_or(ScoreError::UnknownRuleset)
     }
 
-    /// The name the ruleset states, which every result it scores reports.
+    /// The ruleset's name, reported in every result it scores.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
@@ -73,10 +71,8 @@ impl Ruleset {
     }
 }
 
-/// Embeds each ruleset file, paired with its name for the panics `load` raises.
-///
-/// The rulebook each one encodes is linked here: JSON takes no comments, and the numbers are no use
-/// without the text they came from.
+/// Embeds each file under `rulesets/`, with its name for `load`'s panic messages. Each entry's
+/// rulebook URL sits beside it, since JSON has no comments.
 macro_rules! rulesets {
     ($( $file:literal ),* $(,)?) => {
         static RULESET_FILES: &[(&str, &str)] = &[
@@ -92,7 +88,7 @@ rulesets! {
     "cfd.json",
     // https://www.xcontest.org/world/en/rules/
     "xcontest.json",
-    // Single-rule rulesets, each exercising one shape on its own.
+    // Single-rule rulesets, one shape each.
     "1tp.json",
     "2tp.json",
     "line.json",
@@ -101,11 +97,8 @@ rulesets! {
 
 static REGISTRY: OnceLock<Vec<Ruleset>> = OnceLock::new();
 
-/// Parses every embedded ruleset, once.
-///
-/// Panics rather than answering with an error: the JSON ships inside the binary, so anything wrong
-/// with it is a build-time mistake, and the alternative is a panic at a caller's first score. The
-/// registry test walks all of it so CI fails instead.
+/// Parses every embedded ruleset. Panics on a bad file or a duplicate name, which
+/// `rulesets_all_load` catches in CI.
 fn load() -> Vec<Ruleset> {
     let mut registry: Vec<Ruleset> = Vec::with_capacity(RULESET_FILES.len());
 
@@ -129,7 +122,7 @@ fn registry() -> &'static [Ruleset] {
     REGISTRY.get_or_init(load)
 }
 
-/// Every name [`Ruleset::named`] accepts, in the order the CLI shows them.
+/// Names of the embedded rulesets, in the order the CLI lists them.
 pub fn ruleset_names() -> impl Iterator<Item = &'static str> {
     registry().iter().map(|r| r.name.as_str())
 }
@@ -138,9 +131,7 @@ pub fn ruleset_names() -> impl Iterator<Item = &'static str> {
 mod tests {
     use super::*;
 
-    /// Forces the registry, so every `load` assert — bad JSON, an unknown shape, an empty rule or
-    /// variant list, a duplicate ruleset, a variant disagreeing with its shape on closing, a rate
-    /// that improves down a list — fails CI rather than a caller's first score.
+    /// Parses every embedded file, so a bad one fails CI.
     #[test]
     fn rulesets_all_load() {
         let names: Vec<_> = ruleset_names().collect();
@@ -153,8 +144,7 @@ mod tests {
         }
     }
 
-    /// A caller's ruleset is held to the same checks as an embedded one: a closing priced over an
-    /// open shape would go uncharged.
+    /// A caller's ruleset goes through the same checks as an embedded one.
     #[test]
     fn from_json_refuses_closing_on_open_shape() {
         let text = r#"{

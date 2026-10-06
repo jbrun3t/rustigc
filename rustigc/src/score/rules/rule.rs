@@ -6,20 +6,17 @@ use super::variant::{Scored, Variant, pick};
 use crate::score::shapes::Shape;
 use crate::score::shapes::table::{self, ShapeDef};
 
-/// One scoring rule of a ruleset: a geometry priced through one or more [`Variant`]s, listed best
-/// rate first. [`pick`] takes the first that earns anything, so a rate that improves down the list
-/// would never be reached.
+/// A shape and the [`Variant`]s it is scored with, listed best rate first.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
-    /// Resolved as the file is read, so a geometry this build does not carry is a parse error
-    /// rather than a name kept around to fail later.
+    /// Looked up in the shape table as the file is read; an unknown shape is a parse error.
     #[serde(deserialize_with = "shape_def")]
     shape: &'static ShapeDef,
     variants: Vec<Variant>,
 }
 
-/// Reads a [`ShapeSpec`] and answers with the geometry it names.
+/// Deserializes a [`ShapeSpec`] into the shape table entry it names.
 ///
 /// [`ShapeSpec`]: crate::score::shapes::ShapeSpec
 fn shape_def<'de, D>(deserializer: D) -> Result<&'static ShapeDef, D::Error>
@@ -34,19 +31,19 @@ where
 }
 
 impl Rule {
-    /// What a rule's types cannot state: that it prices something, that its variants agree with
-    /// its geometry on closing, and that they are listed best rate first.
+    /// Refuses a rule with no variant, a variant whose closing disagrees with the shape, or a
+    /// multiplier rising down the list.
     pub(super) fn check(&self) -> Result<(), String> {
         let shape = self.shape.spec;
 
         if self.variants.is_empty() {
-            return Err(format!("{shape:?} prices nothing"));
+            return Err(format!("{shape:?} has no variant"));
         }
 
         let mut previous = f64::INFINITY;
         for variant in &self.variants {
-            // A gap priced over a geometry that has none would be charged nothing, whatever the
-            // closing said, and a circuit left open would go free.
+            // An open shape reports no gap to charge, and a circuit without a closing would close
+            // for free.
             if variant.closing.is_some() != self.shape.closes {
                 return Err(format!(
                     "{:?} disagrees with {shape:?} on closing",
@@ -54,8 +51,8 @@ impl Rule {
                 ));
             }
 
-            // `pick` takes the first variant that earns anything, so a better rate further down
-            // would never be reached and `score` would fall as distance grows.
+            // The first variant that earns wins, so a better rate further down would never be
+            // reached, and `score` could fall as distance grows.
             if variant.multiplier > previous {
                 return Err(format!(
                     "{:?} pays more than the variant before it",
@@ -68,21 +65,20 @@ impl Rule {
         Ok(())
     }
 
-    /// Fix-index ranges the search branches on.
+    /// Number of fix ranges the search branches on.
     pub(crate) fn cardinality(&self) -> usize {
         self.shape.cardinality
     }
 
-    /// The geometry this rule scores over.
+    /// The shape this rule scores.
     pub(crate) fn shape(&self) -> &'static dyn Shape {
         self.shape.shape
     }
 
-    /// Score in meters, unrounded — the search prunes on this.
+    /// Score of the first variant that earns anything, else 0; in meters, unrounded.
     ///
-    /// Non-decreasing in `distance` and non-increasing in `gap`, which is what makes the largest
-    /// distance against the smallest gap an upper bound of the subtree. [`Rule::check`] holds the
-    /// variants to the order that keeps it so.
+    /// The search prunes on it, so it must be non-decreasing in `distance` and non-increasing in
+    /// `gap`. The multiplier order [`Rule::check`] enforces keeps it so.
     pub(crate) fn score(&self, distance: f64, gap: f64) -> f64 {
         self.variants
             .iter()
@@ -91,7 +87,7 @@ impl Rule {
             .unwrap_or(0.0)
     }
 
-    /// How the rule presents that score, once on the winning leaf.
+    /// The full result of the winning variant, for the report.
     pub(crate) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
         pick(&self.variants, distance, gap).scored(distance, gap)
     }

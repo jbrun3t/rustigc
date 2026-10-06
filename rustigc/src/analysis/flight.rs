@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Flight sections of a track.
-//!
-//! Detection is a crude ground-speed placeholder (see FIXME), meant to be replaced without touching
-//! anything else.
+//! Flight sections of a track, detected from ground speed.
 
 use log::{debug, warn};
 #[cfg(feature = "serde")]
@@ -13,13 +10,13 @@ use crate::Fix;
 use crate::utils::geometry::{Flat, PointDistance};
 use crate::utils::projector::CheapProjection;
 
-/// Minimal flight speed
-const FGSLIM: f64 = 4.2; // ~15kph
+/// Ground speed, in m/s, at or above which a fix counts as flying: ~15 km/h.
+const FGSLIM: f64 = 4.2;
 
 /// Milliseconds a track must hold above `FGSLIM` to count as flying.
 const TTHRES: f64 = 30_000.0;
 
-/// Longest gap interval, in milliseconds, a flight may contain.
+/// Longest time gap, in milliseconds, a flight may contain; a longer one splits the track.
 /// FIXME: different rulesets, different rules
 const MAX_GAP: f64 = 300_000.0;
 
@@ -40,8 +37,8 @@ pub struct Flight {
 
 /// Flight detection over a track, implemented for `[Fix]`.
 pub trait FlightDetection {
-    /// Flight sections of this track, one per stretch free of a gap longer than five minutes.
-    /// Empty when nothing was detected.
+    /// Flight sections of this track, at most one per stretch free of a gap longer than five
+    /// minutes. Empty when nothing was detected.
     ///
     /// ```no_run
     /// use rustigc::{FlightDetection, Log};
@@ -73,23 +70,20 @@ impl FlightSelection for [Flight] {
     }
 }
 
-/// Detect the flight sections of a track, one per stretch free of a gap longer than `max_gap`.
-/// Empty when no flight is detected.
+/// Flight sections of `track`, at most one per stretch free of a gap longer than `max_gap`.
 fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
     if track.is_empty() {
         return Vec::new();
     }
 
-    // Avoid using a BBox here so we don't to unwrap the coordinates first.
-    // The projections only care for the latitude. longitude is just an offset carried around
-    // This saves a bit of runtime while handling the antimeridian correctly
+    // The projection's scale depends on latitude only, and only differences of projected points
+    // are read, so the origin's longitude cancels out and the antimeridian needs no unwrapping.
     let (south, north) = track.iter().fold((f64::MAX, f64::MIN), |(s, n), fix| {
         (s.min(fix.lat), n.max(fix.lat))
     });
     let projection = CheapProjection::new(&[(south + north) / 2.0, track[0].lon]);
     let mut bad: usize = 0;
 
-    // Project the track on a flat surface
     let flatp: Vec<[f64; 2]> = track
         .iter()
         .map(|fix| {
@@ -98,8 +92,7 @@ fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
         })
         .collect();
 
-    // Get the ground speed. `t`/`dt` are milliseconds; `FGSLIM` is m/s, so the speed calc
-    // converts `duration` to seconds at that one point.
+    // Ground speed in m/s; `t` and `dt` are milliseconds.
     let t: Vec<f64> = track.iter().map(|fix| fix.timestamp as f64).collect();
     let d: Vec<f64> = flatp
         .windows(2)
@@ -124,9 +117,8 @@ fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
         warn!("{bad} fix interval(s) carry no time, ground speed read as 0");
     }
 
-    // Cut at every gap and detect each stretch on its own: a speed spanning a gap is meaningless, and
-    // `detect` must not smooth across one either. `cuts` ends past the last interval to close the
-    // final stretch.
+    // Each gap-free stretch is detected on its own, so no speed or smoothing spans a gap. The last
+    // cut closes the final stretch.
     let mut cuts: Vec<usize> = dt
         .iter()
         .enumerate()
@@ -155,18 +147,19 @@ fn detect_flights(track: &[Fix], max_gap: f64) -> Vec<Flight> {
     flights
 }
 
-// FIXME: This detection algorithm clearly sucks and is meant to be replaced
+/// The flight in one gap-free stretch: from the first run holding at least `FGSLIM` for `TTHRES`,
+/// to the first slow sample after the last fast one, or the last sample. Empty when no run holds
+/// that long.
+// FIXME: crude ground-speed detection, to replace with a real detector.
 fn detect(gs: &[f64], dt: &[f64]) -> Vec<[usize; 2]> {
     let mut result = Vec::new();
 
-    // We do not yet have proper track smoothing, just average the speed to start with.
+    // Ground speed averaged over 5 intervals.
     let sgs: Vec<f64> = gs.windows(5).map(|w| w.iter().sum::<f64>() / 5.0).collect();
 
     let mut held = 0.0;
     let mut start = 0;
 
-    // Look for the start of the flight: the first stretch holding above the threshold for `TTHRES`
-    // milliseconds. Yes it sucks, but it is not here to stay.
     for (i, gs) in sgs.iter().enumerate() {
         if *gs >= FGSLIM {
             if held == 0.0 {

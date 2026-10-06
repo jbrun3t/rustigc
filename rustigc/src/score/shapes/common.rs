@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! DP shared by every shape.
+//! The vertex DP every shape bounds with, and the leg matrices it walks.
 
 use crate::utils::geometry::{Fcc, PointDistance, SPoint, Vertices};
 
@@ -38,11 +38,13 @@ impl TransitionMatrix {
     }
 }
 
+/// Vertices of each range's bounding box, in turnpoint order.
 pub fn candidate_to_path(scorer: &Scorer, c: &Candidate) -> Path {
     c.ranges.iter().map(|r| scorer.bbox(r).vertices()).collect()
 }
 
-/// Dynamic Programming (DP) path search  — through one vertex of each turnpoint box, in order.
+/// Best path through one vertex of each turnpoint box, in order, `pick` choosing longest or
+/// shortest. `entry` and `exit` are the terminal costs of the first and last box's vertices.
 pub fn dynamic_search<F>(
     entry: &[f64],
     exit: &[f64],
@@ -52,8 +54,7 @@ pub fn dynamic_search<F>(
 where
     F: Fn(f64, f64) -> f64,
 {
-    // A layer carries one distance per vertex of the box it stands on, so at most 4.
-    // `entry` and `exit` hold the terminal cost of every vertex of the first and last box
+    // One distance per vertex of the current box, so at most 4.
     let mut distances = [f64::NAN; 4];
     let mut next = [f64::NAN; 4];
     let mut len = entry.len();
@@ -61,8 +62,7 @@ where
     distances[..len].copy_from_slice(entry);
 
     for tb in transitions {
-        // Get the transition cost from each vertex of TPb to the all of the previous
-        // TPa vertices
+        // Best way to reach each vertex of the next box.
         for (i, tbv) in tb.rows().enumerate() {
             debug_assert_eq!(len, tbv.len());
 
@@ -90,14 +90,13 @@ pub fn transition_matrices<'a, I>(iter: I, circuit: bool) -> Transitions
 where
     I: Iterator<Item = (&'a Vertices<SPoint>, &'a Vertices<SPoint>)>,
 {
-    // `circuit` transposes the first one so that its rows are indexed by a vertex of TP1
-    // rather than of TP2: `circuit_dynamic_search` enumerates the origins, since a
-    // circuit's closing leg depends on where it started.
+    // For a circuit, the first matrix is transposed so its rows are indexed by a vertex of TP1:
+    // `circuit_dynamic_search` runs one DP per origin.
     let mut flip = circuit;
     let mut transition = Transitions::new();
 
     for pair in iter {
-        // Flipping the pair transposes the matrix, cheaper than doing it afterwards.
+        // Swapping the pair transposes the matrix.
         let (a, b) = if flip {
             (pair.1, pair.0)
         } else {

@@ -11,8 +11,8 @@ use super::circuit::{Circuit, circuit_dynamic_search};
 use super::common::{candidate_to_path, transition_matrices};
 use super::{Candidate, Scorer, ShapeBound, ShapeKind, ShapePeek, ShapeSpec};
 
-/// Closed circuit: tp1 -> ... -> tpn -> tp1, the longest the turnpoint boxes allow, with the
-/// closing gap left for the rule to charge.
+/// A loop through `TP` turnpoints, tp1 -> ... -> tpn -> tp1. The gap between the flight's entry and
+/// exit is left for the rule to charge.
 #[derive(Debug)]
 pub struct ClosedCircuit<const TP: usize> {}
 
@@ -44,9 +44,9 @@ impl<const TP: usize> ShapePeek for ClosedCircuit<TP> {
 
         let track = &scorer.track;
 
-        // Start on the last fix of TP1, take the first fix of each following turnpoint, close back
-        // on the origin. Ranges start in order, so clamping to the origin is the whole of what
-        // keeps the loop forward; a turnpoint that cannot advance yet collapses onto it.
+        // From the last fix of TP1 through the first fix of each following range, back to TP1.
+        // Ranges start in order, so clamping to the origin keeps the loop forward; a turnpoint
+        // that cannot advance yet collapses onto it.
         let origin = c.ranges[0][1];
         let fixes = c.ranges[1..].iter().map(|r| r[0].max(origin));
 

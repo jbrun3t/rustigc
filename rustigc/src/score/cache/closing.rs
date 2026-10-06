@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Closing-gap cache: the closest pair of fixes between an entry range, before the first turnpoint,
-//! and an exit range, after the last one — the closing leg of a circuit.
+//! Closing-gap cache: the closest pair of fixes between an entry range, up to the first turnpoint,
+//! and an exit range, from the last one — the closing leg of a circuit.
 //!
-//! Two `rstar` trees are in play and they index different things:
-//! * the cache, over fix indices — which requests have been answered,
-//! * the search, over projected metres — where the fixes actually are.
+//! Two `rstar` trees: the cache indexes answered requests by fix index, the search indexes fixes by
+//! projected position.
 
 use rstar::primitives::GeomWithData;
 use rstar::{
@@ -25,10 +24,9 @@ struct ClosingCacheEntry {
 impl RTreeObject for ClosingCacheEntry {
     type Envelope = AABB<[i32; 2]>;
 
-    /// The entry is stored as a rectangle in `(entry_stop, exit_start)` index space, spanning from
-    /// the fixes it found to the bounds it searched. A later query landing in that rectangle has
-    /// both its ranges included in the searched ones and the found pair inside them, so the result
-    /// still holds.
+    /// A rectangle in `(entry_stop, exit_start)` space, from the pair found to the bounds searched.
+    /// A query inside it searches subsets of those ranges that still hold the pair, so the pair is
+    /// still the closest.
     fn envelope(&self) -> Self::Envelope {
         AABB::from_corners(
             [self.entry[0] as i32, self.exit[0] as i32],
@@ -54,6 +52,8 @@ impl ClosingCache {
         self.0.insert(ClosingCacheEntry { entry, exit, dist });
     }
 
+    /// Closest pair between `[0, entry_stop]` and `[exit_start, last]`, as
+    /// `(entry, exit, distance)`.
     pub fn closing(
         &mut self,
         p: &[SPoint],
@@ -76,14 +76,10 @@ impl ClosingCache {
     }
 }
 
-// **`MAX_SIZE` is the only one of these that does anything here.** It is the entry count at which
-// `bulk_load` stops splitting and emits a leaf, so it sets the tree's depth and therefore how many
-// partitioning passes the build makes. This search is bound by construction rather than by querying,
-// so a shallow tree wins: 24 beats both rstar's default 6 and 48.
-//
-// `MIN_SIZE` and `REINSERTION_COUNT` are consulted only by the dynamic `insert` path, which this
-// module never uses. The trait requires them; rstar asserts `MIN_SIZE <= MAX_SIZE / 2` and
-// `REINSERTION_COUNT < MAX_SIZE - MIN_SIZE`.
+// Search-tree parameters. `bulk_load` reads only `MAX_SIZE`, the leaf size, which sets the tree's
+// depth. Building dominates querying here, so a shallow tree is faster: 24 measured faster than
+// rstar's default 6 and than 48. `MIN_SIZE` and `REINSERTION_COUNT` serve `insert`, unused here;
+// rstar requires `MIN_SIZE <= MAX_SIZE / 2` and `REINSERTION_COUNT < MAX_SIZE - MIN_SIZE`.
 struct ClosingParams;
 
 impl RTreeParams for ClosingParams {
@@ -100,7 +96,7 @@ type Tree = RTree<GeomWithData<SPoint, u32>, ClosingParams>;
 /// tree holds nothing that close.
 fn nearest_under(tree: &Tree, point: &SPoint, radius: f64) -> Option<(usize, f64)> {
     if radius.is_infinite() {
-        // A radius query would walk the whole tree, so let the first one be a plain nearest
+        // With no bound yet, a radius query would walk the whole tree.
         return tree
             .nearest_neighbor(*point)
             .map(|o| (o.data as usize, o.distance_2(point)));
@@ -112,13 +108,11 @@ fn nearest_under(tree: &Tree, point: &SPoint, radius: f64) -> Option<(usize, f64
         .min_by(|a, b| a.1.total_cmp(&b.1))
 }
 
-/// Closest pair between the two ranges, by nearest-neighbour queries in a plane projected around
-/// the fixes involved. Only the winning pair gets its real distance computed.
+/// Closest pair between `[0, entry_stop]` and `[exit_start, last]`: one range goes in an R-tree in
+/// a local projection, the other queries it. Only the winning pair gets its FCC distance.
 ///
-/// The queries are not independent: each one searches only under the best pair found so far, so a
-/// query that cannot improve on it is answered by the pruning alone. That still lands on the true
-/// optimum — when the iteration reaches the closest pair's own fix, either the running best already
-/// equals the optimum, or the optimum's partner is strictly inside the radius and the query returns
+/// Each query searches within the best distance so far. That still finds the optimum: when the loop
+/// reaches the optimum's own fix, its partner is within the radius unless the best already equals
 /// it.
 fn closest_closing(
     p: &[SPoint],
@@ -135,8 +129,7 @@ fn closest_closing(
     bbox.merge(&BBox::from_items(&p[exit_start..]).unwrap());
     let projection = CheapProjection::new(&bbox.center());
 
-    // Tree the SHORTER range and iterate the longer one: bulk-loading an R-tree sorts, so building
-    // costs more per point than querying
+    // Tree the shorter range: bulk-loading sorts, so building costs more per point than querying.
     let (iter_range, tree_range) = if entry_len > exit_len {
         (entry_range, exit_range)
     } else {
@@ -173,7 +166,7 @@ fn closest_closing(
     let tree_best = tree_start + tree_best_offset;
     let dist = Fcc::distance(&p[iter_best], &p[tree_best]);
 
-    // Which range was iterated depends on their lengths, so order the pair chronologically
+    // Either range may have been iterated: return the pair in track order.
     if iter_best <= tree_best {
         (iter_best, tree_best, dist)
     } else {

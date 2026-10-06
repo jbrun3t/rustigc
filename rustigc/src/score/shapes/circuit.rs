@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Common circuit tools
+//! What every circuit shares: the closing search, the circuit DP and the report.
 
 use crate::utils::geometry::{Geodesic, PointDistance};
 use crate::utils::iter::pairs;
@@ -16,9 +16,8 @@ pub fn circuit_dynamic_search<F>(transitions: &[TransitionMatrix], pick: &F) -> 
 where
     F: Fn(f64, f64) -> f64,
 {
-    // The closing leg depends on where the circuit started, so this runs one DP per
-    // vertex of TP1.  The outgoing leg TP(1 -> 2) and the closing leg TP(n -> 1) are the
-    // two indexed by that vertex, which is what makes them a run's entry and exit costs.
+    // The closing leg depends on where the circuit started, so this runs one DP per vertex of
+    // TP1: the legs TP(1 -> 2) and TP(n -> 1) are that run's entry and exit costs.
     match transitions {
         [entry, tr @ .., exit] => {
             debug_assert_eq!(entry.rows().len(), exit.rows().len());
@@ -29,18 +28,19 @@ where
                 .fold(f64::NAN, pick)
         }
         _ => {
-            // Two turnpoints already wrap to two legs, and no rule declares fewer
+            // `CARDINALITY` asserts at least 2 turnpoints, which wrap to two legs.
             unreachable!("a circuit needs at least 2 turnpoints");
         }
     }
 }
 
+/// A loop through its turnpoints, closed back to the first.
 pub trait Circuit {
     /// Turnpoints the loop is defined on.
     const TURNPOINTS: usize;
 
-    /// [`ShapeKind::CARDINALITY`] for a circuit, with its floor asserted once for every circuit
-    /// shape. Each of them forwards this rather than restating it.
+    /// [`ShapeKind::CARDINALITY`](super::ShapeKind::CARDINALITY) for a circuit, asserting at least
+    /// 2 turnpoints. Every circuit shape forwards it.
     const CARDINALITY: usize = {
         assert!(Self::TURNPOINTS >= 2);
         Self::TURNPOINTS
@@ -51,14 +51,13 @@ pub trait Circuit {
         true
     }
 
+    /// Closing pair `(entry, exit, gap)`: the closest fixes up to the end of the first range and
+    /// from the start of the last. `(0, last, 0)` while those ranges overlap.
     fn closing(&self, scorer: &Scorer, c: &Candidate) -> (usize, usize, f64) {
         if c.first_last_overlap() {
-            // Nothing to close yet, and no gap to charge for
             (0, scorer.track.len() - 1, 0.0)
         } else {
-            // Find the shortest closing distance between the first and last TP.
-            // Include the TP intervals in search since the final points may still
-            // allow them.
+            // The entry and exit may still fall inside the first and last turnpoint ranges.
             scorer.closing(c.ranges[0][1], c.ranges[c.ranges.len() - 1][0])
         }
     }
@@ -72,12 +71,8 @@ impl<T: Circuit + Debug> ShapeCommon for T {
 
     fn endpoints(&self, scorer: &Scorer, c: &Candidate) -> (usize, usize) {
         if c.first_last_overlap() {
-            // Nothing to close yet, and no gap to charge for
             (0, scorer.track.len() - 1)
         } else {
-            // Find the shortest closing distance between the first and last TP.
-            // Include the TP intervals in search since the final points may still
-            // allow them.
             let (entry, exit, _) = self.closing(scorer, c);
             (entry, exit)
         }

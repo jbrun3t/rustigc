@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Forked from <https://github.com/Turbo87/flat-projection-rs.git>
+//! Local flat projection, forked from <https://github.com/Turbo87/flat-projection-rs.git>.
 
 use num_traits::Float;
 
 use crate::utils::geometry::{PointCoords, PointNew};
 
-/// Wraps a longitude *difference* into [-180, 180]. Callers pass the difference of two longitudes,
-/// so the input is in [-360, 360]; a larger one is wrapped only once and comes out wrong.
-/// That limitation is what keeps a division off the hot path.
+/// Wraps a longitude difference, in [-360, 360], into [-180, 180]. A value outside that range is
+/// wrapped once only, and comes out wrong.
 pub fn lon_round<T: Float>(lon: T) -> T {
     let full = T::from(360).unwrap();
     let half = T::from(180).unwrap();
@@ -22,6 +21,7 @@ pub fn lon_round<T: Float>(lon: T) -> T {
     }
 }
 
+/// Degrees to meters on a plane tangent at an origin, accurate near it (mapbox cheap-ruler).
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct CheapProjection<T: Float> {
     ky: T,
@@ -32,6 +32,7 @@ pub struct CheapProjection<T: Float> {
 }
 
 impl<T: Float> CheapProjection<T> {
+    /// Projection with its origin at `point`. Its scale depends on the origin's latitude only.
     pub fn new<P>(point: &P) -> CheapProjection<T>
     where
         P: PointCoords<T>,
@@ -75,9 +76,8 @@ impl<T: Float> CheapProjection<T> {
         )
     }
 
-    /// Inverse of [`CheapProjection::project`], back to (lon, lat).
-    ///
-    /// Unlike `project` the result here is folded back into ±180
+    /// Inverse of [`CheapProjection::project`], back to (lon, lat) with the longitude wrapped into
+    /// ±180.
     #[allow(dead_code)]
     pub fn unproject<P, R>(&self, input: &P) -> R
     where
@@ -95,8 +95,7 @@ impl<T: Float> CheapProjection<T> {
 mod tests {
     use super::*;
 
-    // The rounding form this replaced, kept as the oracle: the two must agree over every input a
-    // difference of two parsed longitudes can take.
+    // Agrees with `l - round(l / 360) * 360` over every difference of two parsed longitudes.
     #[test]
     fn lon_round_matches_the_rounding_form() {
         let rounding = |l: f64| l - (l / 360.0).round() * 360.0;
@@ -106,7 +105,7 @@ mod tests {
             assert_eq!(lon_round(l), rounding(l), "at {l}");
         }
 
-        // Ties, where the two forms are easiest to get wrong and the sweep's step may not land
+        // Ties, which the sweep's step may miss
         for l in [-360., -180., -0., 0., 180., 360.] {
             assert_eq!(lon_round(l), rounding(l), "at {l}");
         }

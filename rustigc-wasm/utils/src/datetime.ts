@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 /**
- * Local wall clock for a track.
- *
- * Mimic what Rust CLI and Python bindings do, minus tz lookup for now
+ * Local wall-clock time for a track, from the offset the log's `TZN` declares, or UTC. There is
+ * no zone lookup.
  *
  * @module
  */
@@ -13,7 +12,7 @@ import type { Log } from "rustigc-wasm";
 /** Milliseconds in an hour, the unit `TZN` is declared in. */
 const HOUR_MS = 3_600_000;
 
-/** Reads a shifted instant back out. */
+/** Formats a shifted instant as a UTC wall clock. */
 const WALL_CLOCK = new Intl.DateTimeFormat("en-GB", {
 	timeZone: "UTC",
 	year: "numeric",
@@ -41,7 +40,7 @@ export class LocalTime {
 		this.#tzn = tzn;
 	}
 
-	/** `undefined` when the log states no date, so there is nothing to count from. */
+	/** `undefined` when the log has no date. */
 	static of(log: Log): LocalTime | undefined {
 		const origin = log.datetime();
 

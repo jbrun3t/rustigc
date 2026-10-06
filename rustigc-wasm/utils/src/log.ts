@@ -10,12 +10,7 @@ import { Log as Binding } from "rustigc-wasm";
 
 import { LocalTime, type WallClock } from "./datetime.js";
 
-/**
- * IGC as bytes, one per character.
- *
- * A valid file is ASCII: printable `0x20`-`0x7D` less the reserved characters, plus the `CRLF`
- * ending (A6)
- */
+/** A string as bytes, one per character masked to 7 bits: valid IGC is ASCII (A6). */
 function ascii(source: string | Uint8Array): Uint8Array {
 	return typeof source === "string"
 		? Uint8Array.from(source, (char) => char.charCodeAt(0) & 0x7f)
@@ -31,7 +26,7 @@ export class Log extends Binding {
 		this.#local = LocalTime.of(this);
 	}
 
-	/** When the fix carrying `timestamp` was recorded, shifted by whatever `tzn` declares. */
+	/** Wall clock at `timestamp`, shifted by the log's `TZN` offset; `undefined` without a date. */
 	datetimeAt(timestamp: number): WallClock | undefined {
 		return this.#local?.at(timestamp);
 	}

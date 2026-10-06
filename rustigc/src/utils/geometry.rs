@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Geometry primitives and operations
+//! Points, metrics and bounding boxes.
 //!
-//! A point is a plain `[T; 2]` array — zero-cost, and what `rstar` already indexes. What the two
-//! coordinates mean is the metric's business, not the point's: [`Flat`] reads them as a Euclidean
-//! plane, [`Fcc`] and [`Geodesic`] as (lon, lat) on the Earth.
+//! A point is a plain `[T; 2]`, stored `[y, x]`. The metric decides what the coordinates mean:
+//! [`Flat`] reads a Euclidean plane, [`Fcc`] and [`Geodesic`] read `x` as longitude and `y` as
+//! latitude, in degrees.
 
 use crate::utils::projector::lon_round;
 use geographiclib_rs::InverseGeodesic;
@@ -13,41 +13,44 @@ use smallvec::{SmallVec, smallvec};
 
 // ============= Traits =============
 
-/// Read access to 2D coordinates
+/// Read access to 2D coordinates.
 pub trait PointCoords<T: Float> {
-    /// X coordinate (or longitude for spherical)
+    /// X coordinate; longitude for a geographic point.
     fn x(&self) -> T;
 
-    /// Y coordinate (or latitude for spherical)
+    /// Y coordinate; latitude for a geographic point.
     fn y(&self) -> T;
 }
 
-/// Write access to 2D coordinates
+/// Write access to 2D coordinates.
 pub trait PointSetCoords<T: Float> {
-    /// X coordinate (or longitude for spherical)
+    /// Sets the X coordinate; longitude for a geographic point.
     fn set_x(&mut self, x: T);
 
-    /// Y coordinate (or latitude for spherical)
+    /// Sets the Y coordinate; latitude for a geographic point.
     fn set_y(&mut self, y: T);
 }
 
+/// A distance metric: meters for [`Fcc`] and [`Geodesic`], plane units for [`Flat`].
 pub trait PointDistance<T: Float> {
     fn distance<U: PointCoords<T>>(a: &U, b: &U) -> T;
 }
 
+/// Bearing from `a` to `b`, in degrees clockwise from north, in [0, 360).
 #[allow(dead_code)]
 pub trait PointBearing<T: Float> {
     fn bearing<U: PointCoords<T>>(a: &U, b: &U) -> T;
 }
 
-/// Constructible 2D point from coordinates
+/// Construction of a 2D point.
 pub trait PointNew<T: Float>: PointCoords<T> + Copy {
-    /// Create a point from coordinates (x, y)
+    /// The point at `(x, y)`.
     fn new(x: T, y: T) -> Self;
 }
 
 // ==== Euclidean Math ====
 
+/// Euclidean plane, `y` pointing north.
 pub struct Flat;
 
 impl Flat {
@@ -80,19 +83,14 @@ impl<T: Float> PointBearing<T> for Flat {
 
 // ==== Earth Distance using the FCC Simplification ====
 
+/// The FCC flat-earth formula (47 CFR 73.208): fast, within ~7.9 m per 100 km of [`Geodesic`].
 pub struct Fcc;
 
-/// `cos` of a mean latitude in radians — **only valid on [-π/2, π/2]**, where it is a 6-term minimax
-/// polynomial in `fm²` (Remez, degree 10). Latitudes parse within ±90° (`decode/utils.rs`), so their
-/// mean cannot leave that range; outside it this diverges fast.
+/// `cos` of a latitude in radians, **valid only on [-π/2, π/2]**: a 6-term minimax polynomial in
+/// `fm²`. Parsed latitudes stay within ±90°; outside that range it diverges fast.
 ///
-/// Worth 4.9× libm's `cos`, which spends most of its work on the argument reduction a general `cos`
-/// owes any input and this one never needs. The 2.2e-10 it costs on `cos` lands ~0.8 mm per 100 km on
-/// the distance, against the FCC formula's own ~7.9 m per 100 km versus the WGS84 geodesic — the two
-/// errors add, so this is a 0.0001 % widening of a budget that was already there.
-///
-/// Hand-rolled because nothing on crates.io covers it: the f64 `cos`es on offer are general-purpose
-/// and pay for that reduction, and `sleef-trig` — the only credible one — measured 0.97× libm here.
+/// 4.9× faster than libm's `cos`, which pays for an argument reduction this input never needs. Its
+/// 2.2e-10 error adds ~0.8 mm per 100 km to the FCC distance.
 fn cos_lat<T: Float>(fm: T) -> T {
     let a0 = T::from(0.9999999997806517).unwrap();
     let a1 = T::from(-0.49999999358471703).unwrap();
@@ -138,6 +136,7 @@ impl<T: Float> PointDistance<T> for Fcc {
 
 // ==== WGS84 Geodesic Math ====
 
+/// Exact distance on the WGS84 ellipsoid, solved iteratively by `geographiclib`.
 pub struct Geodesic;
 
 impl PointDistance<f64> for Geodesic {
@@ -183,16 +182,17 @@ impl<T: Float> PointNew<T> for [T; 2] {
     }
 }
 
+/// A point, stored `[y, x]`: `[lat, lon]` for a geographic one.
 pub type TPoint<T> = [T; 2];
 
-/// The `f64` point the scoring engine (`score/`) and flight detection (`analysis/`) both work in.
+/// The `f64` point scoring and flight detection work in.
 pub type SPoint = TPoint<f64>;
 
-/// A `BBox`'s vertices: at most 4, held inline so a box costs no allocation.
+/// A [`BBox`]'s distinct corners, at most 4, held inline.
 pub type Vertices<P> = SmallVec<[P; 4]>;
 
-/// Longitudes made continuous across ±180: every point keeps the shortest step from the one before,
-/// so a track straddling the antimeridian reads as one interval instead of two.
+/// Whether a sequence of points crosses the antimeridian: any consecutive pair more than 180° of
+/// longitude apart.
 pub trait AntimeridianCheck<T: Float> {
     fn crosses_antimeridian(&self) -> bool;
 }
@@ -205,6 +205,8 @@ impl<T: Float, P: PointCoords<T>> AntimeridianCheck<T> for [P] {
     }
 }
 
+/// Longitudes made continuous across ±180: each point keeps the shortest step from the one
+/// before, so a track straddling the antimeridian reads as one interval.
 pub trait AntimeridianUnwrap<T: Float>: Iterator + Sized {
     fn unwrapped(self) -> impl Iterator<Item = Self::Item>;
 }
@@ -214,8 +216,7 @@ where
     I: Iterator,
     I::Item: PointCoords<T> + PointSetCoords<T>,
 {
-    // NOTE: This does not unroll well because of the loop dependency, so it is worth
-    // checking if unwrapping is necessary before doing it
+    // Loop-carried, so it does not vectorise: check `crosses_antimeridian` first.
     fn unwrapped(self) -> impl Iterator<Item = Self::Item> {
         self.scan(None, |carry: &mut Option<(T, T)>, mut point| {
             let (lon, raw) = match *carry {
@@ -232,17 +233,17 @@ where
 
 // ============= Bounding Box =============
 
-/// Axis-aligned bounding box
+/// Axis-aligned bounding box.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BBox<P> {
-    /// Bottom-left corner (or southwest for spherical)
+    /// Lowest `x` and `y`; the south-west corner of a geographic box.
     pub min: P,
-    /// Top-right corner (or northeast for spherical)
+    /// Highest `x` and `y`; the north-east corner of a geographic box.
     pub max: P,
 }
 
 impl<P> BBox<P> {
-    /// Create bounding box from a slice of items with coordinates
+    /// Smallest box holding every item; `None` for an empty slice.
     pub fn from_items<T, I>(items: &[I]) -> Option<Self>
     where
         T: Float,
@@ -271,6 +272,7 @@ impl<P> BBox<P> {
         })
     }
 
+    /// Grows this box to cover `other`.
     pub fn merge<T>(&mut self, other: &Self)
     where
         T: Float,
@@ -282,7 +284,7 @@ impl<P> BBox<P> {
         self.max.set_y(T::max(self.max.y(), other.max.y()));
     }
 
-    /// Get the center point of the bounding box
+    /// Midpoint of the box.
     pub fn center<T>(&self) -> P
     where
         T: Float,
@@ -295,7 +297,7 @@ impl<P> BBox<P> {
         )
     }
 
-    /// Diagonal length of the bounding box
+    /// Distance from `min` to `max` under `metric`.
     pub fn diagonal<T, M>(&self, _metric: M) -> T
     where
         T: Float,
@@ -305,6 +307,7 @@ impl<P> BBox<P> {
         M::distance(&self.min, &self.max)
     }
 
+    /// Distinct corners: one for a point, two for a segment, four otherwise.
     pub fn vertices<T>(&self) -> Vertices<P>
     where
         T: Float,
@@ -335,8 +338,8 @@ mod tests {
         BBox::from_items(v.as_slice()).unwrap()
     }
 
-    // The polynomial is only sound on [-pi/2, pi/2] and only useful if it stays far under the FCC
-    // formula's own error, so pin both ends of that: swept against libm across the whole domain.
+    // Swept against libm over [-π/2, π/2]: within the bound, and not so far under it that the
+    // bound is stale.
     #[test]
     fn cos_lat_holds_its_bound_over_every_latitude() {
         const BOUND: f64 = 2.2e-10;
@@ -348,7 +351,6 @@ mod tests {
         }
 
         assert!(worst <= BOUND, "max error {worst:e} exceeds {BOUND:e}");
-        // A polynomial quietly replaced by something weaker should fail here, not silently degrade
         assert!(
             worst > BOUND / 100.0,
             "max error {worst:e} unexpectedly small — stale bound?"

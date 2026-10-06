@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Search-time caches, owned by the [`Scorer`]: one set per scoring pass, shared by every rule of
-//! that pass.
-//!
-//! Rules keep no state of their own, which is what makes the sharing possible: two rules closing the
-//! same way reuse a single `ClosingCache` instead of each filling its own.
+//! Search caches, one set per [`Scorer`], shared by every rule and every `solve` on it.
 
 mod bbox;
 mod closing;

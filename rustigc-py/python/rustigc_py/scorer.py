@@ -32,7 +32,7 @@ class Scorer:
         self._points = len(table)
 
     def score(self, ruleset: str) -> Score | None:
-        """Score the table and report the best rule of `ruleset`.
+        """Score the table against every rule of `ruleset`, reporting the best.
 
         There are no fixes behind the result, so `takeoff`, `entry`, `turnpoints`, `exit` and
         `landing` come back as plain indices into the table.
@@ -41,7 +41,7 @@ class Scorer:
             ruleset: One of `ruleset_names()`.
 
         Returns:
-            The best scoring result, or None when no rule could score the table.
+            The best `Score`, or None when no rule scores the table.
 
         Raises:
             ValueError: `ruleset` is not one of `ruleset_names()`.
@@ -50,6 +50,5 @@ class Scorer:
         if scored is None:
             return None
 
-        # A `Score` resolves a position by indexing what it is given, and `range` is the sequence
-        # that hands an index straight back.
+        # Indexing a `range` hands the index back as the position.
         return Score(range(self._points), json.loads(scored))

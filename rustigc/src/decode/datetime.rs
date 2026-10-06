@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! The instant a track's timestamps count from
+//! Dating a track.
 //!
-//! A `Fix` timestamp counts milliseconds from UTC midnight of the flight's first day and carries
-//! no date, so dating one needs an origin. [`Log::datetime`] comes from `HFDTE` as an UTC date,
-//! "not necessarily the local date" (A2.5.4), so west of Greenwich the local day the flight belong
-//! to is the one before.
-//!
-//! The `TZN` header is the recorder's own declared offset. It may be wrong when the pilot set it by
-//! hand and left it behind.
+//! A fix timestamp counts milliseconds from UTC midnight of the `HFDTE` date, which is a UTC date
+//! (A2.5.4): west of Greenwich, the local day is the one before. `TZN` is the recorder's declared
+//! offset, which may be wrong when set by hand.
 
 use super::utils::date_to_ymd;
 use crate::Log;
 
-/// Largest real offset from UTC, in hours. Ours, not the spec's, which states no range: it
-/// rejects a recorder writing minutes into an hours field as much as it rejects nonsense.
+/// Largest plausible offset from UTC, in hours; the spec states no range. Also rejects minutes
+/// written into the hours field.
 const TZN_LIMIT: f64 = 14.0;
 
 impl Log {
@@ -67,7 +63,7 @@ mod tests {
         assert_eq!(tzn("2"), Some(2.0));
         assert_eq!(tzn("-5"), Some(-5.0));
         assert_eq!(tzn("5.75"), Some(5.75));
-        // hours, so a recorder writing minutes states no offset anyone can use
+        // minutes in the hours field
         assert_eq!(tzn("120"), None);
         assert_eq!(tzn("well past noon"), None);
     }

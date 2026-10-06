@@ -11,11 +11,8 @@ use super::circuit::{Circuit, circuit_dynamic_search};
 use super::common::{candidate_to_path, transition_matrices};
 use super::{Candidate, Scorer, ShapeBound, ShapeKind, ShapePeek, ShapeSpec};
 
-/// Balanced circuit: a closed circuit whose shortest leg must reach a given share of the total,
-/// the FAI triangle's 28 % rule.
-///
-/// `MINSIDE` is that share in per mille, so 280 is the 28 % rule. Carrying it on the type rather
-/// than in a field keeps the struct empty, and a boxed ZST costs no allocation.
+/// A closed circuit whose shortest leg is at least `MINSIDE` per mille of the total: 280 is the FAI
+/// triangle's 28 %.
 #[derive(Debug)]
 pub struct BalancedCircuit<const TP: usize, const MINSIDE: u32> {}
 
@@ -49,8 +46,8 @@ impl<const TP: usize, const MINSIDE: u32> ShapeBound for BalancedCircuit<TP, MIN
         let path = candidate_to_path(scorer, c);
         let transitions = transition_matrices(pairs(&path, true), true);
 
-        // shortest leg >= ratio * total, so total <= shortest / ratio. No leg reaches beyond the
-        // longest transition its own two boxes allow, so the smallest of those caps the shortest.
+        // shortest leg >= ratio * total, so total <= shortest / ratio. Each leg is at most the
+        // longest transition between its two boxes, so the smallest of those caps the shortest.
         let balanced_max = transitions
             .iter()
             .map(|tr| tr.rows().flatten().fold(f64::NAN, |r, v| r.max(*v)))
@@ -89,8 +86,8 @@ impl<const TP: usize, const MINSIDE: u32> ShapePeek for BalancedCircuit<TP, MINS
             from = to;
         }
 
-        // The ratio has to hold once `report` re-measures geodesically, and the two metrics may
-        // disagree either way: test it with the total long and the shortest leg short.
+        // The ratio must still hold on the geodesic re-measure: test it with the total stretched
+        // and the shortest leg shrunk by the margin.
         if total * (1.0 + scorer.margin(total)) * self.ratio()
             > short * (1.0 - scorer.margin(short))
         {

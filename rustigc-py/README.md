@@ -28,16 +28,15 @@ open("flight.geojson", "w").write(log.export(flight, score))
 `Log` is the entry point. The API is documented in the docstrings — `help(rustigc_py.Log)`, or hover
 in any editor; the package ships `py.typed`, so type checkers see the annotations too.
 
-A track is a numpy structured array underneath, copied once from Rust and then read entirely in
-Python. `Track` hands out views over it for vectorized work:
+A track is a numpy structured array, copied once out of Rust. `Track` hands out views over it for vectorized work:
 
 ```python
 log.track._latitude.mean()
 log.track._data[0:100]
 ```
 
-The array is read-only, so it always matches what Rust holds. A `Log` never changes either:
-`Log.with_track` hands back a new one over the track it is given.
+The array is read-only, and a `Log` never changes: `Log.with_track` returns a new one over the
+track it is given.
 
 ## Scoring without a log
 
@@ -60,7 +59,7 @@ as plain indices into the table rather than `Fix` objects.
 
 ```bash
 python -m venv venv && source venv/bin/activate
-pip install maturin pytest
+pip install maturin pytest pytest-cov
 maturin develop
 python -m pytest -v
 ```

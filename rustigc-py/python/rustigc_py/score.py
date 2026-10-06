@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""What a ruleset's rules made of a flight."""
+"""The result of scoring a flight."""
 
 from typing import TYPE_CHECKING
 
@@ -10,13 +10,11 @@ if TYPE_CHECKING:
 
 
 class Score:
-    """Result over a `Log` from a ruleset scored over one window.
+    """The best result of a ruleset over one window.
 
-    Obtained from `Log.score`, and drawable by `Log.export`.
-
-    Positions are resolved by indexing `positions`, so what `takeoff` and the rest hand back is
-    whatever that holds: a `Track` gives `Fix` objects, and `range(n)` — what `Scorer` passes,
-    having only coordinates — gives the plain indices back.
+    Obtained from `Log.score` or `Scorer.score`, and drawable by `Log.export`. `takeoff`,
+    `entry`, `turnpoints`, `exit` and `landing` are `Fix` objects from `Log.score`, plain indices
+    from `Scorer.score`.
     """
 
     def __init__(self, positions: "Track | range", data: dict):
@@ -26,11 +24,11 @@ class Score:
     def __getattr__(self, name):
         """Scalars of the result.
 
-        `description` names the winning variant, `score` is the ruleset's points, `distance_km` the
-        scored distance as the rule presents it and `distance_m` the same in meters. `gap_m` is
-        a circuit's closing leg, `threshold_m` the largest gap the rule would still have accepted,
-        `penalty` what the rule charged for the gap, `multiplier` the rate it scored at, and
-        `circuit` whether the task closes on itself.
+        `description` names the winning variant and `score` is its points. `distance_km` and
+        `distance_m` are the scored distance, net of `penalty`, the kilometers the gap took off.
+        `gap_m` is a circuit's closing leg and `threshold_m` the largest gap the variant closes,
+        in meters. `multiplier` is the rate it scored at, and `circuit` whether the task closes
+        on itself.
         """
         try:
             return self._data[name]

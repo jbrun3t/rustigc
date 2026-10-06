@@ -13,40 +13,41 @@ cargo install --path .
 Reads IGC content on stdin and writes the result to stdout.
 
 ```bash
-> rustigc-xc-score < flight.igc
-Flight on 2025-04-30 Europe/Paris
-Takeoff: 12:12:16 - [45.3101,5.8907] - @0
- Entry : 12:27:10 - [45.2784,5.8467] - @894
-  TP0  : 13:02:11 - [45.2290,5.7477] - @2995
-  TP1  : 15:26:16 - [45.6716,5.8279] - @11639
-  TP2  : 17:32:09 - [45.2574,6.0143] - @19192
- Exit  : 17:54:09 - [45.2678,5.8488] - @20512
-Landing: 17:54:09 - [45.2678,5.8488] - @20512
-closed free triangle 165.03 points, 117.88 km (×1.4) [ closing distance: 1.19 km ]
+> rustigc-xc-score < fai-01.igc
+Flight on 2022-06-21 -03
+Takeoff: 06:11:37 - [51.1883,-41.0285] - @125
+ Entry : 06:11:37 - [51.1883,-41.0285] - @125
+  TP0  : 06:32:27 - [51.1489,-41.0439] - @1374
+  TP1  : 09:26:12 - [52.0284,-43.1461] - @11790
+  TP2  : 11:31:01 - [52.9680,-40.0616] - @19270
+ Exit  : 13:13:46 - [51.1888,-41.0280] - @25421
+Landing: 13:13:50 - [51.1889,-41.0283] - @25425
+closed fai triangle 996.56 points, 622.85 km (×1.6) [ closing distance: 67 / 31146 m ]
 ```
 
 Or as JSON, for a chosen ruleset:
 
 ```bash
-> rustigc-xc-score --ruleset xcontest --format json < flight.igc
+> rustigc-xc-score --ruleset xcontest --format json < fai-01.igc
 {
   "ruleset": "xcontest",
-  "description": "closed free triangle",
-  "distance_m": 117876.93,
-  "distance_km": 117.88,
-  "gap_km": 1.19,
-  "penalty": 1.19,
-  "score": 165.03,
-  "multiplier": 1.4,
-  "takeoff": 0,
-  "entry": 894,
+  "description": "closed fai triangle",
+  "distance_m": 622852.252,
+  "gap_m": 67.275,
+  "threshold_m": 31145.976,
+  "distance_km": 622.85,
+  "score": 996.56,
+  "penalty": 0.07,
+  "multiplier": 1.6,
+  "takeoff": 125,
+  "entry": 125,
   "turnpoints": [
-    2995,
-    11639,
-    19192
+    1374,
+    11790,
+    19270
   ],
-  "exit": 20512,
-  "landing": 20512,
+  "exit": 25421,
+  "landing": 25425,
   "circuit": true
 }
 ```
@@ -56,15 +57,15 @@ Or as JSON, for a chosen ruleset:
 - `--ruleset <name>` — ruleset to score against, `xcontest` by default. `--help` lists them.
 - `--format <human|json|geojson>` — output format, `human` by default. `geojson` draws the track,
   the flight and the task.
-- `--window <start,stop>` — score this fix range instead of the auto-detected flight. The detected
-  flight is still what the report calls takeoff and landing.
+- `--window <start,stop>` — score this fix range instead of the detected flight; takeoff and
+  landing are then its ends.
 
 ## `rustigc-parse`: parser test tool
 
 ### Usage
 
-Reads IGC content on stdin and writes JSON to stdout. It is not terribly useful and mostly there
-to test and profile of the parser.
+Reads IGC content on stdin and writes the parsed log as JSON to stdout. Meant for testing and
+profiling the parser.
 
 ```bash
 # Parse a file

@@ -104,11 +104,10 @@ impl fmt::Display for Record<'_> {
     }
 }
 
+/// Adds `offset` to `ts`. A drop of more than 1 000 000 ms below `last` is taken as midnight and
+/// advances `offset` by a day; a smaller drop, which records of different types can show, is
+/// ignored.
 fn ts_offset(ts: &mut u32, offset: &mut u32, last: &mut u32) {
-    // Advance base by a day when the timestamp wraps
-    // Store the last timestamp to keep track, assuming it goes forward
-    // Ignore if it goes slightly backward, should not happen but could
-    // between different records
     if *last < *ts {
         *last = *ts;
     } else if (*last - *ts) > 1_000_000 {

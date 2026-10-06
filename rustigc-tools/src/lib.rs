@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//! Shared pieces for tools built on `rustigc`
+//! Code shared by the `rustigc` command-line tools.
 
 pub mod timezone;

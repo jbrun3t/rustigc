@@ -1,28 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! C-record (task declaration) parser
+//! C-record (task declaration) parser.
 //!
-//! C-records define the declared task for a flight. Unlike other records, C-records
-//! span multiple lines to represent the complete task declaration.
-//!
-//! Format:
-//! - Header line: `CDDMMYYHHMMSSDDMMYY[4-digit-obsolete][nn][text]`
-//!   - C: Record type
-//!   - DDMMYYHHMMSS: Declaration timestamp (12 digits)
-//!   - DDMMYY: Flight date (6 digits)
-//!   - 4 digits: Obsolete field (ignored)
-//!   - nn: Number of turnpoints (2 digits, excludes start/finish but spec is ambiguous)
-//!   - text: Task description
-//!
-//! - Turnpoint lines (one per turnpoint): `CDDMMmmmN/SDDDMMmmmE/W[text]`
-//!   - C: Record type
-//!   - DDMMmmmN/S: Latitude
-//!   - DDDMMmmmE/W: Longitude
-//!   - text: Turnpoint name/description
+//! A task spans consecutive C-records: an optional declaration line, then one line per turnpoint.
+//! - Declaration: `CDDMMYYHHMMSSDDMMYYnnnnTTtext`, the declaration time, the flight date, an
+//!   obsolete 4-digit field, the turnpoint count and a description.
+//! - Turnpoint: `CDDMMmmmNDDDMMmmmEtext`, latitude, longitude and name.
 //!
 //! Example:
 //! ```text
-//! C15062411010115062400000203Task description
+//! C150624110101150624000002Task description
 //! C5230000N00030000WTakeoff
 //! C5240000N00040000WTP1
 //! C5250000N00050000WTP2
@@ -87,7 +74,7 @@ pub struct Declaration {
 
 /// The task the pilot declared before flying (C-records).
 ///
-/// What was *intended*, which scoring ignores — [`Log::score`] measures the track as flown.
+/// Scoring does not use it: [`Log::score`] searches the track as flown.
 ///
 /// [`Log::score`]: crate::Log::score
 #[derive(Debug, Clone, PartialEq)]
@@ -141,6 +128,7 @@ impl From<Task> for Record<'_> {
     }
 }
 
+/// Parses one turnpoint line.
 pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
     delimited(
         b'C',
@@ -155,6 +143,7 @@ pub fn turnpoint(input: &mut &[u8]) -> PResult<TurnPoint> {
     .parse_next(input)
 }
 
+/// Parses the declaration line; the obsolete field and the turnpoint count are skipped.
 pub fn task_declaration(input: &mut &[u8]) -> PResult<Declaration> {
     delimited(
         b'C',
@@ -175,22 +164,12 @@ pub fn task_declaration(input: &mut &[u8]) -> PResult<Declaration> {
     .parse_next(input)
 }
 
-// NOTE: This record does not behave like the others. It consumes more than
-// one line, assuming all C-records follow each other — which makes sense and
-// seems to be the case. It lets the Task be built directly, which makes the
-// parsing a lot simpler.
-//
-// NOTE #2: Do not bother validating the declared number of turnpoints. The
-// spec is not clear on that point: it says the number excludes start/finish,
-// says nothing about takeoff/landing, and nothing about how the parser is
-// supposed to recognize those TP. In the end the number of TP found could be
-// NN + 2 or NN + 4, depending on the FR and the task entered. The info is not
-// needed anyway, so just ignore it.
-//
-// NOTE #3: While the IGC specification is pretty clear a task should have a
-// declaration header, many FR omit it. In practice it makes sense: most pilots
-// do not contact the FAI before their flight to declare the task, so rather
-// than make the fields up the FR drops the header. Support that quirk.
+/// Parses a whole task, consuming every consecutive C-record: an optional declaration, then the
+/// turnpoints.
+///
+/// The declaration is optional because many recorders omit it. Its turnpoint count is not
+/// checked: the spec excludes start and finish from it but says nothing of takeoff and landing, and
+/// recorders disagree.
 pub fn c_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     (opt(task_declaration), repeat(1.., turnpoint))
         .map(|(declaration, turnpoints)| {

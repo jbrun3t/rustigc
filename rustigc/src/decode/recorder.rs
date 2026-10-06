@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! A-record (flight recorder identification) parser
+//! A-record (flight recorder identification) parser.
 //!
-//! A-record format: AMMMSSSSS...
-//! - A: Record type
-//! - MMM: 3-character manufacturer code (e.g., FLA, GCS, CAM)
-//! - SSSSS...: Serial number or logger ID (variable length)
-//!
-//! Example: AFLA1BX = FLA manufacturer, ID 1BX
+//! Format `AMMMSSS...`: a 3-character manufacturer code, then the serial number or logger id to
+//! the end of the line. `AFLA1BX` is manufacturer `FLA`, id `1BX`.
 
 use std::fmt;
 
@@ -30,7 +26,8 @@ pub struct Recorder {
     pub manufacturer: String,
     /// Serial number or logger id.
     pub uid: String,
-    /// Whatever the manufacturer appended past the id.
+    /// Text past the id. The parser keeps the whole rest of the line in `uid` and leaves this
+    /// `None`.
     pub data: Option<String>,
 }
 
@@ -55,6 +52,7 @@ impl From<Recorder> for Record<'_> {
     }
 }
 
+/// Parses one A-record into a [`Recorder`].
 pub fn a_record<'a>(input: &mut &[u8]) -> PResult<Record<'a>> {
     delimited(b'A', (n_alphanum(3), till_robust_ending), robust_ending_eof)
         .map(|(m, u): (&[u8], &[u8])| {
