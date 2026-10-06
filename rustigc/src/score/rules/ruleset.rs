@@ -78,10 +78,9 @@ impl Ruleset {
 /// The rulebook each one encodes is linked here: JSON takes no comments, and the numbers are no use
 /// without the text they came from.
 macro_rules! rulesets {
-    ($( $(#[$attr:meta])* $file:literal ),* $(,)?) => {
+    ($( $file:literal ),* $(,)?) => {
         static RULESET_FILES: &[(&str, &str)] = &[
             $(
-                $(#[$attr])*
                 ($file, include_str!(concat!("rulesets/", $file))),
             )*
         ];

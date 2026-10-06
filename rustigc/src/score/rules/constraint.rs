@@ -20,7 +20,6 @@ pub enum Constraint {
     /// points is the distance times the rate, and `25_000.0 * 2.3` is `57499.99999999999`, so a
     /// ×2.3 band written in points would refuse a triangle at exactly 25.000 km.
     // No ruleset in the tree states one yet; XC League is what it is here for.
-    #[allow(dead_code)]
     MinDistance { meters: f64 },
 }
 
