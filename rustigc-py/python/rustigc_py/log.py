@@ -193,12 +193,12 @@ class Log:
         return Flights(Flight(self.track, data) for data in json.loads(self._log.flights()))
 
     def score(
-        self, league: str, window: tuple[int, int] | tuple[Fix, Fix] | None = None
+        self, ruleset: str, window: tuple[int, int] | tuple[Fix, Fix] | None = None
     ) -> Score | None:
-        """Score a window of the track against every rule of a league, reporting the best.
+        """Score a window of the track against every rule of a ruleset, reporting the best.
 
         Args:
-            league: One of `league_names()`.
+            ruleset: One of `ruleset_names()`.
             window: The fixes to score, as a `(start, stop)` pair of indices or of `Fix`
                 objects. Defaults to the longest detected flight.
 
@@ -207,7 +207,7 @@ class Log:
 
         Raises:
             TypeError: One bound of `window` is a `Fix` and the other is not.
-            ValueError: `league` is not one of `league_names()`, the window is not one this
+            ValueError: `ruleset` is not one of `ruleset_names()`, the window is not one this
                 track holds — including a default window with no flight to take it from — or a
                 `Fix` bound does not know its position in a track.
         """
@@ -219,23 +219,23 @@ class Log:
         else:
             start, stop = _window(window)
 
-        scored = self._log.score(league, start, stop)
+        scored = self._log.score(ruleset, start, stop)
         if scored is None:
             return None
         return Score(self.track, json.loads(scored))
 
-    def describe(self, league: str) -> str:
+    def describe(self, ruleset: str) -> str:
         """Everything this log describes about itself, as a GeoJSON string.
 
-        The longest flight detected in the track, and what it scored under `league`. A flight
+        The longest flight detected in the track, and what it scored under `ruleset`. A flight
         that scores nothing leaves just the track.
 
         Use `export` when the flight and score are already at hand.
 
         Raises:
-            ValueError: `league` is not one of `league_names()`.
+            ValueError: `ruleset` is not one of `ruleset_names()`.
         """
-        return self._log.describe(league)
+        return self._log.describe(ruleset)
 
     def export(
         self, flight: Flight | None = None, score: Score | None = None, track: bool = True

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-"""What a league's rules made of a flight."""
+"""What a ruleset's rules made of a flight."""
 
 from typing import TYPE_CHECKING
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class Score:
-    """Result over a `Log` from a league scored over one window.
+    """Result over a `Log` from a ruleset scored over one window.
 
     Obtained from `Log.score`, and drawable by `Log.export`.
 
@@ -26,7 +26,7 @@ class Score:
     def __getattr__(self, name):
         """Scalars of the result.
 
-        `description` names the winning rule, `score` is the league points, `distance_km` the
+        `description` names the winning rule, `score` is the ruleset's points, `distance_km` the
         scored distance as the rule presents it and `distance_m` the same in meters. `gap_km` is
         a circuit's closing leg, `threshold_m` the largest gap the rule would still have accepted,
         `penalty` what the rule charged for the gap, `multiplier` the rate it scored at, and

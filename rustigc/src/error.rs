@@ -59,11 +59,11 @@ pub enum TrackError {
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ScoreError {
-    /// Not one of [`league_names`].
+    /// Not one of [`ruleset_names`].
     ///
-    /// [`league_names`]: crate::league_names
-    #[error("unknown league")]
-    UnknownLeague,
+    /// [`ruleset_names`]: crate::ruleset_names
+    #[error("unknown ruleset")]
+    UnknownRuleset,
 
     #[error(transparent)]
     Track(#[from] TrackError),

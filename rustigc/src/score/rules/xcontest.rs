@@ -23,8 +23,8 @@
 //!     - Closed variant: ×1.6
 
 use super::{
-    BalancedCircuit, ClosedCircuit, Closing, League, Limit, OpenPolyline,
-    RuleDescription, RuleGeometry, Ruleset, Variant, VariantKind,
+    BalancedCircuit, ClosedCircuit, Closing, Limit, OpenPolyline, RuleDescription,
+    RuleGeometry, Rules, Ruleset, Variant, VariantKind,
 };
 
 pub struct Xcontest;
@@ -36,9 +36,9 @@ impl Xcontest {
     const OPEN: Closing = Closing::new(Limit::None, Limit::Ratio(0.2));
 }
 
-impl League for Xcontest {
+impl Ruleset for Xcontest {
     const NAME: &'static str = "xcontest";
-    const RULES: Ruleset = &[&FreeFlight, &FreeTriangle, &FaiTriangle];
+    const RULES: Rules = &[&FreeFlight, &FreeTriangle, &FaiTriangle];
 }
 
 #[derive(Debug)]
@@ -49,7 +49,7 @@ impl RuleGeometry for FreeFlight {
 }
 
 impl RuleDescription for FreeFlight {
-    type League = Xcontest;
+    type Ruleset = Xcontest;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -68,7 +68,7 @@ impl RuleGeometry for FreeTriangle {
 }
 
 impl RuleDescription for FreeTriangle {
-    type League = Xcontest;
+    type Ruleset = Xcontest;
 
     fn variants(&self) -> &'static [Variant] {
         &[
@@ -94,7 +94,7 @@ impl RuleGeometry for FaiTriangle {
 }
 
 impl RuleDescription for FaiTriangle {
-    type League = Xcontest;
+    type Ruleset = Xcontest;
 
     fn variants(&self) -> &'static [Variant] {
         &[

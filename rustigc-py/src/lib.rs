@@ -144,21 +144,21 @@ impl PyLog {
         })
     }
 
-    /// Score the fixes in `[start, stop]` against every rule of `league`, reporting the best.
+    /// Score the fixes in `[start, stop]` against every rule of `ruleset`, reporting the best.
     ///
     /// `None` when no rule could score the window.
     ///
-    /// Raises ValueError for an unknown league, or a window this log's track does not hold.
-    #[pyo3(text_signature = "($self, league, start, stop)")]
+    /// Raises ValueError for an unknown ruleset, or a window this log's track does not hold.
+    #[pyo3(text_signature = "($self, ruleset, start, stop)")]
     fn score(
         &self,
         py: Python<'_>,
-        league: &str,
+        ruleset: &str,
         start: usize,
         stop: usize,
     ) -> PyResult<Option<String>> {
         let result = py
-            .detach(|| self.inner.score(league, start, stop))
+            .detach(|| self.inner.score(ruleset, start, stop))
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         result
@@ -167,13 +167,13 @@ impl PyLog {
             .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
     }
 
-    /// Everything the log describes about itself under `league`, as one GeoJSON string.
+    /// Everything the log describes about itself under `ruleset`, as one GeoJSON string.
     ///
-    /// Detects the longest flight and scores it. Raises ValueError for an unknown league.
-    #[pyo3(text_signature = "($self, league)")]
-    fn describe(&self, py: Python<'_>, league: &str) -> PyResult<String> {
+    /// Detects the longest flight and scores it. Raises ValueError for an unknown ruleset.
+    #[pyo3(text_signature = "($self, ruleset)")]
+    fn describe(&self, py: Python<'_>, ruleset: &str) -> PyResult<String> {
         py.detach(|| {
-            let collection = self.inner.describe(league).map_err(|e| e.to_string())?;
+            let collection = self.inner.describe(ruleset).map_err(|e| e.to_string())?;
 
             serde_json::to_string(&collection)
                 .map_err(|e| format!("Failed to serialize geojson: {e}"))
@@ -274,15 +274,15 @@ impl PyScorer {
         })
     }
 
-    /// Score the table against every rule of `league` and report the best.
+    /// Score the table against every rule of `ruleset` and report the best.
     ///
-    /// `None` when no rule could score the table; raises ValueError for an unknown league. Every
+    /// `None` when no rule could score the table; raises ValueError for an unknown ruleset. Every
     /// fix of the result is an index into the table.
-    #[pyo3(text_signature = "($self, league)")]
-    fn score(&self, py: Python<'_>, league: &str) -> PyResult<Option<String>> {
+    #[pyo3(text_signature = "($self, ruleset)")]
+    fn score(&self, py: Python<'_>, ruleset: &str) -> PyResult<Option<String>> {
         py.detach(|| {
             let scorer = self.inner.lock().unwrap();
-            scorer.solve(league)
+            scorer.solve(ruleset)
         })
         .map_err(|e| PyValueError::new_err(e.to_string()))?
         .map(|scored| serde_json::to_string(&scored))
@@ -291,24 +291,24 @@ impl PyScorer {
     }
 }
 
-/// Every league name `score` and `describe` accept.
+/// Every ruleset name `score` and `describe` accept.
 #[pyfunction]
 #[pyo3(text_signature = "()")]
-fn league_names() -> Vec<&'static str> {
-    rustigc::league_names().collect()
+fn ruleset_names() -> Vec<&'static str> {
+    rustigc::ruleset_names().collect()
 }
 
 /// Raw bindings to the rustigc library.
 ///
 /// Not the interface to use: `rustigc_py` wraps this with numpy tracks and Python objects. It holds
-/// `RustLog`, `RustScorer`, `league_names` and `FIX_DTYPE`. Flights and scores cross as JSON.
+/// `RustLog`, `RustScorer`, `ruleset_names` and `FIX_DTYPE`. Flights and scores cross as JSON.
 #[pymodule]
 #[pyo3(name = "_bindings")]
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
     m.add_class::<PyScorer>()?;
-    m.add_function(wrap_pyfunction!(league_names, m)?)?;
+    m.add_function(wrap_pyfunction!(ruleset_names, m)?)?;
 
     // Export FIX_DTYPE as numpy dtype
     Python::attach(|py| {

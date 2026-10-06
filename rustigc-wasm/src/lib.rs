@@ -59,13 +59,13 @@ export interface Header {
 }
 
 /**
- * What the winning rule of a league scored.
+ * What the winning rule of a ruleset scored.
  *
  * Every fix is an index into the track that was scored.
  */
 export interface Score {
-    /** Identity of the scoring league, `"xcontest"`. */
-    league: string;
+    /** Name of the scoring ruleset, `"xcontest"`. */
+    ruleset: string;
     /** The rule that won, `"closed fai triangle"`. */
     description: string;
     /** Scored distance in meters, to the nearest millimeter. */
@@ -76,7 +76,7 @@ export interface Score {
     threshold_m: number;
     /** Distance in kilometers, as the rule presents it. */
     distance_km: number;
-    /** Final score, in league points. */
+    /** Final score, in the ruleset's points. */
     score: number;
     /** What the rule charged for that gap, in points. */
     penalty: number;
@@ -191,16 +191,16 @@ impl Log {
         )?)
     }
 
-    /// Score `window` against every rule of `league` and report the best.
+    /// Score `window` against every rule of `ruleset` and report the best.
     ///
     /// `window` defaults to the longest detected flight, whether left out or passed `undefined`.
-    /// `undefined` when nothing could be scored; throws when `league` is not one of
-    /// `league_names()`, when the window is not one this track holds, or when it is left to
+    /// `undefined` when nothing could be scored; throws when `ruleset` is not one of
+    /// `ruleset_names()`, when the window is not one this track holds, or when it is left to
     /// detection and there is no flight to take it from.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn score(
         &self,
-        league: &str,
+        ruleset: &str,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
         let given: Option<rustigc::Flight> = match window {
@@ -212,7 +212,7 @@ impl Log {
             .or_else(|| self.inner.track.flights().longest().copied())
             .ok_or_else(|| JsError::new("no flight detected, pass an explicit window"))?;
 
-        let scored = self.inner.score(league, window.start, window.stop)?;
+        let scored = self.inner.score(ruleset, window.start, window.stop)?;
 
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
@@ -250,12 +250,12 @@ impl Log {
         Ok(serde_json::to_string(&collection)?)
     }
 
-    /// Everything the log describes about itself under `league`, as one GeoJSON string.
+    /// Everything the log describes about itself under `ruleset`, as one GeoJSON string.
     ///
     /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
     /// score are already at hand.
-    pub fn describe(&self, league: &str) -> Result<String, JsError> {
-        Ok(serde_json::to_string(&self.inner.describe(league)?)?)
+    pub fn describe(&self, ruleset: &str) -> Result<String, JsError> {
+        Ok(serde_json::to_string(&self.inner.describe(ruleset)?)?)
     }
 }
 
@@ -305,18 +305,18 @@ impl Scorer {
         Ok(Scorer { inner })
     }
 
-    /// Score the table against every rule of `league` and report the best.
+    /// Score the table against every rule of `ruleset` and report the best.
     ///
     /// Every fix of the result is an index into the table. `undefined` when nothing could be
-    /// scored; throws when `league` is not one of `league_names()`.
+    /// scored; throws when `ruleset` is not one of `ruleset_names()`.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
-    pub fn solve(&self, league: &str) -> Result<JsValue, JsError> {
-        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(league)?)?)
+    pub fn solve(&self, ruleset: &str) -> Result<JsValue, JsError> {
+        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(ruleset)?)?)
     }
 }
 
-/// Every league name `score` and `describe` accept.
+/// Every ruleset name `score` and `describe` accept.
 #[wasm_bindgen]
-pub fn league_names() -> Vec<String> {
-    rustigc::league_names().map(String::from).collect()
+pub fn ruleset_names() -> Vec<String> {
+    rustigc::ruleset_names().map(String::from).collect()
 }

@@ -60,9 +60,9 @@ def test_invalid_content():
         rib.RustLog.from_bytes(b"INVALID")
 
 
-def test_league_names():
-    """Registry is reachable and holds the real leagues"""
-    names = rib.league_names()
+def test_ruleset_names():
+    """Registry is reachable and holds the real rulesets"""
+    names = rib.ruleset_names()
     assert "cfd" in names
     assert "xcontest" in names
 
@@ -74,7 +74,7 @@ def test_score_shape(igc_content):
     scored = log.score("xcontest", *FAI01_WINDOW)
 
     assert set(json.loads(scored)) == {
-        "league",
+        "ruleset",
         "description",
         "distance_m",
         "distance_km",

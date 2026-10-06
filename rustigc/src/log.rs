@@ -126,7 +126,7 @@ impl Log {
         raw.try_into()
     }
 
-    /// Scores the fixes in `[start, stop]` against every rule of `league`, reporting the best.
+    /// Scores the fixes in `[start, stop]` against every rule of `ruleset`, reporting the best.
     ///
     /// The window is a pair of indices into [`Log::track`]; flight detection is the usual source
     /// of one.
@@ -135,17 +135,17 @@ impl Log {
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`],
+    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`],
     /// [`ScoreError::Track`] when the window is not one this log's track holds.
     ///
-    /// [`league_names`]: crate::league_names
+    /// [`ruleset_names`]: crate::ruleset_names
     pub fn score(
         &self,
-        league: &str,
+        ruleset: &str,
         start: usize,
         stop: usize,
     ) -> Result<Option<ScoringResult>, ScoreError> {
-        Scorer::new(&self.track, start, stop)?.solve(league)
+        Scorer::new(&self.track, start, stop)?.solve(ruleset)
     }
 }
 

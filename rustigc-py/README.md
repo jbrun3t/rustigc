@@ -54,7 +54,7 @@ The whole table is the scored window — there are no timestamps to detect a fli
 are no fixes behind the result, so `takeoff`, `entry`, `turnpoints`, `exit` and `landing` come back
 as plain indices into the table rather than `Fix` objects.
 
-`league_names()` lists what `score` accepts.
+`ruleset_names()` lists what `score` accepts.
 
 ## Development
 

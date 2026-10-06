@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { initSync, league_names, Log, Scorer } from "rustigc-wasm";
+import { initSync, ruleset_names, Log, Scorer } from "rustigc-wasm";
 import { fixes, STRIDE } from "rustigc-wasm-utils";
 
 initSync({ module: readFileSync(new URL("rustigc_wasm_bg.wasm", import.meta.resolve("rustigc-wasm"))) });
@@ -38,8 +38,8 @@ function table(log, { start, stop }) {
 	return coords;
 }
 
-test("league_names lists the real leagues", () => {
-	const names = league_names();
+test("ruleset_names lists the real rulesets", () => {
+	const names = ruleset_names();
 
 	assert.ok(names.includes("xcontest"), `no xcontest in ${names}`);
 	assert.ok(names.includes("cfd"), `no cfd in ${names}`);
@@ -110,12 +110,12 @@ test("a layer the track does not hold throws", () => {
 	assert.throws(() => log.export({ nope: 1 }), /missing field/);
 });
 
-test("an unknown league throws", () => {
+test("an unknown ruleset throws", () => {
 	const log = load("triangle-01");
 
-	assert.throws(() => log.score("nope"), /unknown league/);
-	assert.throws(() => log.describe("nope"), /unknown league/);
+	assert.throws(() => log.score("nope"), /unknown ruleset/);
+	assert.throws(() => log.describe("nope"), /unknown ruleset/);
 
 	const scorer = new Scorer(Float64Array.of(45.0, 6.0, 45.1, 6.1));
-	assert.throws(() => scorer.solve("nope"), /unknown league/);
+	assert.throws(() => scorer.solve("nope"), /unknown ruleset/);
 });

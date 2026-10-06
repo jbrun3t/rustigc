@@ -9,11 +9,11 @@ use rustigc_tools::timezone::LocalTime;
 
 const EXAMPLES: &str = "\
 EXAMPLES:
-    Score against the default league:
+    Score against the default ruleset:
         rustigc-xc-score < flight.igc
 
-    Machine-readable output for another league:
-        rustigc-xc-score --league cfd --format json < flight.igc
+    Machine-readable output for another ruleset:
+        rustigc-xc-score --ruleset cfd --format json < flight.igc
 
     Draw the result on a map:
         rustigc-xc-score --format geojson < flight.igc > flight.geojson
@@ -37,19 +37,19 @@ enum Format {
 #[command(about = "Score IGC files")]
 #[command(
     long_about = "Score an IGC file read on stdin and report the best task found.\n\n\
-                  Every rule of the league is searched at once and the highest scoring one is \
+                  Every rule of the ruleset is searched at once and the highest scoring one is \
                   reported. Unless --window says otherwise, the flight is detected first and only \
                   its fixes are scored."
 )]
 #[command(after_long_help = EXAMPLES)]
 struct Args {
-    /// Scoring league
+    /// Scoring ruleset
     #[arg(long, default_value = "xcontest",
-          value_parser = clap::builder::PossibleValuesParser::new(rustigc::league_names()),
-          long_help = "Ruleset to score against. Each league defines its own rules, \
+          value_parser = clap::builder::PossibleValuesParser::new(rustigc::ruleset_names()),
+          long_help = "Ruleset to score against. Each one defines its own rules, \
                        multipliers and penalties, so the same track scores differently under \
                        each.")]
-    league: String,
+    ruleset: String,
 
     /// Output format
     #[arg(long, value_enum, default_value = "human")]
@@ -149,7 +149,7 @@ fn main() -> io::Result<()> {
         .window
         .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
     let scored = window.and_then(|(start, stop)| {
-        log.score(&args.league, start, stop).unwrap_or_else(|e| {
+        log.score(&args.ruleset, start, stop).unwrap_or_else(|e| {
             eprintln!("Could not score: {e}");
             std::process::exit(1);
         })

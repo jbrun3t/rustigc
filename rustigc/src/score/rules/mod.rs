@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Rules: what a league scores, and over which shape.
+//! Rules: what a ruleset scores, and over which shape.
 //!
-//! One file per league. A league's numbers belong in that file and nowhere else.
+//! One file per ruleset. A ruleset's numbers belong in that file and nowhere else.
 
 use std::fmt::Debug;
 
@@ -90,7 +90,7 @@ pub struct Scored {
     /// there is no closing leg.
     pub threshold: f64,
     pub description: &'static str,
-    pub league: &'static str,
+    pub ruleset: &'static str,
 }
 
 pub trait RuleShape: Debug {
@@ -112,18 +112,18 @@ pub trait RuleReport: Debug {
     fn scored(&self, distance: f64, gap: f64) -> Scored;
 }
 
-/// One scoring rule of a league.
+/// One scoring rule of a ruleset.
 pub trait Rule: RuleShape + RuleScore + RuleReport + Sync {}
 impl<T: RuleShape + RuleScore + RuleReport + Sync> Rule for T {}
 
-/// A league: how a caller asks for it, what it scores, and the numbers its rules take as defaults.
-pub trait League {
+/// A ruleset: how a caller asks for it, what it scores, and the numbers its rules take as defaults.
+pub trait Ruleset {
     const NAME: &'static str;
-    /// Nothing ties a listed rule's [`RuleDescription::League`] back to this one.
-    const RULES: Ruleset;
+    /// Nothing ties a listed rule's [`RuleDescription::Ruleset`] back to this one.
+    const RULES: Rules;
 
-    /// Identity of the scoring league
-    fn league() -> &'static str {
+    /// Identity of the scoring ruleset
+    fn ruleset() -> &'static str {
         Self::NAME
     }
 
@@ -212,15 +212,15 @@ impl VariantList for [Variant] {
 /// A rule pricing a geometry through one or more [`Variant`]s, listed from the strictest (tightest
 /// gap allowance, best rate) to the loosest.
 pub trait RuleDescription: Debug {
-    type League: League;
+    type Ruleset: Ruleset;
 
     fn variants(&self) -> &'static [Variant];
 
     fn minimum(&self) -> f64 {
-        Self::League::minimum()
+        Self::Ruleset::minimum()
     }
-    fn league(&self) -> &'static str {
-        Self::League::league()
+    fn ruleset(&self) -> &'static str {
+        Self::Ruleset::ruleset()
     }
 }
 
@@ -253,32 +253,32 @@ impl<T: RuleDescription> RuleReport for T {
             multiplier: variant.multiplier,
             threshold: variant.kind.limit(distance),
             description: variant.name,
-            league: self.league(),
+            ruleset: self.ruleset(),
         }
     }
 }
 
 /// The rules a caller scores against.
-pub type Ruleset = &'static [&'static dyn Rule];
+pub type Rules = &'static [&'static dyn Rule];
 
-/// A league as the registry sees it.
-pub trait LeagueInfo: Sync {
+/// A ruleset as the registry sees it.
+pub trait RulesetInfo: Sync {
     fn name(&self) -> &'static str;
-    fn rules(&self) -> Ruleset;
+    fn rules(&self) -> Rules;
 }
 
-impl<L: League + Sync> LeagueInfo for L {
+impl<L: Ruleset + Sync> RulesetInfo for L {
     fn name(&self) -> &'static str {
         L::NAME
     }
 
-    fn rules(&self) -> Ruleset {
+    fn rules(&self) -> Rules {
         L::RULES
     }
 }
 
-/// League list in the order the CLI will show them
-static LEAGUES: &[&'static dyn LeagueInfo] = &[
+/// Ruleset list in the order the CLI will show them
+static RULESETS: &[&'static dyn RulesetInfo] = &[
     &cfd::Cfd,
     &xcontest::Xcontest,
     &misc::OneTurnpoint,
@@ -287,27 +287,30 @@ static LEAGUES: &[&'static dyn LeagueInfo] = &[
     &misc::Oar,
 ];
 
-pub(crate) fn league_rules(name: &str) -> Option<Ruleset> {
-    LEAGUES.iter().find(|l| l.name() == name).map(|l| l.rules())
+pub(crate) fn ruleset_rules(name: &str) -> Option<Rules> {
+    RULESETS
+        .iter()
+        .find(|r| r.name() == name)
+        .map(|r| r.rules())
 }
 
-/// Refuses a name the registry does not hold, for an entry point that takes a league but may not
+/// Refuses a name the registry does not hold, for an entry point that takes a ruleset but may not
 /// reach [`Scorer::solve`].
 ///
 /// [`Scorer::solve`]: crate::Scorer::solve
 #[cfg(feature = "geojson")]
-pub fn known_league(name: &str) -> Result<(), ScoreError> {
-    league_rules(name)
+pub fn known_ruleset(name: &str) -> Result<(), ScoreError> {
+    ruleset_rules(name)
         .map(|_| ())
-        .ok_or(ScoreError::UnknownLeague)
+        .ok_or(ScoreError::UnknownRuleset)
 }
 
-/// Every league name [`Log::score`] and [`Scorer::solve`] accept.
+/// Every ruleset name [`Log::score`] and [`Scorer::solve`] accept.
 ///
 /// [`Log::score`]: crate::Log::score
 /// [`Scorer::solve`]: crate::Scorer::solve
-pub fn league_names() -> impl Iterator<Item = &'static str> {
-    LEAGUES.iter().map(|l| l.name())
+pub fn ruleset_names() -> impl Iterator<Item = &'static str> {
+    RULESETS.iter().map(|r| r.name())
 }
 
 #[cfg(test)]
@@ -315,8 +318,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn leagues_names_unique() {
-        let mut names: Vec<_> = league_names().collect();
+    fn rulesets_names_unique() {
+        let mut names: Vec<_> = ruleset_names().collect();
         let listed = names.len();
 
         names.sort_unstable();
@@ -326,9 +329,9 @@ mod tests {
     }
 
     #[test]
-    fn leagues_rules_reachable() {
-        for name in league_names() {
-            let rules = league_rules(name).expect("league unreachable by its own name");
+    fn rulesets_rules_reachable() {
+        for name in ruleset_names() {
+            let rules = ruleset_rules(name).expect("ruleset unreachable by its own name");
             assert!(!rules.is_empty(), "{name} scores nothing");
         }
     }

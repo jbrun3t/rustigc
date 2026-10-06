@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Tracklog scoring: what a flight is worth under the rules of a league.
+//! Tracklog scoring: what a flight is worth under a ruleset.
 
 mod cache;
 mod engine;
@@ -8,8 +8,8 @@ mod rules;
 mod shapes;
 
 #[cfg(feature = "geojson")]
-pub(crate) use rules::known_league;
-pub use rules::league_names;
+pub(crate) use rules::known_ruleset;
+pub use rules::ruleset_names;
 
 pub use engine::Scorer;
 
@@ -23,12 +23,12 @@ fn round_mm(meters: f64) -> f64 {
 /// What the winning rule scored, as that rule presents it.
 ///
 /// Every fix here is an index into the track that was scored, not into the window. `distance_km`
-/// and `score` are rounded the way the league publishes them; `distance_m` keeps the metres.
+/// and `score` are rounded the way the ruleset publishes them; `distance_m` keeps the metres.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
-    /// Identity of the scoring league, e.g. "xcontest"
-    pub league: String,
+    /// Name of the scoring ruleset, e.g. "xcontest"
+    pub ruleset: String,
     /// Identity of the rule, e.g. `"triangle plat"`.
     pub description: String,
     /// Scored distance in meters, rounded to the nearest millimeter.
@@ -39,7 +39,7 @@ pub struct ScoringResult {
     pub threshold_m: f64,
     /// Distance in kilometers, as the rule presents it.
     pub distance_km: f64,
-    /// Final score, in league points.
+    /// Final score, in the ruleset's points.
     pub score: f64,
     /// What the rule charged for that gap, in points.
     pub penalty: f64,

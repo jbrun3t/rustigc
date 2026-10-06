@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Single-rule leagues, each exercising one shape on its own. Their numbers are the [`League`]
+//! Single-rule rulesets, each exercising one shape on its own. Their numbers are the [`Ruleset`]
 //! defaults — nothing charged, no minimum — except for `Oar`.
 
 use super::{
-    ClosedCircuit, Closing, League, Limit, OpenPolyline, RuleDescription, RuleGeometry,
+    ClosedCircuit, Closing, Limit, OpenPolyline, RuleDescription, RuleGeometry, Rules,
     Ruleset, Variant, VariantKind,
 };
 
 pub struct TwoTurnpoints;
 
-impl League for TwoTurnpoints {
+impl Ruleset for TwoTurnpoints {
     const NAME: &'static str = "2tp";
-    const RULES: Ruleset = &[&FreeDistance2];
+    const RULES: Rules = &[&FreeDistance2];
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ impl RuleGeometry for FreeDistance2 {
 }
 
 impl RuleDescription for FreeDistance2 {
-    type League = TwoTurnpoints;
+    type Ruleset = TwoTurnpoints;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -36,9 +36,9 @@ impl RuleDescription for FreeDistance2 {
 
 pub struct OneTurnpoint;
 
-impl League for OneTurnpoint {
+impl Ruleset for OneTurnpoint {
     const NAME: &'static str = "1tp";
-    const RULES: Ruleset = &[&FreeDistance1];
+    const RULES: Rules = &[&FreeDistance1];
 }
 
 #[derive(Debug)]
@@ -49,7 +49,7 @@ impl RuleGeometry for FreeDistance1 {
 }
 
 impl RuleDescription for FreeDistance1 {
-    type League = OneTurnpoint;
+    type Ruleset = OneTurnpoint;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -62,9 +62,9 @@ impl RuleDescription for FreeDistance1 {
 
 pub struct Line;
 
-impl League for Line {
+impl Ruleset for Line {
     const NAME: &'static str = "line";
-    const RULES: Ruleset = &[&StraightDistance];
+    const RULES: Rules = &[&StraightDistance];
 }
 
 /// The two furthest-apart fixes of the flight.
@@ -76,7 +76,7 @@ impl RuleGeometry for StraightDistance {
 }
 
 impl RuleDescription for StraightDistance {
-    type League = Line;
+    type Ruleset = Line;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -94,9 +94,9 @@ impl Oar {
     const CLOSING: Closing = Closing::new(Limit::None, Limit::Ratio(0.10));
 }
 
-impl League for Oar {
+impl Ruleset for Oar {
     const NAME: &'static str = "out-and-return";
-    const RULES: Ruleset = &[&OutAndReturn];
+    const RULES: Rules = &[&OutAndReturn];
 }
 
 #[derive(Debug)]
@@ -107,7 +107,7 @@ impl RuleGeometry for OutAndReturn {
 }
 
 impl RuleDescription for OutAndReturn {
-    type League = Oar;
+    type Ruleset = Oar;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {

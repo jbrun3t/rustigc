@@ -89,7 +89,7 @@ See [rustigc-wasm/README.md](rustigc-wasm/README.md), which covers instantiating
 ### CLI tool
 
 ```bash
-rustigc-xc-score --league xcontest < flight.igc
+rustigc-xc-score --ruleset xcontest < flight.igc
 ```
 
 See [rustigc-tools/README.md](rustigc-tools/README.md)

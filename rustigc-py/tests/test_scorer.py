@@ -37,9 +37,9 @@ def test_accepts_a_strided_table():
     assert Scorer(strided).score("xcontest")._data == Scorer(TRIANGLE).score("xcontest")._data
 
 
-def test_unknown_league():
-    """Refuse unknown leagues"""
-    with pytest.raises(ValueError, match="unknown league"):
+def test_unknown_ruleset():
+    """Refuse unknown rulesets"""
+    with pytest.raises(ValueError, match="unknown ruleset"):
         Scorer(TRIANGLE).score("xkontest")
 
 

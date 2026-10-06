@@ -3,7 +3,7 @@
 """Parsing and cross-country scoring of IGC flight recorder files.
 
 `Log` is the entry point. It parses an IGC file, exposes its metadata and its `Track`, detects
-the flights in it, scores them against a league, and draws the result as GeoJSON:
+the flights in it, scores them against a ruleset, and draws the result as GeoJSON:
 
     from rustigc_py import Log
 
@@ -32,7 +32,7 @@ directly.
 
 from importlib.metadata import version
 
-from rustigc_py._bindings import league_names
+from rustigc_py._bindings import ruleset_names
 
 from .fix import Fix
 from .flight import Flight, Flights
@@ -42,4 +42,4 @@ from .scorer import Scorer
 from .track import Track
 
 __version__ = version("rustigc-py")
-__all__ = ["Log", "Scorer", "Track", "Fix", "Flight", "Flights", "Score", "league_names"]
+__all__ = ["Log", "Scorer", "Track", "Fix", "Flight", "Flights", "Score", "ruleset_names"]

@@ -77,7 +77,7 @@ jobs:
         run: |
           window=$(jq -r '"\(.takeoff),\(.landing)"' "$SMOKE_PIN")
           target/${{ matrix.target }}/release/rustigc-xc-score${{ matrix.ext }} \
-            --league xcontest --window "$window" --format json \
+            --ruleset xcontest --window "$window" --format json \
             < "$SMOKE_FIXTURE" | diff - "$SMOKE_PIN"
 
       - name: Archive the binary
@@ -169,7 +169,7 @@ jobs:
 
       - name: Smoke test the example CLI
         run: |
-          node rustigc-wasm/score/dist/rustigc-wasm-score.js --league xcontest \
+          node rustigc-wasm/score/dist/rustigc-wasm-score.js --ruleset xcontest \
             < "$SMOKE_FIXTURE" | grep -q 'points,'
 
       - name: Test the bindings

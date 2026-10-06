@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Branch-and-bound search scoring a flight against a league.
+//! Branch-and-bound search scoring a flight against a ruleset.
 //!
-//! A run evaluates every rule of the league at once: candidates of all rules share the
+//! A run evaluates every rule of the ruleset at once: candidates of all rules share the
 //! heap, the caches and the pruning floor, so the weaker rules get discarded early instead of each
 //! paying for a full search of its own.
 //!
@@ -27,7 +27,7 @@ use std::collections::BinaryHeap;
 use crate::utils::round_km;
 
 use super::cache::{Caches, Leg, Terminals};
-use super::rules::{Rule, league_rules};
+use super::rules::{Rule, ruleset_rules};
 use super::shapes::margin::Band;
 use super::{ScoringResult, round_mm};
 
@@ -173,7 +173,7 @@ impl Eq for Solution {}
 /// A scoring window, prepared once and searched by [`Scorer::solve`].
 ///
 /// [`Log::score`] does both steps in one call. Build a `Scorer` to score one window under several
-/// leagues: the fix layout, the caches and the latitude band are then set up once.
+/// rulesets: the fix layout, the caches and the latitude band are then set up once.
 ///
 /// Any [`PointCoords`] slice will do, no [`Log`] needed. `x` is longitude, `y` latitude, decimal
 /// degrees, in flight order.
@@ -184,8 +184,8 @@ impl Eq for Solution {}
 /// let log = Log::new(&std::fs::read("flight.igc")?)?;
 /// let scorer = Scorer::new(&log.track, 125, 25425)?;
 ///
-/// for league in rustigc::league_names() {
-///     println!("{league}: {:?}", scorer.solve(league)?.map(|r| r.score));
+/// for ruleset in rustigc::ruleset_names() {
+///     println!("{ruleset}: {:?}", scorer.solve(ruleset)?.map(|r| r.score));
 /// }
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -390,7 +390,7 @@ impl Scorer {
         }
 
         Some(ScoringResult {
-            league: scored.league.to_string(),
+            ruleset: scored.ruleset.to_string(),
             description: scored.description.to_string(),
             distance_km: distance,
             distance_m: round_mm(scored.distance),
@@ -490,20 +490,20 @@ impl Scorer {
         }
     }
 
-    /// Scores the window against every rule of `league` and reports the best.
+    /// Scores the window against every rule of `ruleset` and reports the best.
     ///
     /// `None` when no rule could score the window — a real answer, not a failure.
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`].
+    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`].
     ///
     /// Main B&B loop. Evaluating the rules together is important to quickly discard the least
     /// performing ones.
     ///
-    /// [`league_names`]: crate::league_names
-    pub fn solve(&self, league: &str) -> Result<Option<ScoringResult>, ScoreError> {
-        let rules = league_rules(league).ok_or(ScoreError::UnknownLeague)?;
+    /// [`ruleset_names`]: crate::ruleset_names
+    pub fn solve(&self, ruleset: &str) -> Result<Option<ScoringResult>, ScoreError> {
+        let rules = ruleset_rules(ruleset).ok_or(ScoreError::UnknownRuleset)?;
 
         let (solutions, mut floor) = self.seed(rules);
         let mut heap: BinaryHeap<Solution> = solutions
@@ -632,9 +632,12 @@ mod tests {
     }
 
     #[test]
-    fn solve_rejects_unknown_league() {
+    fn solve_rejects_unknown_ruleset() {
         let scorer = Scorer::from_vec(vec![[45.0, 6.0], [45.1, 6.1]]).unwrap();
 
-        assert_eq!(scorer.solve("nope").unwrap_err(), ScoreError::UnknownLeague);
+        assert_eq!(
+            scorer.solve("nope").unwrap_err(),
+            ScoreError::UnknownRuleset
+        );
     }
 }

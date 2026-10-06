@@ -1,5 +1,5 @@
 {
-  "league": "xcontest",
+  "ruleset": "xcontest",
   "description": "closed fai triangle",
   "distance_m": 14403.052,
   "gap_m": 3.224,

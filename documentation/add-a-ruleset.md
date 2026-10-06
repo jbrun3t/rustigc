@@ -1,6 +1,6 @@
-# Adding a league or rule
+# Adding a ruleset or rule
 
-Everything lives in `rustigc/src/score/rules/`, one file per league. A rule never touches the
+Everything lives in `rustigc/src/score/rules/`, one file per ruleset. A rule never touches the
 search: it only says which geometry to fly and what a distance and a closing gap are worth.
 
 ---
@@ -14,13 +14,13 @@ Rules are supposed to implement 2 traits:
 `RuleShape`, `RuleScore` and `RuleReport` are blanket-implemented in `rules/mod.rs`
 rules should generally not touch those.
 
-Override `minimum` on `RuleDescription` only when this one rule diverges from its league's numbers.
+Override `minimum` on `RuleDescription` only when this one rule diverges from its ruleset's numbers.
 Most don't.
 
 ## Closing
 
 `variant` answers with a `Closing` alongside the multiplier and the name: how large the closing gap
-may get, and what it costs. A league states its law as an inherent const (`Cfd::CLOSING`) and its
+may get, and what it costs. A ruleset states its law as an inherent const (`Cfd::CLOSING`) and its
 rules name it; a rule over an open shape names `Closing::NONE`.
 
 Both halves of the law — the free allowance and the largest gap that still closes once charged — are

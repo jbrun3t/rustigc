@@ -1,5 +1,5 @@
 {
-  "league": "cfd",
+  "ruleset": "cfd",
   "description": "distance 3 points",
   "distance_m": 20499.896,
   "gap_m": 0.0,

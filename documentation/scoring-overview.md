@@ -10,7 +10,7 @@ For per-module detail, follow the pointers in the last section.
 ## Problem difficulty
 
 Scoring a flight means finding, among every way turnpoints could be placed on the track log, the one
-that scores the most points under a league's rules.
+that scores the most points under a ruleset's rules.
 
 Trying every combination of turnpoints is not practically possible. A flight log can hold tens of
 thousands of GPS fixes, and a shape with `k` turnpoints picked from `n` fixes is `C(n, k)`
@@ -90,10 +90,10 @@ costs, and keeps the best of those runs.
 
 ## Scoring every rule in one pass
 
-A league is a set of rules (e.g. XContest's free distance and its two triangle variants). Rather than
-run the search once per rule, every rule of a league shares one heap and one floor: a strong candidate
+A ruleset is a set of rules (e.g. XContest's free distance and its two triangle variants). Rather than
+run the search once per rule, every rule of a ruleset shares one heap and one floor: a strong candidate
 for one rule raises the floor for all of them, so weak rules get pruned early by a floor that candidates
-of other rules set. `Scorer::solve` runs exactly one pass over the whole league — scoring the whole
+of other rules set. `Scorer::solve` runs exactly one pass over the whole ruleset — scoring the whole
 ruleset costs close to what scoring its single best rule alone would; for XContest, scoring each rule
 separately and comparing the results afterwards would run around 3× longer.
 
@@ -103,15 +103,15 @@ separately and comparing the results afterwards would run around 3× longer.
   itself. `OpenPolyline<N>` (a free-distance flight of N points, ends included), `ClosedCircuit<N>`,
   `BalancedCircuit<N, MINSIDE>` (the FAI triangle, with its 28%-per-side rule). A shape only knows
   about ranges and distances — bound, peek, where the flight starts/ends, the closing gap if any.
-* A **rule** is what a league pays for that geometry — the multiplier, the penalty charged for a
+* A **rule** is what a ruleset pays for that geometry — the multiplier, the penalty charged for a
   closing gap, the minimum score, the name shown in the report. A rule never sees a fix index, only
   the distance and gap a shape hands it.
 
 This split is why adding a scoring rule to an existing shape (a new multiplier scheme, say) does not
 touch the search, and keeps the process of adding one simple — and why the same `ClosedCircuit`
-geometry backs triangle rules for several leagues.
+geometry backs triangle rules for several rulesets.
 
-See [`add-a-league.md`](add-a-league.md) for a walkthrough of adding a new league or rule.
+See [`add-a-ruleset.md`](add-a-ruleset.md) for a walkthrough of adding a new ruleset or rule.
 
 ## Runtime costs
 
@@ -180,7 +180,7 @@ heap instead, since the floor was never raised above what a re-measure can withd
 
 Once a leaf wins, the solution is recomputed once against the WGS84 reference: the exact geodesic distance
 of every leg, which fixes are turnpoints vs. entry/exit, the closing gap. The rule then turns that
-raw `(distance, gap)` into what gets reported — applies the closing penalty, the league's
+raw `(distance, gap)` into what gets reported — applies the closing penalty, the ruleset's
 multiplier, checks the minimum, and rounds.
 
 ## More details
@@ -189,4 +189,4 @@ multiplier, checks the minimum, and rounds.
   behind the costly searches above.
 * [`igc-xc-score-diff.md`](igc-xc-score-diff.md) — where this implementation's results differ from the
   igc-xc-score JS tool, and why.
-* [`add-a-league.md`](add-a-league.md) — how to add a new league or rule.
+* [`add-a-ruleset.md`](add-a-ruleset.md) — how to add a new ruleset or rule.

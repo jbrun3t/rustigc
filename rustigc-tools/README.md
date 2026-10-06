@@ -25,12 +25,12 @@ Landing: 17:54:09 - [45.2678,5.8488] - @20512
 closed free triangle 165.03 points, 117.88 km (×1.4) [ closing distance: 1.19 km ]
 ```
 
-Or as JSON, for a chosen league:
+Or as JSON, for a chosen ruleset:
 
 ```bash
-> rustigc-xc-score --league xcontest --format json < flight.igc
+> rustigc-xc-score --ruleset xcontest --format json < flight.igc
 {
-  "league": "xcontest",
+  "ruleset": "xcontest",
   "description": "closed free triangle",
   "distance_m": 117876.93,
   "distance_km": 117.88,
@@ -53,7 +53,7 @@ Or as JSON, for a chosen league:
 
 ### Options
 
-- `--league <name>` — ruleset to score against, `xcontest` by default. `--help` lists them.
+- `--ruleset <name>` — ruleset to score against, `xcontest` by default. `--help` lists them.
 - `--format <human|json|geojson>` — output format, `human` by default. `geojson` draws the track,
   the flight and the task.
 - `--window <start,stop>` — score this fix range instead of the auto-detected flight. The detected

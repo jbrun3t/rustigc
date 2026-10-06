@@ -75,14 +75,14 @@ fn describe_fai_01() {
     }
 }
 
-/// A league name is the caller's, so a wrong one is refused rather than drawn without a score.
+/// A ruleset name is the caller's, so a wrong one is refused rather than drawn without a score.
 #[test]
-fn describe_unknown_league() {
+fn describe_unknown_ruleset() {
     let log = Log::new(&fixture("fai-01")).unwrap();
 
     assert_eq!(
         log.describe("xkontest").unwrap_err(),
-        ScoreError::UnknownLeague
+        ScoreError::UnknownRuleset
     );
 }
 

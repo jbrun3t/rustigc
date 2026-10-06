@@ -12,7 +12,7 @@ v1.8.0.
   the longest path over the ranges' bounding-box vertices.
 - Left-first ordering, so permutations collapse into combinations: each range is trimmed against its
   neighbours, making any pick chronological.
-- All rules of a league run in one shared pass — one queue, one incumbent, shared caches.
+- All rules of a ruleset run in one shared pass — one queue, one incumbent, shared caches.
 - FCC distance during the search (igc-xc-score can be configured otherwise).
 - The closing search is the closest pair between the entry-side and exit-side ranges, found via a spatial
   index built over one side and queried with the other. The details differ — see below.

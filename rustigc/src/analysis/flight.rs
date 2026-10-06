@@ -20,7 +20,7 @@ const FGSLIM: f64 = 4.2; // ~15kph
 const TTHRES: f64 = 30_000.0;
 
 /// Longest gap interval, in milliseconds, a flight may contain.
-/// FIXME: different leagues, different rules
+/// FIXME: different rulesets, different rules
 const MAX_GAP: f64 = 300_000.0;
 
 /// One flight section, as fix indices into the track it was detected in.

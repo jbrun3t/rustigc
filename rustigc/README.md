@@ -35,7 +35,7 @@ prints back valid IGC. The API is documented on [docs.rs](https://docs.rs/rustig
 
 Beyond the API reference, the [`documentation/`](../documentation) directory covers the internals:
 [how scoring works](../documentation/scoring-overview.md), [adding a
-league](../documentation/add-a-league.md), [where we differ from
+ruleset](../documentation/add-a-ruleset.md), [where we differ from
 igc-xc-score](../documentation/igc-xc-score-diff.md), and [the IGC spec violations found in the
 wild](../documentation/igc-spec-errors.md).
 

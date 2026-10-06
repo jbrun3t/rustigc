@@ -12,7 +12,7 @@ from .score import Score
 
 
 class Scorer:
-    """A table of coordinates, scorable against a league."""
+    """A table of coordinates, scorable against a ruleset."""
 
     def __init__(self, points: numpy.ndarray):
         """Hold an `(N, 2)` array of `[latitude, longitude]`, degrees, in flight order.
@@ -31,22 +31,22 @@ class Scorer:
         self._scorer = rib.RustScorer(table)
         self._points = len(table)
 
-    def score(self, league: str) -> Score | None:
-        """Score the table and report the best rule of `league`.
+    def score(self, ruleset: str) -> Score | None:
+        """Score the table and report the best rule of `ruleset`.
 
         There are no fixes behind the result, so `takeoff`, `entry`, `turnpoints`, `exit` and
         `landing` come back as plain indices into the table.
 
         Args:
-            league: One of `league_names()`.
+            ruleset: One of `ruleset_names()`.
 
         Returns:
             The best scoring result, or None when no rule could score the table.
 
         Raises:
-            ValueError: `league` is not one of `league_names()`.
+            ValueError: `ruleset` is not one of `ruleset_names()`.
         """
-        scored = self._scorer.score(league)
+        scored = self._scorer.score(ruleset)
         if scored is None:
             return None
 

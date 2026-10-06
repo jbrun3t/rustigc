@@ -67,7 +67,7 @@ def test_export_rejects_other(igc_content):
     """Reading the layer back is what refuses it, and it names the field it wanted"""
     log = Log.from_bytes(igc_content)
 
-    with pytest.raises(ValueError, match="Not a score: missing field `league`"):
+    with pytest.raises(ValueError, match="Not a score: missing field `ruleset`"):
         log.export(score=log.flights().longest)
 
     with pytest.raises(ValueError, match="Not a flight: missing field `start`"):

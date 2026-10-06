@@ -31,7 +31,7 @@
 //!
 //! Scoring works on a fix window: [`FlightDetection::flights`] cuts a track into [`Flight`]
 //! sections and [`FlightSelection::longest`] picks one. [`Log::score`] scores that window against
-//! a league and reports the best rule as a [`ScoringResult`]. [`league_names`] lists the leagues.
+//! a ruleset and reports the best rule as a [`ScoringResult`]. [`ruleset_names`] lists the rulesets.
 //!
 //! ```no_run
 //! use rustigc::{FlightDetection, FlightSelection, Log};
@@ -85,7 +85,7 @@ pub use decode::{
 pub use error::{DecodeError, ScoreError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
-pub use score::{Scorer, ScoringResult, league_names};
+pub use score::{Scorer, ScoringResult, ruleset_names};
 #[cfg(feature = "geojson")]
 #[cfg_attr(docsrs, doc(cfg(feature = "geojson")))]
 pub use utils::export::{GeoJson, TrackLine};

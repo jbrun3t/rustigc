@@ -5,13 +5,13 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { initSync, league_names, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
+import { initSync, ruleset_names, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
 import { Log } from "rustigc-wasm-utils/log";
 
 const FORMATS = ["human", "geojson"];
 
 const OPTIONS = {
-	league: { type: "string", default: "xcontest" },
+	ruleset: { type: "string", default: "xcontest" },
 	format: { type: "string", default: "human" },
 	window: { type: "string" },
 	help: { type: "boolean", short: "h" },
@@ -25,10 +25,10 @@ function usage(): void {
 			"Usage: rustigc-wasm-score [OPTIONS]",
 			"",
 			"Options:",
-			`      --league <LEAGUE>  Scoring league [default: xcontest] [possible values: ${league_names().join(", ")}]`,
-			`      --format <FORMAT>  Output format [default: human] [possible values: ${FORMATS.join(", ")}]`,
-			"      --window <WINDOW>  Explicit `start,stop` fix range to score, bypassing flight detection",
-			"  -h, --help             Print help",
+			`      --ruleset <RULESET>  Scoring ruleset [default: xcontest] [possible values: ${ruleset_names().join(", ")}]`,
+			`      --format <FORMAT>    Output format [default: human] [possible values: ${FORMATS.join(", ")}]`,
+			"      --window <WINDOW>    Explicit `start,stop` fix range to score, bypassing flight detection",
+			"  -h, --help               Print help",
 		].join("\n"),
 	);
 }
@@ -87,17 +87,17 @@ function humanOutput(log: Log, result: Score): void {
 
 /// Runs the CLI over `wasm`, the bindings' WebAssembly, which each entry point sources its own way.
 export function main(wasm: SyncInitInput): void {
-	// Before anything else: `usage` reports the leagues, and that is a call into the wasm.
+	// Before anything else: `usage` reports the rulesets, and that is a call into the wasm.
 	initSync({ module: wasm });
 
-	let league: string;
+	let ruleset: string;
 	let format: string;
 	let requested: Flight | undefined;
 	let help: boolean | undefined;
 
 	try {
 		const { values } = parseArgs({ options: OPTIONS });
-		({ league, format, help } = values);
+		({ ruleset, format, help } = values);
 		requested = values.window === undefined ? undefined : parseWindow(values.window);
 		if (!FORMATS.includes(format)) {
 			throw new Error(`invalid format: ${format}`);
@@ -129,7 +129,7 @@ export function main(wasm: SyncInitInput): void {
 	}
 
 	const window = requested ?? log.longest_flight();
-	const scored = log.score(league, window);
+	const scored = log.score(ruleset, window);
 
 	if (!scored) {
 		console.error("Could not score");

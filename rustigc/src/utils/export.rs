@@ -9,7 +9,7 @@ use super::geometry::{
 };
 use super::iter::pairs;
 use super::round_km;
-use crate::score::known_league;
+use crate::score::known_ruleset;
 use crate::{
     Fix, Flight, FlightDetection, FlightSelection, Log, ScoreError, ScoringResult,
     TrackError,
@@ -372,22 +372,22 @@ impl Log {
     }
 
     /// Everything this log describes about itself: the longest flight detected in it, and what
-    /// that flight scored under `league`.
+    /// that flight scored under `ruleset`.
     ///
     /// Use [`Log::export`] when the flight and score are already at hand.
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownLeague`] when `league` is not one of [`league_names`].
+    /// [`ScoreError::UnknownRuleset`] when `ruleset` is not one of [`ruleset_names`].
     ///
-    /// [`league_names`]: crate::league_names
-    pub fn describe(&self, league: &str) -> Result<FeatureCollection, ScoreError> {
+    /// [`ruleset_names`]: crate::ruleset_names
+    pub fn describe(&self, ruleset: &str) -> Result<FeatureCollection, ScoreError> {
         // Detection may find nothing to score, and the name is refused either way.
-        known_league(league)?;
+        known_ruleset(ruleset)?;
 
         let window = self.track.flights().longest().copied();
         let scored = window
-            .map(|w| self.score(league, w.start, w.stop))
+            .map(|w| self.score(ruleset, w.start, w.stop))
             .transpose()?
             .flatten();
 

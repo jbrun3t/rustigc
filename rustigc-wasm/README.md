@@ -36,7 +36,7 @@ The wasm has to be instantiated before the first call. In a browser, `init` fetc
 beside the module:
 
 ```ts
-import init, { Log, league_names } from "rustigc-wasm";
+import init, { Log, ruleset_names } from "rustigc-wasm";
 
 await init();
 ```
@@ -52,7 +52,7 @@ log.longest_flight()                            // { start: 125, stop: 25425 }
 log.score("xcontest")                           // over the longest detected flight
 log.describe("xcontest")                        // GeoJSON: detects, scores and draws
 
-league_names()                                  // what score and describe accept
+ruleset_names()                                 // what score and describe accept
 ```
 
 Documentation is in `pkg/rustigc_wasm.d.ts`, generated from the doc comments in
@@ -143,7 +143,7 @@ example and smoke test for these bindings, not a supported tool, and will not be
 the wasm, from beside the bindings or from a single executable's assets.
 
 ```sh
-node rustigc-wasm/score/dist/rustigc-wasm-score.js --league xcontest --format human < flight.igc
+node rustigc-wasm/score/dist/rustigc-wasm-score.js --ruleset xcontest --format human < flight.igc
 ```
 
 ## License

@@ -20,8 +20,8 @@
 //!     - Shortest side at least 28 % of total distance
 
 use super::{
-    BalancedCircuit, ClosedCircuit, Closing, League, Limit, OpenPolyline,
-    RuleDescription, RuleGeometry, Ruleset, Variant, VariantKind,
+    BalancedCircuit, ClosedCircuit, Closing, Limit, OpenPolyline, RuleDescription,
+    RuleGeometry, Rules, Ruleset, Variant, VariantKind,
 };
 
 pub struct Cfd;
@@ -33,9 +33,9 @@ impl Cfd {
     const CLOSING: Closing = Closing::new(Limit::Fixed(3000.0), Limit::Ratio(0.05));
 }
 
-impl League for Cfd {
+impl Ruleset for Cfd {
     const NAME: &'static str = "cfd";
-    const RULES: Ruleset = &[&Distance3Points, &TrianglePlat, &TriangleFai];
+    const RULES: Rules = &[&Distance3Points, &TrianglePlat, &TriangleFai];
 
     fn minimum() -> f64 {
         Self::MIN_POINTS
@@ -50,7 +50,7 @@ impl RuleGeometry for Distance3Points {
 }
 
 impl RuleDescription for Distance3Points {
-    type League = Cfd;
+    type Ruleset = Cfd;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -69,7 +69,7 @@ impl RuleGeometry for TrianglePlat {
 }
 
 impl RuleDescription for TrianglePlat {
-    type League = Cfd;
+    type Ruleset = Cfd;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
@@ -88,7 +88,7 @@ impl RuleGeometry for TriangleFai {
 }
 
 impl RuleDescription for TriangleFai {
-    type League = Cfd;
+    type Ruleset = Cfd;
 
     fn variants(&self) -> &'static [Variant] {
         &[Variant {
