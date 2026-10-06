@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! I/J-record extension definition
+//! I- and J-record parsers: the extension fields appended to every B- or K-record.
 //!
-//! I/J records define additional data fields in B/K-records beyond the standard format.
-//! Format: Inn[start_byte][end_byte][3-letter code]...
-//! - I: Record type
-//! - nn: Number of extensions (2 digits)
-//! - For each extension: start byte (2 digits), end byte (2 digits), 3-letter code
-//! - Note: the positions in the file are 1-based and inclusive of the end character. They are stored
-//!   here 0-based and exclusive, so that `start..finish` slices a B/K-record directly.
-//!
-//! Example: I033638FXA3940SIU4143ENL
-//! - 03 extensions
-//! - Bytes 36-38: FXA (fix accuracy)
-//! - Bytes 39-40: SIU (satellites in use)
-//! - Bytes 41-43: ENL (engine noise level)
+//! Format `Inn` then, per field, `SSFFCCC`: 1-based inclusive start and end bytes and a 3-letter
+//! code. `I033638FXA3940SIU4143ENL` puts FXA on bytes 36–38, SIU on 39–40 and ENL on 41–43.
+//! Positions are stored 0-based and end-exclusive within the extension area, so `start..finish`
+//! slices it directly.
 
 use std::fmt;
 
@@ -33,14 +24,14 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
 /// One extension field, as an I or J record defines it.
 pub struct RecordExtension<'a> {
-    /// Start byte, 0-based within the record's extension area
+    /// First byte, 0-based within the extension area.
     pub start: usize,
-    /// End byte, exclusive
+    /// End byte, exclusive.
     pub finish: usize,
-    /// Three-letter code for this extension (e.g., FXA, SIU, ENL)
+    /// Three-letter code, e.g. `FXA`, `SIU`, `ENL`.
     pub tlc: &'a [u8],
-    /// Length of the owning record's fixed part (35 for B, 7 for K), kept so `Display` can
-    /// re-emit the file's original 1-based inclusive positions
+    /// Length of the owning record's fixed part, 35 for B and 7 for K; `Display` adds it back to
+    /// print the file's positions.
     pub offset: usize,
 }
 
@@ -90,6 +81,8 @@ impl fmt::Display for Extensions<'_> {
     }
 }
 
+/// `nn` then the field definitions. Refused when the count disagrees with the fields, or a field
+/// starts inside the fixed part or ends before it starts.
 fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensions<'a>> {
     move |input: &mut &[u8]| {
         (
@@ -114,12 +107,14 @@ fn extension(offset: usize) -> impl for<'a> Fn(&mut &'a [u8]) -> PResult<Extensi
     }
 }
 
+/// Parses one I-record, the fields extending every B-record.
 pub fn i_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'I', extension(35), robust_ending_eof)
         .map(Record::I)
         .parse_next(input)
 }
 
+/// Parses one J-record, the fields extending every K-record.
 pub fn j_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'J', extension(7), robust_ending_eof)
         .map(Record::J)
@@ -191,7 +186,7 @@ mod tests {
         };
     }
 
-    // Some FR actually do this
+    /// Some recorders write an I-record with no field.
     #[test]
     fn test_i_zero() {
         let line = b"I00\n";

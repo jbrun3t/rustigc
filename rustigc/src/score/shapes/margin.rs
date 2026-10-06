@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 //! FCC-vs-geodesic slack the search leaves on every distance it scores, so the floor never rises
-//! above what `report` credits geodesically. The error depends on distance and latitude, both known
-//! during the search.
+//! above what the geodesic re-measure confirms. The error grows with distance and latitude.
 
 /// Latitude band of a flight: row of [`TABLE`] covering every leg it can contain.
 #[derive(Debug, Clone, Copy)]
@@ -41,7 +40,8 @@ impl Band {
         )
     }
 
-    /// Slack to allow on a distance of `d_m` metres. Distances past the last key clamp to it.
+    /// Relative slack to allow on a distance of `d_m` metres. Distances past the last key clamp
+    /// to it.
     #[inline]
     pub fn margin(&self, d_m: f64) -> f64 {
         let k = KEYS_M.partition_point(|&key| key < d_m);

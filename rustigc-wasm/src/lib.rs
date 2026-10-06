@@ -2,27 +2,21 @@
 
 //! WASM bindings for rustigc.
 //!
-//! Values cross as plain data. Field names come from the core's serde derives, so they stay
-//! `snake_case` — `distance_m`, `baro_alt` — and the method names follow them.
-//!
-//! Nothing crosses as a Rust map. `serde_wasm_bindgen` renders one as a `Map`, which
-//! `JSON.stringify` prints as `{}` — hence `header`, one key at a time, rather than the whole
-//! `headers` map.
+//! Values cross as plain data with the core's `snake_case` field names, and the method names
+//! follow them. No map crosses: `serde_wasm_bindgen` makes one a `Map`, which `JSON.stringify`
+//! prints as `{}`, so headers are read one key at a time with `header`.
 
 use rustigc::{FlightDetection, FlightSelection, Ruleset, TrackLine};
 use wasm_bindgen::prelude::*;
 
-/// Shapes that cross as plain data, declared for the generated `.d.ts`.
-///
-/// They mirror the core's serde derives field for field: keep them in step.
+/// Types for the generated `.d.ts`. They mirror the core's serde derives field for field.
 #[wasm_bindgen]
 extern "C" {
-    /// A `Flight` on its way in. Naming the interface through an extern type rather than
-    /// `unchecked_param_type` keeps the argument optional in the generated `.d.ts`.
+    /// A `Flight` argument; an extern type keeps it optional in the `.d.ts`.
     #[wasm_bindgen(typescript_type = "Flight")]
     pub type FlightArg;
 
-    /// A `Score` on its way in, for the same reason.
+    /// A `Score` argument, likewise.
     #[wasm_bindgen(typescript_type = "Score")]
     pub type ScoreArg;
 }
@@ -45,9 +39,9 @@ export interface Fix {
 
 /** One flight section, as fix indices into the track it was detected in. */
 export interface Flight {
-    /** Takeoff. */
+    /** First fix of the flight. */
     start: number;
-    /** Landing. */
+    /** Last fix of the flight. */
     stop: number;
 }
 
@@ -59,22 +53,20 @@ export interface Header {
 }
 
 /**
- * What the winning rule of a ruleset scored.
- *
- * Every fix is an index into the track that was scored.
+ * The winning rule's result. Every fix is an index into the track that was scored.
  */
 export interface Score {
     /** Name of the scoring ruleset, `"xcontest"`. */
     ruleset: string;
     /** Name of the winning variant, `"closed fai triangle"`. */
     description: string;
-    /** Scored distance in meters, to the nearest millimeter. */
+    /** Scored distance in meters, net of the penalty, to the nearest millimeter. */
     distance_m: number;
     /** Closing leg of a circuit, in meters; 0 for an open task. */
     gap_m: number;
-    /** Largest gap the rule would still accept, in meters; 0 for an open task. */
+    /** Largest gap the winning variant closes, in meters; 0 for an open task. */
     threshold_m: number;
-    /** Distance in kilometers, as the rule presents it. */
+    /** Scored distance in kilometers. */
     distance_km: number;
     /** Final score, in the ruleset's points. */
     score: number;
@@ -143,13 +135,12 @@ impl Log {
 
     /// The same track as raw `#[repr(C)] Fix` bytes, 32 per fix, little-endian.
     ///
-    /// About 10x faster than `track`, if you decode it yourself. The `rustigc-wasm-utils`
-    /// package ships a decoder; the crate README has the layout.
+    /// About 10x faster than `track` once decoded. `rustigc-wasm-utils` ships a decoder; the
+    /// README has the layout.
     #[wasm_bindgen(getter)]
     pub fn track_bytes(&self) -> Vec<u8> {
         let track = &self.inner.track;
-        // SAFETY: Fix is repr(C), the slice is valid for this borrow, and to_vec copies out
-        // before anything can realloc it.
+        // SAFETY: `Fix` is `repr(C)`, and `to_vec` copies the slice while the borrow holds.
         unsafe {
             std::slice::from_raw_parts(
                 track.as_ptr() as *const u8,
@@ -159,7 +150,7 @@ impl Log {
         .to_vec()
     }
 
-    /// Instant this log's fix timestamps count from as an ISO8601 String, or `undefined`
+    /// Instant this log's fix timestamps count from, as an ISO 8601 string, or `undefined`
     /// without a usable `HFDTE` header.
     pub fn datetime(&self) -> Option<String> {
         self.inner.datetime()
@@ -177,7 +168,7 @@ impl Log {
         Ok(serde_wasm_bindgen::to_value(self.get(index)?)?)
     }
 
-    /// Flight sections detected in the track, empty when none was.
+    /// Flight sections detected in the track, empty when none is found.
     #[wasm_bindgen(unchecked_return_type = "Flight[]")]
     pub fn flights(&self) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(&self.inner.track.flights())?)
@@ -193,10 +184,9 @@ impl Log {
 
     /// Score `window` against every rule of `ruleset` and report the best.
     ///
-    /// `window` defaults to the longest detected flight, whether left out or passed `undefined`.
-    /// `undefined` when nothing could be scored; throws when `ruleset` is not one of
-    /// `ruleset_names()`, when the window is not one this track holds, or when it is left to
-    /// detection and there is no flight to take it from.
+    /// `window` defaults to the longest detected flight. `undefined` when no rule scores; throws
+    /// when `ruleset` is not one of `ruleset_names()`, when the window is not one this track
+    /// holds, or when no flight is detected to default to.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn score(
         &self,
@@ -218,14 +208,12 @@ impl Log {
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
 
-    /// The log and the layers handed to it, as one GeoJSON string.
+    /// GeoJSON of the log, drawing `window` and `scored` when given and the track line unless
+    /// `track` is `false`. Every feature has a `role`: `track`, `marker`, `leg`, `closing`,
+    /// `score` or `metadata`.
     ///
-    /// `window` and `scored` may each be left out; `track` draws the flown line. Every feature
-    /// declares a `role` — `track`, `marker`, `leg`, `closing`, `score` or `metadata`.
-    /// `JSON.parse` it for objects.
-    ///
-    /// Throws when a layer is not the shape it should be, or reads a fix this log's track does
-    /// not hold
+    /// Throws when a layer is not the shape it should be, or holds a fix index past the end of
+    /// the track.
     pub fn export(
         &self,
         window: Option<FlightArg>,
@@ -251,10 +239,8 @@ impl Log {
         Ok(serde_json::to_string(&collection)?)
     }
 
-    /// Everything the log describes about itself under `ruleset`, as one GeoJSON string.
-    ///
-    /// Detects the longest flight, scores it and draws both. Use `export` when the flight and
-    /// score are already at hand.
+    /// GeoJSON of the track, its longest detected flight and that flight's score under
+    /// `ruleset`. Use `export` when the flight and score are already at hand.
     pub fn describe(&self, ruleset: &str) -> Result<String, JsError> {
         let ruleset = Ruleset::named(ruleset)?;
         Ok(serde_json::to_string(&self.inner.describe(ruleset)?)?)
@@ -262,7 +248,7 @@ impl Log {
 }
 
 impl Log {
-    /// Fix `index`, as an error rather than the panic indexing would raise.
+    /// Fix `index`, or an error past the end of the track.
     fn get(&self, index: usize) -> Result<&rustigc::Fix, JsError> {
         self.inner.track.get(index).ok_or_else(|| {
             JsError::new(&format!(
@@ -294,9 +280,8 @@ impl Scorer {
         }
 
         let points = coords.len() / 2;
-        // SAFETY: a Box<[f64]> of even length and a Box<[[f64; 2]]> of half that length describe
-        // the same allocation — 8-byte align, identical size — so retyping it keeps the layout it
-        // will be dropped through. A boxed slice carries no capacity of its own to reconcile.
+        // SAFETY: a `Box<[f64]>` of even length and a `Box<[[f64; 2]]>` of half that length have
+        // the same size and alignment, so the allocation is dropped with the layout it has.
         let table = unsafe {
             let ptr = Box::into_raw(coords) as *mut [f64; 2];
             Box::from_raw(std::ptr::slice_from_raw_parts_mut(ptr, points))
@@ -309,8 +294,8 @@ impl Scorer {
 
     /// Score the table against every rule of `ruleset` and report the best.
     ///
-    /// Every fix of the result is an index into the table. `undefined` when nothing could be
-    /// scored; throws when `ruleset` is not one of `ruleset_names()`.
+    /// Every fix of the result is an index into the table. `undefined` when no rule scores;
+    /// throws when `ruleset` is not one of `ruleset_names()`.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn solve(&self, ruleset: &str) -> Result<JsValue, JsError> {
         let ruleset = Ruleset::named(ruleset)?;

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Reusable record parsers
+//! Parsers shared by the record types.
 
 use winnow::combinator::{eof, not, peek, repeat};
 use winnow::error::Result as PResult;
@@ -9,7 +9,7 @@ use winnow::stream::AsChar;
 use winnow::token::{any, take_while};
 use winnow::{combinator::alt, token::take};
 
-/// Eat trailing whitespace and carriage returns
+/// Consumes trailing spaces, then carriage returns.
 pub fn trailing_space_cr(input: &mut &[u8]) -> PResult<()> {
     (
         take_while(0.., |c| c == b' '),
@@ -19,13 +19,14 @@ pub fn trailing_space_cr(input: &mut &[u8]) -> PResult<()> {
         .parse_next(input)
 }
 
-/// Gracefully handle missing newline at file end
+/// A line ending: trailing spaces and `\r`, then `\n` or the end of input, which is not consumed.
 pub fn robust_ending_eof<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
     (trailing_space_cr, alt(("\n".as_bytes(), peek(eof))))
         .map(|(_, ending)| ending)
         .parse_next(input)
 }
 
+/// Everything up to the line ending.
 pub fn till_robust_ending<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
     repeat(0.., (not(robust_ending_eof), any))
         .with_taken()
@@ -33,9 +34,7 @@ pub fn till_robust_ending<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
         .parse_next(input)
 }
 
-/// Parse n decimal digits as a number
-/// Uses btoi to parse directly from bytes without UTF-8 validation.
-/// This is faster than converting to str first since IGC files are ASCII-only.
+/// Exactly `n` decimal digits, as a number.
 pub fn n_digits<'a, T, E>(n: usize) -> impl Parser<&'a [u8], T, E>
 where
     T: num_traits::PrimInt + num_traits::FromPrimitive,
@@ -44,12 +43,12 @@ where
     take(n).verify_map(|bytes: &[u8]| btoi::btoi(bytes).ok())
 }
 
-/// take exactly n alphanum
+/// Exactly `n` ASCII alphanumerics.
 pub fn n_alphanum<'a>(n: usize) -> impl Fn(&mut &'a [u8]) -> PResult<&'a [u8]> {
     move |input: &mut &[u8]| take_while(n..=n, AsChar::is_alphanum).parse_next(input)
 }
 
-/// Parse a HHMMSS timestamp and convert it to a number of milliseconds
+/// `HHMMSS` as milliseconds since midnight.
 pub fn ts_to_ms(input: &mut &[u8]) -> PResult<u32> {
     (
         n_digits(2).verify(|&h| h < 24),
@@ -60,7 +59,7 @@ pub fn ts_to_ms(input: &mut &[u8]) -> PResult<u32> {
         .parse_next(input)
 }
 
-/// Parse a DDMMYY date and convert it to (year, month, day)
+/// `DDMMYY` as `(year, month, day)`, the year in 2000–2099.
 pub fn date_to_ymd(input: &mut &[u8]) -> PResult<(i16, i8, i8)> {
     (
         n_digits(2).verify(|&d| (1..=31).contains(&d)),
@@ -71,6 +70,7 @@ pub fn date_to_ymd(input: &mut &[u8]) -> PResult<(i16, i8, i8)> {
         .parse_next(input)
 }
 
+/// Milliseconds as `HHMMSS`, wrapped to one day.
 pub fn ts_to_igc(input: u32) -> String {
     let input = (input / 1000) % (24 * 60 * 60);
     let (h, rem) = (input / 3600, input % 3600);
@@ -78,7 +78,8 @@ pub fn ts_to_igc(input: u32) -> String {
     format!("{:02}{:02}{:02}", h, m, s)
 }
 
-/// Parse an arc value in the form (D)DDMMmmm
+/// An angle `(D)DDMMmmm`, in thousandths of a minute: two degree digits below 90 for a latitude,
+/// three below 180 for a longitude.
 fn latlon(islat: bool) -> impl Fn(&mut &[u8]) -> PResult<u32> {
     move |input: &mut &[u8]| {
         (
@@ -91,12 +92,13 @@ fn latlon(islat: bool) -> impl Fn(&mut &[u8]) -> PResult<u32> {
     }
 }
 
+/// Thousandths of a minute as `(degrees, thousandths of a minute)`.
 fn latlon_to_igc(input: u32) -> (u32, u32) {
     let (d, mm) = (input / 60000, input % 60000);
     (d, mm)
 }
 
-/// Parse a Latitude in the form DDMMmmmN
+/// `DDMMmmm` then `N`/`S` (or `+`/`-`), in signed thousandths of a minute.
 pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
     (
         latlon(true),
@@ -111,13 +113,14 @@ pub fn latitude(input: &mut &[u8]) -> PResult<i32> {
         .parse_next(input)
 }
 
+/// Degrees as `DDMMmmmN` or `DDMMmmmS`.
 pub fn latitude_to_igc(input: f64) -> String {
     let lat: u32 = (input.abs() * 60000.0).round() as u32;
     let (d, mm) = latlon_to_igc(lat);
     format!("{:02}{:05}{}", d, mm, if input < 0.0 { 'S' } else { 'N' })
 }
 
-/// Parse a Longitude in the form DDDMMmmmE
+/// `DDDMMmmm` then `E`/`W` (or `+`/`-`), in signed thousandths of a minute.
 pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
     (
         latlon(false),
@@ -132,6 +135,7 @@ pub fn longitude(input: &mut &[u8]) -> PResult<i32> {
         .parse_next(input)
 }
 
+/// Degrees as `DDDMMmmmE` or `DDDMMmmmW`.
 pub fn longitude_to_igc(input: f64) -> String {
     let lon: u32 = (input.abs() * 60000.0).round() as u32;
     let (d, mm) = latlon_to_igc(lon);

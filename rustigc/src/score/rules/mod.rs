@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Rules: what a ruleset scores, and over which shape.
+//! Scoring rules, read from JSON.
 //!
-//! One JSON file per embedded ruleset, under `rulesets/`. A ruleset's numbers belong in that file
-//! and nowhere else; this module is what reads them, and reads a caller's own the same way.
+//! A [`Ruleset`] lists [`Rule`]s; a rule scores one shape with variants, each a multiplier with
+//! an optional closing and a list of constraints. The embedded rulesets are the files under
+//! `rulesets/`.
 
 mod closing;
 mod constraint;

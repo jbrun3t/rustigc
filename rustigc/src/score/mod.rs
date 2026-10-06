@@ -18,24 +18,24 @@ fn round_mm(meters: f64) -> f64 {
     (meters * 1000.0).round() / 1000.0
 }
 
-/// What the winning rule scored, as that rule presents it.
+/// The winning rule's result.
 ///
-/// Every fix here is an index into the track that was scored, not into the window. `distance_km`
-/// and `score` are rounded the way the ruleset publishes them; `distance_m` keeps the metres.
+/// Every fix is an index into the track that was scored, not into the window. Kilometre values
+/// and `score` are rounded to two decimals, metre values to the millimetre.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct ScoringResult {
-    /// Name of the scoring ruleset, e.g. "xcontest"
+    /// Name of the scoring ruleset, e.g. `"xcontest"`.
     pub ruleset: String,
     /// Name of the winning variant, e.g. `"triangle plat"`.
     pub description: String,
-    /// Scored distance in meters, rounded to the nearest millimeter.
+    /// Scored distance in meters, net of the penalty.
     pub distance_m: f64,
     /// Closing leg of a circuit, in metres; 0 for an open polyline.
     pub gap_m: f64,
-    /// Largest gap the reported rule and variant would still hold at, in meters.
+    /// Largest gap the winning variant closes, in meters; 0 for an open task.
     pub threshold_m: f64,
-    /// Distance in kilometers, as the rule presents it.
+    /// Scored distance in kilometers.
     pub distance_km: f64,
     /// Final score, in the ruleset's points.
     pub score: f64,

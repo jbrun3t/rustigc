@@ -24,7 +24,7 @@ EXAMPLES:
 /// How a result is printed.
 #[derive(Clone, ValueEnum, Debug, PartialEq)]
 enum Format {
-    /// One line per fix of the task, then the score.
+    /// The flight date, one line per point of the task, then the score.
     Human,
     /// The scoring report as JSON, `null` when nothing scored.
     Json,
@@ -55,11 +55,11 @@ struct Args {
     #[arg(long, value_enum, default_value = "human")]
     format: Format,
 
-    /// Explicit `start,stop` fix window to score, bypassing flight auto-detection.
+    /// Fix window `start,stop` to score instead of the detected flight.
     #[arg(long, value_parser = parse_window,
-          long_help = "Score this range of fix indices instead of the auto-detected flight. \
-                       Both bounds are indices into the track, the first fix being 0. The \
-                       detected flight is still what the human report calls takeoff and landing.")]
+          long_help = "Score this range of fix indices instead of the detected flight. Both \
+                       bounds are indices into the track, the first fix being 0, and the report's \
+                       takeoff and landing are these bounds.")]
     window: Option<(usize, usize)>,
 }
 
@@ -79,7 +79,6 @@ fn parse_window(s: &str) -> Result<(usize, usize), String> {
 }
 
 fn human_output(log: &Log, result: &ScoringResult) {
-    // Get time origin for the flight and create display helper
     let local = LocalTime::new(log);
 
     let coord = |i: usize| format!("{:.04},{:.04}", log.track[i].lat, log.track[i].lon);
@@ -94,7 +93,6 @@ fn human_output(log: &Log, result: &ScoringResult) {
         None => format!("[{}] - @{i}", coord(i)),
     };
 
-    // Display the flight date, locally.
     if let Some(l) = &local {
         let entry = l.at(log.track[result.entry].timestamp);
         println!("{}", entry.strftime("Flight on %Y-%m-%d %Z"));
@@ -102,7 +100,6 @@ fn human_output(log: &Log, result: &ScoringResult) {
         println!("Flight has no date !");
     }
 
-    // Points location
     println!("Takeoff: {}", disp(result.takeoff));
     println!(" Entry : {}", disp(result.entry));
     for (i, tp) in result.turnpoints.iter().enumerate() {
@@ -111,7 +108,6 @@ fn human_output(log: &Log, result: &ScoringResult) {
     println!(" Exit  : {}", disp(result.exit));
     println!("Landing: {}", disp(result.landing));
 
-    // Final score report
     print!(
         "{} {} points, {} km",
         result.description, result.score, result.distance_km
@@ -145,7 +141,7 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     });
 
-    // The parser only lets an embedded name through.
+    // clap only accepts embedded names.
     let ruleset = Ruleset::named(&args.ruleset).expect("ruleset accepted by clap");
 
     let window = args

@@ -76,7 +76,6 @@ def test_track_cached(igc_content):
     log = Log.from_bytes(igc_content)
     track1 = log.track
     track2 = log.track
-    # Same object (cached)
     assert track1 is track2
 
 
@@ -124,6 +123,6 @@ def test_repr(igc_content):
 
 
 def test_invalid_content():
-    """Handle invalid IGC content"""
+    """A line of garbage is refused"""
     with pytest.raises(ValueError, match="Failed to parse"):
         Log.from_bytes(b"INVALID")

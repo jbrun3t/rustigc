@@ -14,7 +14,7 @@ use crate::{
     ScoringResult, TrackError,
 };
 
-/// Header codes a log labels its flown line with.
+/// Header codes copied into the `metadata` feature.
 const LABELS: [&str; 1] = ["PLT"];
 
 /// One layer of a flight, as GeoJSON.
@@ -32,23 +32,23 @@ const LABELS: [&str; 1] = ["PLT"];
 /// | `marker` | Point, 3D | `name`, `fix`, `timestamp` |
 /// | `leg` | LineString | a scored side: `name` (`leg0`…), `from`, `to`, `distance_m` |
 /// | `closing` | LineString | a circuit's closing side, named `entry`, `exit` or `gap` |
-/// | `metadata` | none | `datetime`, the instant every `timestamp` counts from, and IGC metadata |
-/// | `score` | none | `rule`, `score`, `distance_km`, `distance_m`, `gap_km`, `threshold_m`, `penalty`, `multiplier`, `circuit` |
+/// | `metadata` | none | `datetime`, `tzn`, `headers` |
+/// | `score` | none | `rule`, `score`, `distance_km`, `distance_m`, `gap_m`, `threshold_m`, `penalty`, `multiplier`, `circuit` |
 ///
 /// Markers are named `takeoff`, `landing`, `Entry`, `tp0`…`tp(n-1)` and `Exit`, and that is what a
 /// leg's `from`/`to` refer to.
 ///
 /// An open task is drawn as `leg`s alone, `leg0` starting at its entry and the last one ending at
 /// its exit. A circuit's `leg`s close over its turnpoints, with `closing` legs — `entry`, `exit`
-/// and `gap` — beside them. A leg's `distance_m` is its geodesic length in kilometers, so the legs
-/// of a task do not add up to the `score`'s `distance_m`, which is net of the penalty, if any.
+/// and `gap` — beside them. A leg's `distance_m` is its geodesic length in kilometers, despite the
+/// name.
 ///
-/// `datetime` is stated once, in ISO8601 format. Every `timestamp` and `coordTimes` entry is
-/// milliseconds to add to it. `tzn` beside it, when the log declares one, is the offset to local
-/// time in hours — the recorder's own claim, which no dataset here checks.
+/// `datetime` is ISO 8601; every `timestamp` and `coordTimes` entry is milliseconds after it.
+/// `tzn`, when the log declares one, is its offset to local time in hours. `headers` holds the
+/// pilot name.
 ///
-/// Every position over a fix is `[lon, lat, gnss_alt]`, trimmed to eight decimals — finer than
-/// any fix records.
+/// Positions are `[lon, lat]`, with `gnss_alt` third on markers and the track. Degrees are rounded
+/// to eight decimals.
 pub trait GeoJson: Sync {
     /// Features for `self`, its fix indices resolved against `track`.
     ///
@@ -60,30 +60,29 @@ pub trait GeoJson: Sync {
 
 // --- Helpers ---
 
-/// Create properties with a role
+/// Properties holding `role`.
 fn props(role: &str) -> JsonObject {
     let mut props = JsonObject::new();
     props.insert("role".into(), role.into());
     props
 }
 
-/// Eight decimals, about a millimetre
-/// It's more than enough and it saves space in the final file
+/// Rounds to eight decimals, about a millimeter.
 fn round_deg(degrees: f64) -> f64 {
     (degrees * 1e8).round() / 1e8
 }
 
-/// Create a 2D position from a fix
+/// `[lon, lat]` of a fix.
 fn position(fix: &Fix) -> [f64; 2] {
     [round_deg(fix.lon), round_deg(fix.lat)]
 }
 
-/// Create a 3D position from a fix
+/// `[lon, lat, gnss_alt]` of a fix.
 fn position3d(fix: &Fix) -> [f64; 3] {
     [round_deg(fix.lon), round_deg(fix.lat), fix.gnss_alt as f64]
 }
 
-/// Create the timestamp array
+/// Every fix's timestamp, for `coordTimes`.
 fn coord_times(track: &[Fix]) -> Vec<JsonValue> {
     track.iter().map(|fix| fix.timestamp.into()).collect()
 }
@@ -98,6 +97,7 @@ fn at(track: &[Fix], index: usize) -> Result<&Fix, TrackError> {
     })
 }
 
+/// A `marker` on fix `fix.0`, named `fix.1`.
 fn marker(
     track: &[Fix],
     fix: &(usize, &str),
@@ -119,7 +119,7 @@ fn marker(
     })
 }
 
-/// takeoff and landing markers.
+/// The `takeoff` and `landing` markers.
 impl GeoJson for Flight {
     fn features(&self, track: &[Fix]) -> Result<Vec<Feature>, TrackError> {
         Ok(vec![
@@ -129,7 +129,7 @@ impl GeoJson for Flight {
     }
 }
 
-/// Everything the rules made of the task.
+/// The `score` feature: the result's scalars, without geometry.
 fn score(result: &ScoringResult) -> Feature {
     let mut props = props("score");
     props.insert("rule".into(), result.description.clone().into());
@@ -149,7 +149,7 @@ fn score(result: &ScoringResult) -> Feature {
     }
 }
 
-/// A straight side between two named fixes.
+/// A straight line between two named fixes, with its geodesic length in kilometers.
 fn leg(
     track: &[Fix],
     from: &(usize, &str),
@@ -183,10 +183,8 @@ impl GeoJson for ScoringResult {
     fn features(&self, track: &[Fix]) -> Result<Vec<Feature>, TrackError> {
         let mut features = Vec::new();
 
-        // Score as an empty geometry
         features.push(score(self));
 
-        // Create the chain of turnpoints fixes with their names
         let tp_names: Vec<String> = (0..self.turnpoints.len())
             .map(|i| format!("tp{i}"))
             .collect();
@@ -197,23 +195,20 @@ impl GeoJson for ScoringResult {
             .map(|(&fix, name)| (fix, name.as_str()))
             .collect();
 
-        // Draw them right away
         for tp in chain.iter() {
             features.push(marker(track, tp, "marker", "#0000ff")?);
         }
 
-        // Draw entry and exit
         let entry = (self.entry, "Entry");
         let exit = (self.exit, "Exit");
         features.push(marker(track, &entry, "marker", "#00a000")?);
         features.push(marker(track, &exit, "marker", "#ff0000")?);
 
         if !self.circuit {
-            // Include entry and exit for open tasks
+            // An open task's legs run from entry to exit.
             chain.insert(0, entry);
             chain.push(exit);
         } else {
-            // Actual entry and exit legs
             features.push(leg(
                 track, &entry, &chain[0], "closing", "entry", "#ff8000", 1,
             )?);
@@ -227,7 +222,6 @@ impl GeoJson for ScoringResult {
                 1,
             )?);
 
-            // ... and the closing gap
             features.push(leg(track, &exit, &entry, "closing", "gap", "#00a000", 2)?);
         }
 
@@ -242,7 +236,6 @@ impl GeoJson for ScoringResult {
             })
             .collect::<Result<_, _>>()?;
 
-        // Draw the task line
         features.extend(legs);
 
         Ok(features)
@@ -262,7 +255,6 @@ impl Log {
     fn metadata_export(&self) -> Feature {
         let mut props = props("metadata");
 
-        // The reference every timestamp counts from, and whatever shift the log itself declares.
         if let Some(origin) = self.datetime() {
             props.insert("datetime".into(), origin.into());
         }
@@ -323,13 +315,12 @@ impl Log {
             features.push(self.trackline_export());
         }
 
-        // Extend with all provided layers
         for layer in layers {
             features.extend(layer.features(&self.track)?);
         }
 
         // Geojson wants west, south, east, north
-        // FIXME: Antimeridian crossing not supported
+        // FIXME: no bbox for a track crossing the antimeridian
         let bbox = (!self.track.crosses_antimeridian())
             .then(|| BBox::<SPoint>::from_items(&self.track))
             .flatten()

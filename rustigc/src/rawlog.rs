@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 
 /// An IGC file as records, borrowing from the bytes it was parsed from.
 ///
-/// Keeps every record, including the ones [`Log`] drops, and validates nothing beyond recognizing
-/// them. `Display` renders it back as valid IGC.
+/// Keeps every record, including the ones [`Log`] drops, and checks nothing beyond each record's
+/// syntax. `Display` prints it back as IGC.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
@@ -53,30 +53,25 @@ impl<'a> RawLog<'a> {
     }
 }
 
-/// Renders a log back as records, with `XRS` as the manufacturer — the result is not what a
-/// recorder wrote.
+/// Rebuilds records from a log: the A-record with `XRS` as manufacturer, the headers, the task, the
+/// fixes, and a placeholder G-record. Whatever [`Log`] dropped is not restored.
 impl From<Log> for RawLog<'_> {
     fn from(log: Log) -> Self {
         let mut records: Vec<Record> = Vec::new();
 
-        // Make it clear where this log comes from
         let mut recorder = log.recorder;
         recorder.manufacturer = "XRS".into();
 
-        // The mandatory A record first
         records.push(recorder.into());
 
-        // All the H record
         for (key, value) in log.headers.into_iter() {
             records.push(Header { key, value }.into());
         }
 
-        // The optional C records if we have a task
         if let Some(task) = log.task {
             records.push(task.into())
         }
 
-        // All the B records carrying the fixes
         for fix in log.track.into_iter() {
             records.push(
                 RawFix {
@@ -88,7 +83,6 @@ impl From<Log> for RawLog<'_> {
             );
         }
 
-        // Finally a fake G record just in case
         records.push(Record::G(TextEvent {
             text: b"RUSTIGCLOGISNOTVALID",
         }));
@@ -97,11 +91,10 @@ impl From<Log> for RawLog<'_> {
     }
 }
 
-/// Prints back valid IGC, one record per line.
+/// Prints the records back as IGC, one per line; a [`Record::Bad`] prints as an empty line.
 ///
-/// A record holding bytes that are not UTF-8 — which the parser accepts — comes back with each
-/// of them replaced, so the output matches the input only for a file that was UTF-8 to begin
-/// with. This should not really happen since IGC are supposed to be ASCII only ...
+/// Bytes that are not UTF-8, which the parser accepts, come back replaced, so the output matches
+/// the input only for a UTF-8 file.
 impl fmt::Display for RawLog<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for rec in &self.records {

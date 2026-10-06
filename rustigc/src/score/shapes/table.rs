@@ -1,36 +1,29 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! The geometries a rule may name, by [`ShapeSpec`].
-//!
-//! Every monomorphisation the crate scores with is listed here and nowhere else, and a rule reaches
-//! one only through this table. The set is therefore fixed at compile time however the rules are
-//! configured: nothing can ask for a `ClosedCircuit<9>` that was never instantiated.
+//! Every geometry the crate scores with, found by [`ShapeSpec`]. A ruleset reaches a shape only
+//! through this table, so it can name only the monomorphisations listed here.
 
 use super::balanced::BalancedCircuit;
 use super::closed::ClosedCircuit;
 use super::polyline::OpenPolyline;
 use super::{Shape, ShapeKind, ShapeSpec};
 
-/// One geometry, as a rule names it.
-///
-/// `shape` borrows the geometry's own singleton, so naming a shape costs no allocation.
+/// One geometry: how a ruleset names it, its search cardinality, whether it closes, and its
+/// instance.
 #[derive(Debug)]
 pub struct ShapeDef {
     pub spec: ShapeSpec,
     pub cardinality: usize,
-    /// Whether there is a closing leg for a rule to charge. A rule pricing a gap over a geometry
-    /// that has none would charge nothing, whatever its closing said.
+    /// Whether the geometry has a closing leg; a variant states a closing exactly when it does.
     pub closes: bool,
     pub shape: &'static dyn Shape,
 }
 
-/// Builds [`SHAPES`] from a list of types.
-///
-/// Every field of an entry comes from the one type, so they cannot drift apart, and evaluating
-/// `CARDINALITY` here is what fires its post-monomorphisation assert at build time.
+/// Builds [`SHAPES`] from a list of types, each entry's fields from its one type. Evaluating
+/// `CARDINALITY` here fires its assert at build time.
 macro_rules! shapes {
     ($( $ty:ty ),* $(,)?) => {
-        /// Every geometry a rule may name.
+        /// Every geometry a ruleset may name.
         pub static SHAPES: &[ShapeDef] = &[
             $(
                 ShapeDef {
@@ -75,7 +68,7 @@ mod tests {
         }
     }
 
-    /// Every listed geometry answers to its own spec, which is what a ruleset file names it by.
+    /// Every listed geometry is found by its own spec.
     #[test]
     fn shapes_reachable_by_spec() {
         for def in SHAPES {

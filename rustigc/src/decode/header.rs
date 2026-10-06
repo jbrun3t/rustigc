@@ -36,7 +36,7 @@ pub enum HeaderOrigin {
     Observer,
     /// Entered by the pilot.
     Pilot,
-    /// Unexpected origin.
+    /// Any other origin byte; printed back as `U`.
     Unknown,
 }
 
@@ -71,17 +71,13 @@ impl fmt::Display for HeaderOrigin {
     }
 }
 
-// Metadata is the kind of things we will eventually provide
-// and their number is negligible so we are better allocating
-// the strings directly
-
 /// The value of one header.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct HeaderData {
     /// The value as written, trimmed of the key and its separator.
     pub text: String,
-    /// Header origin
+    /// Who entered it.
     pub origin: HeaderOrigin,
 }
 
@@ -124,11 +120,12 @@ fn horigin(input: &mut &[u8]) -> PResult<HeaderOrigin> {
         (HeaderOrigin::FlightRecorder.as_byte()).value(HeaderOrigin::FlightRecorder),
         (HeaderOrigin::Observer.as_byte()).value(HeaderOrigin::Observer),
         (HeaderOrigin::Pilot.as_byte()).value(HeaderOrigin::Pilot),
-        (take(1usize)).value(HeaderOrigin::Unknown), // Match creative origins
+        (take(1usize)).value(HeaderOrigin::Unknown),
     ))
     .parse_next(input)
 }
 
+/// The 3-character key, skipping a long name ending in `:` when one follows.
 fn hkey<'a>(input: &mut &'a [u8]) -> PResult<&'a [u8]> {
     (n_alphanum(3), opt((alphanumeric1, (b':'))))
         .map(|(m, _): (&[u8], _)| m)

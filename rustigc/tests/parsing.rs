@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Integration tests with real IGC files
+//! Parsing and flight detection over the real fixtures.
 
 use rustigc::{FlightDetection, FlightSelection, Log};
 use rustigc_test_data::{for_each_fixture, real, stem_of};
@@ -15,7 +15,7 @@ fn fixture_parse_file(path: &PathBuf) -> Log {
     Log::new(&content).unwrap_or_else(|e| panic!("Failed to parse {:?}: {}", *path, e))
 }
 
-/// Test parsing a test file
+/// free-06's headers, recorder and fix count, with every coordinate in range.
 #[test]
 fn test_parse_plouf() {
     let path = real().join("free-06.igc");
@@ -27,14 +27,13 @@ fn test_parse_plouf() {
     assert_eq!(log.headers["GTY"].text, "Ozone Delta 4 MS");
     assert_eq!(log.headers["DTE"].text, "201024");
 
-    // Verify fix coordinates are reasonable
     for (i, fix) in log.track.iter().enumerate() {
         assert!(fix.lat.abs() <= 90.0, "Invalid latitude at fix {}", i);
         assert!(fix.lon.abs() <= 180.0, "Invalid longitude at fix {}", i);
     }
 }
 
-/// `Log::track` promises strictly increasing timestamps
+/// Timestamps strictly increase along `Log::track`.
 fn assert_increasing_timestamps(log: &Log, path: &PathBuf) {
     for i in 1..log.track.len() {
         assert!(
@@ -44,7 +43,7 @@ fn assert_increasing_timestamps(log: &Log, path: &PathBuf) {
     }
 }
 
-/// `problem-time-gaps.igc` has 3 big gaps, check we identify them correctly
+/// The longest flight in problem-time-gaps does not run past its gap at fix 3103.
 #[test]
 fn flight_window_stops_at_time_gap() {
     let path = real().join("problem-time-gaps.igc");
@@ -61,7 +60,7 @@ fn flight_window_stops_at_time_gap() {
     );
 }
 
-/// fai-01 is the fixture the bindings and their READMEs quote, so pin what they quote.
+/// fai-01's numbers, which the bindings' READMEs quote.
 #[test]
 fn flight_window_of_fai_01() {
     let path = real().join("fai-01.igc");
@@ -77,6 +76,7 @@ fn flight_window_of_fai_01() {
     assert_eq!((flight.start, flight.stop), (125, 25425));
 }
 
+/// A fixture parses to a non-empty track with increasing timestamps.
 fn check_fixture(name: &str) {
     let stem = stem_of(name);
     let path = real().join(format!("{stem}.igc"));

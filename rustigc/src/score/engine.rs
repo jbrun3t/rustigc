@@ -2,9 +2,8 @@
 
 //! Branch-and-bound search scoring a flight against a ruleset.
 //!
-//! A run evaluates every rule of the ruleset at once: candidates of all rules share the
-//! heap, the caches and the pruning floor, so the weaker rules get discarded early instead of each
-//! paying for a full search of its own.
+//! A run evaluates every rule of the ruleset at once: candidates of all rules share one heap, the
+//! caches and the pruning floor.
 //!
 //! **Branch.** A [`Candidate`] holds one `[start, end]` fix-index range per turnpoint. A split cuts
 //! one of them, giving two children.
@@ -12,7 +11,8 @@
 //! **Bound.** `Shape::bound` maximises the distance over the vertices of the candidate bounding
 //! boxes, under whatever its own geometry also constrains.
 //!
-//! **Score.** `Shape::peek` measures the distance through one real fix of each range.
+//! **Peek.** `Shape::peek` measures the distance through one real fix of each range: a score some
+//! flight reaches.
 //!
 //! **Floor.** The highest score found so far, all rules included.
 
@@ -31,12 +31,11 @@ use super::rules::{Rule, Ruleset};
 use super::shapes::margin::Band;
 use super::{ScoringResult, round_mm};
 
-// How much larger a range's box must be to take the split from the widest range.
-// There is not much to back this number over another, other than a slightly better
-// runtime.
+// How many times larger a range's box area must be than the widest range's to take the split.
+// Tuned on runtime only.
 const AREA_OVERRIDE: f64 = 2.5;
 
-/// A node of the search: one fix-index range per turnpoint
+/// A node of the search: one fix-index range per turnpoint.
 #[derive(Debug, Clone)]
 pub struct Candidate {
     pub ranges: Vec<[usize; 2]>,
@@ -48,7 +47,7 @@ impl Candidate {
         self.ranges[i][1].saturating_sub(self.ranges[i][0])
     }
 
-    // Not needed but kept for symmetry with `Solution`
+    /// Whether every range is down to one fix.
     fn is_leaf(&self) -> bool {
         self.leaf
     }
@@ -59,7 +58,7 @@ impl Candidate {
         first[1] >= last[0]
     }
 
-    // Mostly useful on leafs
+    /// First fix of each range: the turnpoints, on a leaf.
     pub(crate) fn positions(&self) -> Vec<usize> {
         self.ranges.iter().map(|r| r[0]).collect()
     }
@@ -67,9 +66,8 @@ impl Candidate {
     pub(crate) fn new(mut ranges: Vec<[usize; 2]>) -> Self {
         let len = ranges.len() - 1;
 
-        // Turnpoints are flown in order, so trim the impossible parts of each range: TP(n+1) cannot
-        // start before TP(n) does, TP(n) cannot end after TP(n+1) does. This keeps any fix sequence
-        // picked from the ranges chronological.
+        // Turnpoints are flown in order: TP(n+1) cannot start before TP(n), and TP(n) cannot end
+        // after TP(n+1). Trimming both keeps any fix sequence picked from the ranges chronological.
         for i in 0..len {
             ranges[i + 1][0] = max(ranges[i][0], ranges[i + 1][0]);
         }
@@ -82,23 +80,21 @@ impl Candidate {
         Candidate { ranges, leaf }
     }
 
-    /// Root of the search: every turnpoint over the whole window
+    /// Root of the search: every turnpoint over the whole window.
     fn initial(size: usize, c: usize) -> Self {
         debug_assert!(c >= 1);
 
         Self::new(vec![[0, size - 1]; c])
     }
 
-    /// Splits a range at its midpoint: the widest one, unless another covers a much larger area.
+    /// Splits one range at its midpoint: the widest, unless another range's box is more than
+    /// [`AREA_OVERRIDE`] times larger by area, in degrees squared.
     ///
-    /// The areas are degrees squared on purpose, for faster operation. This is just heuristic and does
-    /// not affect correctness. It helps the B&B unglue itself when there is big gap/jump in the track.
-    /// In such case the diagonal of a box is bigger than it should, forcing the B&B to grind to the leaf.
-    /// The area trick solve that problem by forcing a split on the gap.
+    /// The choice only steers the search, never its result. A gap in the track inflates a box well
+    /// beyond its fix count; splitting it first keeps the search from grinding down to the leaves.
     fn split(&self, scorer: &Scorer) -> [Self; 2] {
         debug_assert!(!self.leaf);
 
-        // Find largest range in the candidate
         let mut best = 0;
         for i in 1..self.ranges.len() {
             if self.rlen(i) > self.rlen(best) {
@@ -106,9 +102,8 @@ impl Candidate {
             }
         }
 
-        // ... then hand the split over to a range whose box dwarfs it, if there is one
         let area = |range: &[usize; 2]| {
-            // `eval` already built these, so this is a cache hit
+            // A cache hit: `eval` built these boxes.
             let b = scorer.bbox(range);
             (b.max.x() - b.min.x()) * (b.max.y() - b.min.y())
         };
@@ -137,6 +132,7 @@ impl Candidate {
     }
 }
 
+/// A candidate on the heap, ordered by `bound`: its rule's score at the candidate's upper bound.
 #[derive(Debug)]
 struct Solution<'r> {
     bound: f64,
@@ -202,11 +198,8 @@ pub struct Scorer {
     offset: usize,
 }
 
-/// Rejects a table that cannot be searched.
-///
-/// A NaN would poison the heap's `total_cmp` ordering, and a longitude past 180 would make
-/// `crosses_antimeridian` misfire. Points reaching [`Scorer::new`] come from the B-record parser,
-/// which bounds both degrees already; these come from outside.
+/// Rejects fewer than two points, or a point that is not a finite latitude within ±90 and longitude
+/// within ±180. A NaN would break the heap's ordering, a longitude past 180 the antimeridian check.
 fn check_points<P: PointCoords<f64>>(track: &[P]) -> Result<(), TrackError> {
     if track.len() < 2 {
         return Err(TrackError::TooFewPoints {
@@ -234,7 +227,7 @@ impl Scorer {
         Band::of(lat)
     }
 
-    /// FCC-vs-geodesic slack to allow on `distance`
+    /// Relative FCC-vs-geodesic slack to allow on `distance`, for this window's latitudes.
     pub(super) fn margin(&self, distance: f64) -> f64 {
         self.band.margin(distance)
     }
@@ -270,7 +263,9 @@ impl Scorer {
         self.caches.end(self, leg, tp)
     }
 
-    /// Evaluates a candidate, returning the `Solution` to push and its score.
+    /// Evaluates `candidate` under `rule`: the solution to push, and the score the floor may rise
+    /// to. `None` for a non-leaf that cannot reach `floor` even with no gap, and for a leaf
+    /// below it, rejected by the shape on the geodesic re-measure, or valid under no variant.
     fn eval<'r>(
         &self,
         rule: &'r Rule,
@@ -282,8 +277,7 @@ impl Scorer {
         let leaf = candidate.is_leaf();
         let bound = shape.bound(self, &candidate);
 
-        // A gap of 0 is the most favourable a rule can be given, so a candidate
-        // rejected here cannot score above the floor with its real gap either.
+        // A gap of 0 is the most a rule can be given, so this prunes on the real gap too.
         if !leaf && rule.score(bound, 0.0) < floor {
             return None;
         }
@@ -296,38 +290,35 @@ impl Scorer {
             rule,
         };
 
-        // Cannot raise the floor, so skip the work of measuring it.
+        // Cannot raise the floor: skip `peek`.
         if solution.bound < floor {
             return Some((solution, upper));
         }
 
-        // `peek` on a leaf too, though `bound` agrees with it on the distance there.
-        // Only `peek` tests a shape's constraints with the Fcc-vs-geodesic margin for balanced
+        // `peek` on a leaf too: only `peek` checks a balanced circuit's ratio with the margin.
         // TODO: Return None early if bound is re-usable
         let dist = shape.peek(self, &solution.candidate);
 
-        // Add slack on peeked distance to account for Fcc-vs-Geodesic distance difference.
-        // Ensure a solution valid with Fcc but invalid with Geodesic does not poison the heap.
+        // Shrink the distance and grow the gap by the margin, so the floor never rests on a score
+        // the geodesic re-measure would refuse.
         let lower = rule.score(
             dist * (1.0 - self.margin(dist)),
             gap * (1.0 + self.margin(gap)),
         );
 
-        // A score higher than the bound would poison the B&B. If it happens, something is broken
+        // A floor above the bound would prune the optimum.
         debug_assert!(upper >= lower);
 
         Some((solution, lower))
     }
 
-    /// Whether a solution is worth keeping.
+    /// Whether a solution is worth keeping: its bound reaches the floor and is above 0. The second
+    /// test matters while the floor is 0, when candidates that can never score would fill the heap.
     fn retain(bound: f64, floor: f64) -> bool {
-        // NOTE: Rejecting a 0 bound matters while the floor is still 0:
-        // Candidates which can never score (cannot close, ...) would
-        // otherwise pollute the heap until the floor rises.
         !(bound < floor || bound <= 0.0)
     }
 
-    /// Seeds one initial solution per rule, and the best floor they provide.
+    /// One root solution per rule, and the floor they reach.
     fn seed<'r>(&self, rules: &'r [Rule]) -> (Vec<Solution<'r>>, f64) {
         let mut floor = 0.0;
         let mut solutions = Vec::new();
@@ -342,9 +333,6 @@ impl Scorer {
 
                 solutions.push(result.0);
 
-                // NOTE: the first and last bounding boxes necessarily overlap at this stage,
-                // so every floor should be 0 here. Keep it in case the overlap handling
-                // changes.
                 floor = floor.max(result.1);
             }
         }
@@ -352,8 +340,8 @@ impl Scorer {
         (solutions, floor)
     }
 
-    /// Branching part of the B&B: evaluates both children and returns them with the floor they
-    /// raise, if any.
+    /// Splits `solution` and evaluates both children; returns them with the highest floor they
+    /// reach.
     fn split<'r>(
         &self,
         solution: Solution<'r>,
@@ -378,10 +366,9 @@ impl Scorer {
         (children, highest)
     }
 
-    /// Rebuilds the winning geometry, lets the rule price it, and assembles the report,
-    /// shift the index space back out of the window to the track reference.
-    ///
-    /// `None` when the geodesic re-measure rejects what the FCC search accepted.
+    /// Re-measures the winning leaf on the geodesic, scores it under its rule, and builds the
+    /// result in the caller's track indices. `None` when the shape rejects the re-measure, or the
+    /// scored distance rounds to 0.
     fn report(&self, ruleset: &Ruleset, solution: &Solution) -> Option<ScoringResult> {
         let rule = solution.rule;
 
@@ -415,9 +402,8 @@ impl Scorer {
 
     /// Prepares the fixes in `[start, stop]` for searching.
     ///
-    /// The window is the caller's, and checked. The coordinates are this crate's own — they reach
-    /// here from the B-record parser, which bounds both degrees — and are taken on trust;
-    /// [`Scorer::from_slice`] is the entry for a table from outside.
+    /// Checks the window, not the coordinates, which must be finite degrees within range; use
+    /// [`Scorer::from_slice`] or [`Scorer::from_vec`] for points not checked yet.
     ///
     /// # Errors
     ///
@@ -461,8 +447,7 @@ impl Scorer {
     /// Prepares an owned table of `[latitude, longitude]` points, in decimal degrees and in flight
     /// order.
     ///
-    /// Keeps the allocation it is given, so a binding can hand over the buffer it copied across its
-    /// FFI without a second pass.
+    /// Takes the buffer as is, without copying it.
     ///
     /// # Errors
     ///
@@ -474,11 +459,8 @@ impl Scorer {
         Ok(Self::build(track, 0))
     }
 
-    /// Sets up the caches and the latitude band over `track`, `offset` fixes into the caller's own
-    /// point list.
-    ///
-    /// `track` is the cache-friendly layout the search reads, and gets its longitudes "unwrapped"
-    /// here so the antimeridian is no longer an issue.
+    /// A scorer over `[lat, lon]` points starting `offset` fixes into the caller's track.
+    /// Longitudes are unwrapped when the track crosses the antimeridian.
     fn build(mut track: Vec<SPoint>, offset: usize) -> Self {
         if track.crosses_antimeridian() {
             track = track.iter().copied().unwrapped().collect();
@@ -497,10 +479,7 @@ impl Scorer {
 
     /// Scores the window against every rule of `ruleset` and reports the best.
     ///
-    /// `None` when no rule could score the window — a real answer, not a failure.
-    ///
-    /// Main B&B loop. Evaluating the rules together is important to quickly discard the least
-    /// performing ones.
+    /// `None` when no rule scores the window.
     #[must_use]
     pub fn solve(&self, ruleset: &Ruleset) -> Option<ScoringResult> {
         let (solutions, mut floor) = self.seed(ruleset.rules());
@@ -509,16 +488,15 @@ impl Scorer {
             .filter(|s| Self::retain(s.bound, floor))
             .collect();
 
-        // Critical performance hot-path
+        // Hot path.
         loop {
             let Some(solution) = heap.pop() else {
                 break None;
             };
 
             if solution.is_leaf() {
-                // The geodesic re-measure can reject what the FCC search accepted. Take the next
-                // best leaf instead of giving up: this is not an error, and the floor was never
-                // raised above what a re-measure can withdraw, so the heap still holds the rest.
+                // The geodesic re-measure may reject this leaf. The next best is still on the
+                // heap: the floor never rose above a score the re-measure could withdraw.
                 match self.report(ruleset, &solution) {
                     Some(result) => {
                         info!("Best {:?}", solution);

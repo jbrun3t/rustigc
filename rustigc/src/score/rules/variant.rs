@@ -5,13 +5,14 @@ use serde::Deserialize;
 use super::closing::Closing;
 use super::constraint::Constraint;
 
-/// One way a rule prices a geometry: what it requires, and what the price is worth.
+/// One way a rule scores its shape.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Variant {
+    /// Reported as the result's description.
     pub name: String,
     pub multiplier: f64,
-    /// `None` over an open geometry, which has no closing leg and reports no gap.
+    /// `None` for an open shape.
     #[serde(default)]
     pub closing: Option<Closing>,
     #[serde(default)]
@@ -19,7 +20,8 @@ pub struct Variant {
 }
 
 impl Variant {
-    /// What this rate makes of a geometry; its score is 0 unless every constraint holds.
+    /// Scores a raw `distance` and its closing `gap`. The score is 0 when a constraint fails or
+    /// the gap does not close.
     pub(super) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
         let penalty = self.closing.map_or(0.0, |c| c.penalty(distance, gap));
         let net = (distance - penalty).max(0.0);
@@ -41,8 +43,7 @@ impl Variant {
     }
 }
 
-/// The variant a rule prices a geometry at: the first, listed best rate first, that earns anything
-/// — the last one if none do, which then scores 0.
+/// The first variant that earns anything, or the last one when none does.
 pub(super) fn pick(variants: &[Variant], distance: f64, gap: f64) -> &Variant {
     variants
         .iter()
@@ -54,20 +55,19 @@ pub(super) fn pick(variants: &[Variant], distance: f64, gap: f64) -> &Variant {
         })
 }
 
-/// What a rule made of a geometry, in meters, unrounded.
-///
-/// Borrows its description from the rule that produced it, which owns the name its ruleset states.
+/// A distance and gap scored by one variant, in meters, unrounded.
 #[derive(Debug)]
 pub struct Scored<'a> {
     /// Distance net of the penalty.
     pub distance: f64,
+    /// Distance the gap took off.
     pub penalty: f64,
-    /// 0 when a constraint is not met: there is a path, it is worth nothing.
+    /// `distance` × `multiplier`, or 0 when a constraint fails.
     pub score: f64,
     pub multiplier: f64,
-    /// Largest gap this result's variant would still hold at, on the raw distance; 0 when there is
-    /// no closing leg.
+    /// Largest gap the variant closes for the raw distance; 0 without a closing.
     pub threshold: f64,
+    /// The variant's name.
     pub description: &'a str,
 }
 
@@ -81,8 +81,8 @@ mod tests {
         penalized: true,
     };
 
-    /// One closing paying two rates by distance, best first, as XC League bands its circuits:
-    /// ×2 from 35 km of scoring distance, ×1.2 from 5 km.
+    /// Two rates banded by scoring distance, as XC League bands its circuits: ×2 from 35 km,
+    /// ×1.2 from 5 km.
     fn banded() -> Vec<Variant> {
         vec![
             Variant {
@@ -100,9 +100,8 @@ mod tests {
         ]
     }
 
-    /// A distance threshold holds at exactly the distance its rulebook states. The same threshold
-    /// in points cannot: it is that distance times the rate, and the product falls short of the
-    /// round number, so a ×2.3 band written in points refuses a 25.000 km triangle.
+    /// A distance threshold holds at exactly its distance; the same band in points does not, since
+    /// `25_000.0 * 2.3` falls short of `57_500.0`.
     #[test]
     fn variants_min_distance_exact_at_stated_distance() {
         const RATE: f64 = 2.3;
@@ -141,8 +140,7 @@ mod tests {
         assert_eq!(pick(&banded, 10_000.0, 0.0).name, "low");
     }
 
-    /// A threshold is tested on the distance the variant scores, net of what it charges for the
-    /// gap: 35.5 km raw, 800 m of it charged, misses a band stated at 35 km.
+    /// A threshold is tested on the net distance: 35.5 km less an 800 m gap misses the 35 km band.
     #[test]
     fn variants_band_on_scoring_distance() {
         let banded = banded();
@@ -151,7 +149,7 @@ mod tests {
         assert_eq!(pick(&banded, 35_500.0, 0.0).name, "high");
     }
 
-    /// Under every band a rule earns nothing, so the search prunes it rather than reporting a path.
+    /// Below every band, nothing is earned.
     #[test]
     fn variants_band_below_floor_scores_zero() {
         let banded = banded();
@@ -169,8 +167,7 @@ mod tests {
         );
     }
 
-    /// Thresholds step the score up, never down. A band paying a worse rate as distance grows would
-    /// break the bound the search prunes on, with nothing to report it.
+    /// The score never falls as distance grows; the search's bound relies on it.
     #[test]
     fn variants_band_monotone_in_distance() {
         let banded = banded();
@@ -188,7 +185,7 @@ mod tests {
         }
     }
 
-    /// A variant stating no threshold earns from the first metre.
+    /// Without constraints, a variant earns from the first metre.
     #[test]
     fn variants_unthresholded_earn_from_zero() {
         let free = [Variant {

@@ -37,12 +37,12 @@ def _finder():
 
 
 def _json(item) -> str | None:
-    """A layer's scalars, for Rust to read back into the struct that draws it"""
+    """A layer's scalars as JSON, for the Rust export to read back."""
     return None if item is None else json.dumps(item._data)
 
 
 def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
-    """Fix indices of a scoring window, given as indices or as fixes"""
+    """Fix indices of a scoring window, given as indices or as fixes."""
     start, stop = bounds
 
     if isinstance(start, Fix) and isinstance(stop, Fix):
@@ -56,11 +56,7 @@ def _window(bounds: tuple[int, int] | tuple[Fix, Fix]) -> tuple[int, int]:
 
 
 class Log:
-    """A parsed IGC file.
-
-    A log never changes, so the track is copied into a numpy array on first `track` access
-    and kept; reading it after that stays in Python.
-    """
+    """A parsed IGC file. It never changes; the track is copied out of Rust on first access."""
 
     def __init__(self, log: rib.RustLog):
         """Wrap an already-parsed log. Prefer `from_file` or `from_bytes`."""
@@ -121,13 +117,13 @@ class Log:
 
     @property
     def pilot_name(self) -> str | None:
-        """Pilot name, from the `PLT` header. None when entry is not present."""
+        """Pilot name, from the `PLT` header, or None."""
         header = self._log.get_header("PLT")
         return header[0] if header else None
 
     @property
     def glider_type(self) -> str | None:
-        """Glider type, from the `GTY` header. None when entry is not present."""
+        """Glider type, from the `GTY` header, or None."""
         header = self._log.get_header("GTY")
         return header[0] if header else None
 
@@ -173,6 +169,9 @@ class Log:
 
         Args:
             timestamp: A `Fix.timestamp`, in milliseconds.
+
+        Returns:
+            None when `datetime` is None.
         """
         origin = self.datetime
         if origin is None:
@@ -203,7 +202,7 @@ class Log:
                 objects. Defaults to the longest detected flight.
 
         Returns:
-            The best `Score`. None when no rule could score.
+            The best `Score`, or None when no rule scores.
 
         Raises:
             TypeError: One bound of `window` is a `Fix` and the other is not.
@@ -225,10 +224,9 @@ class Log:
         return Score(self.track, json.loads(scored))
 
     def describe(self, ruleset: str) -> str:
-        """Everything this log describes about itself, as a GeoJSON string.
+        """GeoJSON of the track, its longest detected flight and that flight's score.
 
-        The longest flight detected in the track, and what it scored under `ruleset`. A flight
-        that scores nothing leaves just the track.
+        A flight that scores nothing leaves the track and the flight.
 
         Use `export` when the flight and score are already at hand.
 
@@ -252,12 +250,12 @@ class Log:
             `leg`, `closing`, `score` or `metadata`.
 
         Raises:
-            ValueError: A layer is not the kind its slot draws. Rust reads each one back and
-                names the field it is missing.
-            TypeError: A layer is not a layer at all.
+            ValueError: A layer is not the kind its slot draws, with the field it is missing, or
+                holds a fix index past the end of the track.
+            TypeError: A layer is another object with data, such as a `Fix`.
 
-        Indices are taken on trust: a layer detected or scored in another log — what `with_track`
-        hands back, for one — no longer refers to the track it came from.
+        Indices are not checked against the track the layers came from: a layer from another log,
+        such as one `with_track` returned, draws at its indices in this one.
         """
         return self._log.export(_json(flight), _json(score), track)
 

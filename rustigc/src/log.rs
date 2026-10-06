@@ -16,16 +16,15 @@ const BAD_RECORD_LIMIT: usize = 8;
 
 /// An IGC file, decoded.
 ///
-/// Everything the file states about the flight. Comments, signatures and events are dropped;
-/// [`RawLog`] keeps them. Build one with [`Log::new`], or from a [`RawLog`] when the record-level
-/// view is needed first.
+/// Keeps the recorder, headers, fixes and task; comments, signatures and events are dropped, and
+/// [`RawLog`] keeps them. Build one with [`Log::new`], or from a [`RawLog`].
 ///
-/// Invalid fixes and fixes whose timestamp does not advance are dropped, so `track` is always
-/// strictly increasing in time. A file that is mostly unparsable is rejected outright.
+/// Invalid fixes and fixes whose timestamp does not advance are dropped, so `track` is strictly
+/// increasing in time.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Log {
-    /// Flight recorder that produced the file (A-record), synthesized when it is missing.
+    /// Flight recorder that produced the file (A-record); manufacturer `BAD` when it is missing.
     pub recorder: Recorder,
     /// Flight metadata (H-records), keyed by 3-letter code: `"PLT"`, `"GTY"`, `"DTE"`, ...
     pub headers: HashMap<String, HeaderData>,
@@ -50,7 +49,7 @@ impl TryFrom<RawLog<'_>> for Log {
         let mut recorder: Option<Recorder> = None;
         let mut _bextensions: Option<Vec<RecordExtension>> = None;
         let mut bad_count: usize = 0;
-        // -1 so the first fix passes whatever its timestamp
+        // Below any timestamp, so the first fix passes.
         let mut last_ts: i64 = -1;
         let mut dropped: usize = 0;
 
@@ -67,7 +66,7 @@ impl TryFrom<RawLog<'_>> for Log {
                     }
                     last_ts = ts;
 
-                    // TODO: Handle LOD/LAD, Possibly TDS
+                    // TODO: LOD/LAD extra precision, TDS sub-second time.
                     track.push(inner.fix);
                 }
                 Record::C(inner) => {
@@ -84,8 +83,7 @@ impl TryFrom<RawLog<'_>> for Log {
             }
         }
 
-        // Reject a file that is 80% bad or worse
-        // TODO: Try to reject earlier, while parsing
+        // TODO: reject while parsing.
         if (bad_count * 10) / count >= BAD_RECORD_LIMIT {
             return Err(DecodeError::TooManyBadRecords);
         }
@@ -94,8 +92,6 @@ impl TryFrom<RawLog<'_>> for Log {
             warn!("Dropped {dropped} invalid or out-of-order fix(es)");
         }
 
-        // How can one miss this in the IGC spec ?
-        // it is literally the first thing !
         let recorder = recorder.unwrap_or_else(|| {
             warn!("Missing Record \"A\". Please fix your flight recorder");
             Recorder {
@@ -131,7 +127,7 @@ impl Log {
     /// The window is a pair of indices into [`Log::track`]; flight detection is the usual source
     /// of one.
     ///
-    /// `None` when no rule could score the window — a real answer, not a failure.
+    /// `None` when no rule scores the window.
     ///
     /// # Errors
     ///
@@ -171,8 +167,8 @@ mod tests {
         assert_eq!(log.track[0].timestamp, 39_695_000);
     }
 
-    /// A `RawLog` can be built or deserialized empty, and the bad-record ratio divides by its
-    /// record count.
+    /// An empty `RawLog` is [`DecodeError::Empty`]; the bad-record ratio divides by the record
+    /// count.
     #[test]
     fn log_from_recordless_rawlog() {
         let raw = RawLog {

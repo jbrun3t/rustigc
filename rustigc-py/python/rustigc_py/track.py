@@ -18,13 +18,12 @@ class Track:
         track._latitude.mean()
         track._data[0:100]
 
-    They expose the fix layout directly, hence the underscores. The array is read-only, so it
-    always matches what Rust holds; `Log.with_track` hands back a log over a different one.
+    The underscores mark that they expose the fix layout. The array is read-only;
+    `Log.with_track` makes a log over a different one.
     """
 
     def __init__(self, track_bytes: bytes):
-        """Wrap raw `FIX_DTYPE` bytes, copying them into a numpy array once."""
-        # The one copy: everything after this is local Python
+        """Wrap raw `FIX_DTYPE` bytes as a read-only numpy array, without copying them."""
         self._npdata = numpy.frombuffer(track_bytes, dtype=FIX_DTYPE)
 
     @property
@@ -34,22 +33,22 @@ class Track:
 
     @property
     def _latitude(self) -> numpy.ndarray:
-        """Latitudes in decimal degrees"""
+        """Latitudes in decimal degrees."""
         return self._npdata["latitude"]
 
     @property
     def _longitude(self) -> numpy.ndarray:
-        """Longitudes in decimal degrees"""
+        """Longitudes in decimal degrees."""
         return self._npdata["longitude"]
 
     @property
     def _baro_altitude(self) -> numpy.ndarray:
-        """Barometric altitudes in meters"""
+        """Barometric altitudes in meters."""
         return self._npdata["baro_altitude"]
 
     @property
     def _gnss_altitude(self) -> numpy.ndarray:
-        """GNSS altitudes in meters"""
+        """GNSS altitudes in meters."""
         return self._npdata["gnss_altitude"]
 
     @property
@@ -64,7 +63,6 @@ class Track:
         """The fix at `idx`, negative indices counted from the end."""
         fix = self._npdata[idx]
 
-        # Do not let a negative index slip through
         return Fix(fix, idx if idx >= 0 else idx + len(self._npdata))
 
     def __iter__(self):

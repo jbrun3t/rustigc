@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Bounding-box cache, keyed on the inclusive `(start, end)` fix-index range.
-//!
-//! Building a box is linear in the range length and the search keeps revisiting the same ranges as
-//! it splits neighbouring candidates.
+//! Bounding-box cache, keyed on the inclusive `(start, end)` fix-index range. Building a box is
+//! linear in the range, and the search asks for the same ranges again across sibling candidates.
 
 use rustc_hash::FxHashMap;
 
@@ -17,7 +15,7 @@ impl BoxCache {
         BoxCache(FxHashMap::default())
     }
 
-    /// Get-or-compute the bounding box covering the range.
+    /// Bounding box of the fixes in `range`, computed on first request.
     pub fn bbox(&mut self, p: &[SPoint], range: &[usize; 2]) -> BBox<SPoint> {
         debug_assert!(
             range[0] <= range[1] && range[1] < p.len(),

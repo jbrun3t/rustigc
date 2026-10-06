@@ -2,10 +2,10 @@
 
 use serde::Deserialize;
 
-/// How far a circuit may stay open, and whether the gap is charged.
+/// How far a circuit may stay open. `penalized` takes the gap off the distance; otherwise the gap
+/// is free.
 ///
-/// One closing answers both what a gap costs and how large it may get, so a charged penalty and a
-/// reported threshold cannot drift apart. A rulebook pricing one gap two ways states two variants.
+/// A rulebook charging one gap two ways states two variants, each with its own closing.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Closing {
@@ -16,7 +16,7 @@ pub enum Closing {
 }
 
 impl Closing {
-    /// Largest gap this closes, in meters, against the raw distance.
+    /// Largest gap this closes, in meters, for the raw `distance`.
     pub(super) fn reach(&self, distance: f64) -> f64 {
         match self {
             Closing::Distance { distance_m, .. } => *distance_m,
@@ -24,8 +24,8 @@ impl Closing {
         }
     }
 
-    /// Charge for the gap: its own length when penalized, else nothing. INFINITY for a gap this does
-    /// not reach.
+    /// Distance the gap takes off: the gap itself when penalized, else 0. INFINITY past
+    /// [`Closing::reach`].
     pub(super) fn penalty(&self, distance: f64, gap: f64) -> f64 {
         let (Closing::Distance { penalized, .. } | Closing::Ratio { penalized, .. }) =
             self;

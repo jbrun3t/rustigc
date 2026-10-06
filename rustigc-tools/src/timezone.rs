@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//! Local wall clock for a track
+//! Local wall-clock time for a track.
 //!
-//! Two datasets with two jobs: `utz` maps the first fix to an IANA name against timezone-boundary
-//! polygons, `jiff` turns that name into offsets against tzdb.
-//!
-//! `TZN` from the IGC is the fallback. It is a declared offset which might actually be wrong
+//! `utz` names the zone of the first fix from boundary polygons, and `jiff` gives that zone's
+//! offsets from the tzdb. The log's `TZN` offset is the fallback, then UTC.
 
 use jiff::tz::{Offset, TimeZone};
 use jiff::{SignedDuration, Timestamp};
@@ -13,15 +11,15 @@ use log::warn;
 
 use rustigc::{Fix, Log};
 
-/// Zoned instant, as [`LocalTime::at`] reports one. Re-exported so a caller needs no direct
+/// Zoned instant, as [`LocalTime::at`] returns. Re-exported so a caller needs no direct
 /// dependency on [`jiff`].
 pub use jiff::Zoned;
 
-/// The instant a track's timestamps count from, read in the zone it starts in.
+/// The instant a track's timestamps count from, in the zone the track starts in.
 pub struct LocalTime(Zoned);
 
 impl LocalTime {
-    /// `None` when the log states no date, so there is nothing to count from.
+    /// `None` when the log has no usable date.
     pub fn new(log: &Log) -> Option<Self> {
         let origin: Timestamp = log
             .datetime()?
@@ -37,7 +35,7 @@ impl LocalTime {
         &self.0 + SignedDuration::from_millis(i64::from(timestamp))
     }
 
-    /// The instant the track counts from, in that same zone.
+    /// The instant timestamps count from.
     pub fn origin(&self) -> &Zoned {
         &self.0
     }
@@ -48,7 +46,7 @@ fn zone(log: &Log) -> TimeZone {
     if let Some(name) = log.track.first().and_then(lookup) {
         match TimeZone::get(&name) {
             Ok(tz) => return tz,
-            // The boundary data and the tzdb are versioned apart, so this is the skew showing.
+            // Boundary data and tzdb release separately; a name may be missing from the tzdb.
             Err(_) => warn!("Timezone {name} is not in the tzdb"),
         }
     }
@@ -64,7 +62,7 @@ fn zone(log: &Log) -> TimeZone {
     TimeZone::UTC
 }
 
-/// IANA name covering `first`.
+/// IANA name of the zone holding `first`.
 fn lookup(first: &Fix) -> Option<String> {
     let finder = utz::Finder::new()
         .inspect_err(|e| warn!("No timezone finder: {e}"))

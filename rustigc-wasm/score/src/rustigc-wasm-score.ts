@@ -7,7 +7,6 @@ import { readFileSync } from "node:fs";
 
 import { main } from "./cli.js";
 
-// `import.meta.resolve` names the package entry, never a subpath: a package that declares
-// `exports` encapsulates its subpaths, and the bindings' manifest is generated, not ours to hold
-// still. The wasm sits beside that entry either way.
+// Resolved from the package entry: the generated manifest's `exports` hide its subpaths, and the
+// wasm sits beside the entry.
 main(readFileSync(new URL("rustigc_wasm_bg.wasm", import.meta.resolve("rustigc-wasm"))));

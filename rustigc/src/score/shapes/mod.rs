@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! The geometries a flight can be scored over. A rule names one and prices what it measures.
+//! The geometries a flight is scored over. A rule names one and scores the distance and gap it
+//! measures.
 
 mod circuit;
 mod common;
@@ -21,18 +22,17 @@ use crate::utils::geometry::{SPoint, Vertices};
 use common::TransitionMatrix;
 
 pub trait ShapeBound: Debug {
-    /// Upper bound of the distance reachable within this geometry. Hot-path.
+    /// Upper bound of the distance any flight through `c`'s ranges reaches. On the hot path.
     fn bound(&self, scorer: &Scorer, c: &Candidate) -> f64;
 }
 
 pub trait ShapePeek: Debug {
-    /// FCC distance the flight actually reaches, through one real fix of each range, or 0 when no
-    /// such path meets the shape's own constraints. Floors the shared search. Hot-path.
+    /// FCC distance through one real fix of each range, or 0 when that path breaks the shape's
+    /// constraints. A score some flight reaches, so it raises the search floor. On the hot path.
     fn peek(&self, scorer: &Scorer, c: &Candidate) -> f64;
 }
 
-/// The task a candidate flew, on the geodesic. Which of its fixes are turnpoints and which are the
-/// ends is the shape's call, not the rule's.
+/// The task a leaf flies, measured on the geodesic, with its turnpoints and ends as track indices.
 #[derive(Debug)]
 pub struct Task {
     pub distance: f64,
@@ -44,27 +44,22 @@ pub struct Task {
 }
 
 pub trait ShapeCommon: Debug {
-    /// Entry and exit fixes of this candidate: the closing points of a circuit, the furthest points
-    /// around an open polyline. Hot-path.
+    /// Entry and exit fixes: a circuit's closing pair, an open polyline's furthest points, or
+    /// the first fix of its first and last ranges when it searches its ends. On the hot path.
     fn endpoints(&self, scorer: &Scorer, c: &Candidate) -> (usize, usize);
-    /// Closing leg of a circuit — a raw distance, not a penalty. 0 when there is no closing leg, or
-    /// when the closing search was skipped. Hot-path.
+    /// Closing leg of a circuit, as a distance. 0 for an open shape, and while a circuit's
+    /// first and last ranges overlap. On the hot path.
     fn gap(&self, scorer: &Scorer, c: &Candidate) -> f64;
-    /// Cold-path, once on the winner. `None` when the geodesic re-measure fails the shape's own
-    /// constraints.
+    /// The task `c` flies, re-measured on the geodesic; `None` when it then breaks the shape's
+    /// constraints. Called once, on the winning leaf.
     fn report(&self, scorer: &Scorer, c: &Candidate) -> Option<Task>;
 }
 
-/// `Sync` so [`table::SHAPES`] can hold `&'static dyn Shape` in a `static`.
+/// A geometry the search can bound, peek and report. `Sync` for the static [`table::SHAPES`].
 pub trait Shape: ShapeCommon + ShapePeek + ShapeBound + Sync {}
 impl<T: ShapeCommon + ShapePeek + ShapeBound + Sync> Shape for T {}
 
-/// A geometry as a rule names it: the parameters that pick one monomorphisation, and nothing the
-/// search derives from them.
-///
-/// Not the Rust type's spelling — renaming a shape would then rewrite every ruleset — and not
-/// [`ShapeKind::CARDINALITY`] either, which an open polyline computes rather than states, so two
-/// different polylines share one.
+/// A geometry as a ruleset names it: the parameters that pick one monomorphisation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum ShapeSpec {
@@ -82,23 +77,21 @@ pub enum ShapeSpec {
     },
 }
 
-/// A geometry a rule can name, e.g. `ClosedCircuit<3>`.
+/// A concrete geometry, e.g. `ClosedCircuit<3>`, listed in [`table::SHAPES`].
 ///
-/// A cardinality floor is asserted inside `CARDINALITY`. Being post-monomorphization, it fails
-/// `cargo build` but not `cargo check`.
+/// `CARDINALITY` asserts the geometry's minimum size; that assert fails `cargo build` but not
+/// `cargo check`.
 pub trait ShapeKind: Shape + Sized + 'static {
-    /// Fix-index ranges the search branches on. Needed to size the root candidate, before any
-    /// shape exists.
+    /// Number of fix ranges the search branches on.
     const CARDINALITY: usize;
 
-    /// Whether the geometry has a closing leg for a rule to charge.
+    /// Whether the geometry has a closing leg.
     const CLOSES: bool;
 
-    /// How a rule names this geometry, stated from the type's own parameters.
+    /// How a ruleset names this geometry.
     const SPEC: ShapeSpec;
 
-    /// The one instance of this geometry, a stateless ZST. A `const` rather than [`Default`] so a
-    /// `static` can be declared from it, which `Default::default()` cannot.
+    /// The geometry's single, stateless instance; a `const` so a `static` can hold it.
     const NEW: Self;
 }
 

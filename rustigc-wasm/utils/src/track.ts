@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
 /**
- * Decoder for `Log.track_bytes`.
- *
- * Optional: the binding hands over the raw fix array and nothing obliges a caller to use this.
- * Doing it here rather than in Rust is 10x faster, because `serde_wasm_bindgen` crosses the FFI
- * once per field where this crosses once per track.
+ * Decoder for `Log.track_bytes`, about 10x faster than `Log.track`, whose `serde_wasm_bindgen`
+ * crosses the boundary once per field where this crosses once per track.
  *
  * @module
  */

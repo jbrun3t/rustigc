@@ -87,7 +87,7 @@ function humanOutput(log: Log, result: Score): void {
 
 /// Runs the CLI over `wasm`, the bindings' WebAssembly, which each entry point sources its own way.
 export function main(wasm: SyncInitInput): void {
-	// Before anything else: `usage` reports the rulesets, and that is a call into the wasm.
+	// First: `usage` lists the rulesets, which calls into the wasm.
 	initSync({ module: wasm });
 
 	let ruleset: string;

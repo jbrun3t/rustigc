@@ -17,8 +17,8 @@ the flights in it, scores them against a ruleset, and draws the result as GeoJSO
 
     open("flight.geojson", "w").write(log.export(flight, score))
 
-The track is a numpy structured array underneath, copied once from Rust and then read entirely in
-Python. Parsing, detection and scoring release the GIL.
+The track is a numpy structured array, copied once out of Rust. Parsing, detection and scoring
+release the GIL.
 
 `Scorer` scores a table of coordinates on its own, with no IGC file behind it:
 

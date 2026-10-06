@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! B-record (position fix) parser
+//! B-record (position fix) parser.
 //!
-//! B-record format: BHHMMSSsDDMMmmmNDDDMMmmmEVPPPPPGGGGG
-//! - B: Record type
-//! - HHMMSS: UTC time
-//! - DDMMmmmN/S: Latitude (degrees, minutes with 3 decimals, hemisphere)
-//! - DDDMMmmmE/W: Longitude (degrees, minutes with 3 decimals, hemisphere)
-//! - V: Validity (A=valid 3D, V=invalid)
-//! - PPPPP: Pressure altitude (meters)
-//! - GGGGG: GNSS altitude (meters)
+//! Format `BHHMMSSDDMMmmmNDDDMMmmmEVPPPPPGGGGG`, then the extension fields the I-record lays out:
+//! - `HHMMSS`: UTC time
+//! - `DDMMmmmN`, `DDDMMmmmE`: latitude and longitude, degrees and minutes to three decimals
+//! - `V`: `A` for a 3D fix, `V` otherwise
+//! - `PPPPP`, `GGGGG`: pressure and GNSS altitude, in meters
 
 use std::fmt;
 
@@ -29,12 +26,10 @@ use serde::{Deserialize, Serialize};
 
 /// One position fix.
 ///
-/// The unit of a track. A timestamp counts milliseconds from the origin [`Log::datetime`] states
-/// and carries no date of its own.
+/// The timestamp counts milliseconds from the origin [`Log::datetime`] states and carries no date.
 ///
-/// `repr(C)`, 32 bytes: the `u32` timestamp, four bytes of alignment padding, then the `f64` and
-/// `i32` fields. A binding reading a track as raw bytes must account for that padding. Do not
-/// reorder the fields !
+/// `repr(C)`, 32 bytes: the `u32` timestamp, 4 bytes of padding, then the `f64` and `i32` fields.
+/// Bindings read a track as raw bytes in this layout, so the field order is fixed.
 ///
 /// [`Log::datetime`]: crate::Log::datetime
 #[repr(C)]
@@ -79,8 +74,6 @@ impl crate::utils::geometry::PointCoords<f64> for Fix {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 /// A fix as its B-record holds it.
-///
-/// [`Log`]: crate::Log
 pub struct RawFix<'a> {
     /// The position itself.
     pub fix: Fix,
@@ -124,14 +117,17 @@ impl<'a> From<RawFix<'a>> for Record<'a> {
     }
 }
 
+/// Five-digit altitude in meters, sign allowed.
 fn altitude(input: &mut &[u8]) -> PResult<i32> {
     n_digits(5).parse_next(input)
 }
 
+/// `A` (valid 3D fix) or `V`.
 fn valid3d(input: &mut &[u8]) -> PResult<bool> {
     alt(((b'A').value(true), (b'V').value(false))).parse_next(input)
 }
 
+/// The fixed part of a B-record past the letter, with the validity flag.
 fn fix(input: &mut &[u8]) -> PResult<(Fix, bool)> {
     (ts_to_ms, latitude, longitude, valid3d, altitude, altitude)
         .map(|(t, ns, ew, v, baro_alt, gnss_alt)| {
@@ -149,6 +145,7 @@ fn fix(input: &mut &[u8]) -> PResult<(Fix, bool)> {
         .parse_next(input)
 }
 
+/// Parses one B-record; whatever follows the fixed part is kept as extension bytes.
 pub fn b_record<'a>(input: &mut &'a [u8]) -> PResult<Record<'a>> {
     delimited(b'B', (fix, till_robust_ending), robust_ending_eof)
         .map(|((fix, valid), ext)| RawFix { fix, valid, ext }.into())

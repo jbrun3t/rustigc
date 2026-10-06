@@ -6,6 +6,7 @@ pub mod geometry;
 pub mod iter;
 pub mod projector;
 
+/// `meters` in kilometers, rounded to 10 m.
 pub fn round_km(meters: f64) -> f64 {
     (meters / 10.0).round() / 100.0
 }

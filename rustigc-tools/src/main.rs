@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+//! Parses an IGC file from stdin and prints the log as JSON.
+
 use clap::Parser;
 use log::error;
 use rustigc::*;
@@ -10,7 +12,7 @@ use std::io::{self, Read};
 #[command(name = "rustigc-parse")]
 #[command(about = "Parse IGC files", long_about = None)]
 struct Args {
-    /// Suppress all output (useful for profiling)
+    /// Parse only, print nothing (for profiling)
     #[arg(short, long)]
     quiet: bool,
 }
@@ -35,8 +37,7 @@ fn main() -> io::Result<()> {
     if !args.quiet
         && let Err(e) = write_output(&log)
     {
-        // Broken pipe is expected when piping to head, less, etc.
-        // Exit silently in that case
+        // `head`, `less` and the like close the pipe early.
         if e.kind() != io::ErrorKind::BrokenPipe {
             return Err(e);
         }

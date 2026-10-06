@@ -3,11 +3,9 @@
 //! Furthest-point caches: how far the entry, or exit, leg of an open distance reaches, and where it
 //! lands.
 //!
-//! Three levels, all keyed on the question their caller asks rather than on the one they ask below:
-//! [`Furthest::terminals`] on the turnpoint range the bound is working on, [`Furthest::end`] on the
-//! turnpoint a leg hangs off, and [`FurthestCache`] underneath on the anchor and the bound scanned.
-//! The upper two collapse many distinct scans into one lookup; keying them on the scan parameters
-//! instead reads as a healthy cache while doing hundreds of times the work.
+//! Three levels: [`Furthest::terminals`] keyed on the turnpoint range a bound works on,
+//! [`Furthest::end`] on the turnpoint a leg hangs off, and [`FurthestCache`] underneath on the
+//! anchor point and how far it scanned.
 
 use std::cell::RefCell;
 
@@ -24,7 +22,7 @@ use crate::utils::projector::CheapProjection;
 pub type Terminals = SmallVec<[f64; 4]>;
 
 /// Which end of the turnpoint chain a leg hangs off, and so which way its scan runs. The
-/// discriminant indexes the per-direction caches.
+/// discriminant indexes the per-leg caches.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Leg {
     Entry = 0,
@@ -36,22 +34,21 @@ impl Leg {
         self as usize
     }
 
-    /// Fix a scan for this leg stops at, out of the turnpoint range the leg hangs off: the edge
-    /// facing it. Both legs therefore scan away from the range and skip its interior, which
-    /// [`Furthest::terminals`] covers with the box diagonal instead.
+    /// Edge of the turnpoint range facing this leg, where its scan stops. The range's interior is
+    /// never scanned; [`Furthest::terminals`] covers it with the box diagonal.
     fn tp(self, range: &[usize; 2]) -> usize {
         range[self.index()]
     }
 }
 
-/// A search, in cache coordinates
+/// One scan, in indices counted from the leg's window end. It answers any query stopping between
+/// `start` and `stop`.
 #[derive(Debug)]
 struct FurthestCacheEntry {
-    /// Furthest fix it found
+    /// Furthest fix found.
     start: usize,
-    /// Bound covered
+    /// How far the scan reached.
     stop: usize,
-    /// Cached distance
     distance: f64,
 }
 
@@ -81,7 +78,7 @@ impl FurthestCache {
         }
     }
 
-    /// Mirror exit-leg coordinates so both directions grow from 0
+    /// Mirrors exit-leg indices, so both legs count from their window end.
     fn translate(&self, value: usize) -> usize {
         match self.leg {
             Leg::Entry => value,
@@ -89,14 +86,14 @@ impl FurthestCache {
         }
     }
 
-    /// Returns full or partial match on the search range, if any
+    /// The scan of `point` whose fix is nearest `tp` without passing it, as
+    /// `(fix, distance, reached, covers tp)`, in track indices.
     fn get(&self, point: &SPoint, tp: usize) -> Option<(usize, f64, usize, bool)> {
         let key = Self::key(point);
         let stop = self.translate(tp);
         let list = self.cache.get(&key)?;
 
-        // Entry whose fix sits closest to `tp`: the likeliest to cover it, and otherwise the one
-        // leaving the least to rescan
+        // The likeliest to cover `tp`, and otherwise the one leaving the least to rescan.
         let upper = list.partition_point(|e| e.start <= stop);
         list[..upper].last().map(|e| {
             (
@@ -108,8 +105,8 @@ impl FurthestCache {
         })
     }
 
-    /// Records the result of a scan, possibly extending an existing record.
-    /// Returns the furthest fix over the whole range.
+    /// Records a scan up to `tp` that found `r`, merged with the entry it resumed from. Returns the
+    /// furthest fix over the whole range.
     fn insert(&mut self, point: &SPoint, tp: usize, r: &(usize, f64)) -> (usize, f64) {
         let key = Self::key(point);
         let (mut start, mut distance) = (self.translate(r.0), r.1);
@@ -117,8 +114,7 @@ impl FurthestCache {
 
         let list = self.cache.entry(key).or_default();
 
-        // Adopt the entry the scan resumed from when it still holds the furthest fix, leaving the
-        // extension below to stretch it over the range just scanned
+        // The entry the scan resumed from wins if it still holds the furthest fix.
         let upper = list.partition_point(|e| e.start <= stop);
         if let Some(prefix) = list[..upper].last()
             && prefix.distance > distance
@@ -127,7 +123,7 @@ impl FurthestCache {
             distance = prefix.distance;
         }
 
-        // Same fix found means the same distance, so only the bound reached can have grown
+        // Same fix, same distance: only the reach can grow.
         match list.iter_mut().find(|e| e.start == start) {
             Some(entry) => {
                 debug_assert_eq!(
@@ -138,7 +134,7 @@ impl FurthestCache {
                 entry.stop = stop.max(entry.stop);
             }
             None => {
-                // Kept sorted by start, `get` binary searches it
+                // Sorted by `start` for `get`'s binary search.
                 let pos = list.partition_point(|e| e.start < start);
                 list.insert(
                     pos,
@@ -159,8 +155,8 @@ impl FurthestCache {
         self.cache.len()
     }
 
-    /// Get-or-compute the furthest fix from `anchor` between `tp` and the window end this cache
-    /// searches from, as `(index, distance)`.
+    /// Furthest fix from `anchor` between this leg's window end and `tp`, as `(index, distance)`,
+    /// resuming a cached scan that stops short.
     fn furthest(&mut self, p: &[SPoint], anchor: &SPoint, tp: usize) -> (usize, f64) {
         debug_assert!(tp < p.len(), "bad range tp={tp} for {} points", p.len());
 
@@ -171,7 +167,7 @@ impl FurthestCache {
                 return (fix, distance);
             }
 
-            // Resume from the bound reached, `insert` puts back what this scan leaves out
+            // Resume where it stopped; `insert` merges the two.
             start = bound;
         }
 
@@ -180,8 +176,8 @@ impl FurthestCache {
     }
 }
 
-/// Linear scan, ranking the fixes on a plane projected around `anchor` and computing the real
-/// distance for the winner only.
+/// Furthest fix from `anchor` between `ground` and `tp`, ranked in a projection around `anchor`;
+/// only the winner gets its FCC distance.
 fn furthest_flat(
     p: &[SPoint],
     anchor: &SPoint,
@@ -199,7 +195,7 @@ fn furthest_flat(
 
     let projection = CheapProjection::new(anchor);
 
-    // Ranked on the square: same winner, without a `sqrt` per fix
+    // Ranked on the squared distance: same winner, no `sqrt`.
     for (offset, fix) in p[left..=right].iter().enumerate() {
         let point = projection.project(fix);
         let dist = Flat::distance_squared(&[0., 0.], &point);
@@ -214,7 +210,7 @@ fn furthest_flat(
     (max_idx, max_dist)
 }
 
-/// The whole furthest stack, one set of caches per leg.
+/// The furthest-point caches, one set per leg.
 #[derive(Debug)]
 pub struct Furthest {
     scan: [RefCell<FurthestCache>; 2],
@@ -263,7 +259,7 @@ impl Furthest {
 
         let cache = &self.terminals[leg.index()];
 
-        // Not held across the scans below, which reach back into the furthest caches
+        // Released before the scans, which borrow the same caches.
         let hit = cache.borrow().get(range).cloned();
         if let Some(hit) = hit {
             return hit;
@@ -285,7 +281,7 @@ impl Furthest {
     pub(super) fn end(&self, scorer: &Scorer, leg: Leg, tp: usize) -> usize {
         let slots = &self.ends[leg.index()];
 
-        // Not held across the search below, which reaches back into the furthest caches
+        // Released before the scan, which borrows the same caches.
         let hit = slots.borrow()[tp];
         if let Some(hit) = hit {
             return hit;

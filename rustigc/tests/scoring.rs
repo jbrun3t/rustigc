@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! Scoring regression pins: `rustigc-test-data`'s `real/<fixture>.xcontest.json` holds the plain
-//! serde dump of `log.score(xcontest, ..)`. The window scored is the reference's own `takeoff`/`landing`, so a
-//! mismatch here means scoring math moved, not flight detection.
-//! Re-bless with `rustigc-xc-score --format json` if the move was intended.
+//! Scoring pins: `real/<fixture>.xcontest.json` is the serde dump of `Log::score` under xcontest,
+//! over the pin's own `takeoff`/`landing`, so a mismatch is a scoring change, not a detection one.
+//! Re-bless with `rustigc-xc-score --format json` when the change is intended.
 
 use std::fs;
 
@@ -11,8 +10,7 @@ use rustigc::{FlightDetection, FlightSelection, Log, Ruleset, Scorer, ScoringRes
 use rustigc_test_data::{for_each_fixture, real, stem_of};
 use serde_json::Value;
 
-/// `(takeoff, landing)` from the reference's own fields, when it has any — a blessed "no XC" carries
-/// no window, so falling back to our own detection is the best this can do for that case.
+/// `(takeoff, landing)` from the pin, or the detected flight when the pin is `null`.
 fn window_of(expected: &Value, log: &Log) -> Option<(usize, usize)> {
     match (expected.get("takeoff"), expected.get("landing")) {
         (Some(t), Some(l)) => {
@@ -47,8 +45,7 @@ fn check_fixture(name: &str) {
     pretty_assertions::assert_eq!(actual, expected, "{stem}: xcontest result moved");
 }
 
-// free-04 and free-05 are near-straight tracks, worst case for the search — way too slow in debug
-// mode. Everything else runs there too.
+// free-04 and free-05 are near-straight tracks, the search's worst case: release builds only.
 macro_rules! xcontest_test {
     (free_04) => {
         xcontest_test!(@slow free_04);
@@ -73,8 +70,7 @@ macro_rules! xcontest_test {
 
 for_each_fixture!(xcontest_test);
 
-// A `Scorer` needs no `Log`. Check that each Scorer entry point yield the exact same
-// result as a complete Log would.
+// Each `Scorer` entry point gives what `Log::score` gives.
 
 /// triangle-01 as a `[latitude, longitude]` table, with what `Log::score` makes of it.
 fn coord_table() -> (Vec<[f64; 2]>, ScoringResult) {

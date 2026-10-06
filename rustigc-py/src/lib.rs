@@ -35,10 +35,8 @@ impl PyLog {
     /// The track as raw bytes, laid out for `FIX_DTYPE`: 32 per fix, padding included.
     #[getter]
     fn track_bytes<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        // SAFETY: Creating a byte slice view of Vec<Fix> is safe because:
-        // - Fix is repr(C) with guaranteed layout
-        // - Pointer is valid for the duration of this borrow
-        // - PyBytes::new_bound immediately copies data (no aliasing)
+        // SAFETY: `Fix` is `repr(C)`, the pointer is valid for this borrow, and `PyBytes::new`
+        // copies the bytes before it ends.
         let bytes = unsafe {
             std::slice::from_raw_parts(
                 self.inner.track.as_ptr() as *const u8,
@@ -48,10 +46,8 @@ impl PyLog {
         PyBytes::new(py, bytes)
     }
 
-    /// Create a log over `data` as a track, laid out for `FIX_DTYPE`: same recorder, headers, task.
-    ///
-    /// A new log: this one is untouched, so anything detected or scored in it still refers to the
-    /// track it was built from. `data` need not hold as many fixes.
+    /// A new log with `data` as its track, laid out for `FIX_DTYPE`, and this log's recorder,
+    /// headers and task. `data` may hold any number of fixes.
     ///
     /// Raises ValueError unless `data` is a whole number of fixes with strictly increasing
     /// timestamps.
@@ -68,11 +64,8 @@ impl PyLog {
         let count = data.len() / stride;
         let track: Vec<rustigc::Fix> = py.detach(|| {
             let mut track = Vec::<rustigc::Fix>::with_capacity(count);
-            // SAFETY: reinterpreting `data` as `Fix`es is safe because:
-            // - Fix is repr(C), so its layout is still guaranteed
-            // - the length check above makes `count * stride` exactly `data.len()`
-            // - `with_capacity` gives an allocation aligned for Fix, large enough, and distinct
-            //   from `data`, so the copy cannot overlap
+            // SAFETY: `Fix` is `repr(C)`; `count * stride` is exactly `data.len()`; the new
+            // allocation is aligned for `Fix`, large enough, and distinct from `data`.
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     data.as_ptr(),
@@ -84,7 +77,6 @@ impl PyLog {
             track
         });
 
-        // Make sure the timestamps are strictly increasing
         if let Some(w) = track.windows(2).find(|w| w[1].timestamp <= w[0].timestamp) {
             return Err(PyValueError::new_err(format!(
                 "timestamps must be strictly increasing, got {} then {}",
@@ -92,8 +84,7 @@ impl PyLog {
             )));
         }
 
-        // Field by field rather than `clone()`: cloning the log would copy the old track only to
-        // drop it, and a track is the one big allocation here.
+        // Field by field, so the old track is not copied.
         Ok(PyLog {
             inner: rustigc::Log {
                 recorder: self.inner.recorder.clone(),
@@ -121,8 +112,7 @@ impl PyLog {
 
     /// Instant this log's fix timestamps count from, or `None` without a usable `HFDTE` header.
     ///
-    /// UTC midnight of the flight's date, ISO 8601 — `2022-08-05T00:00:00.000Z`. Naming the zone
-    /// is the Python side's job; it has its own dataset for that.
+    /// UTC midnight of the flight's date, ISO 8601, e.g. `2022-08-05T00:00:00.000Z`.
     #[pyo3(text_signature = "($self)")]
     fn datetime(&self) -> Option<String> {
         self.inner.datetime()
@@ -134,7 +124,7 @@ impl PyLog {
         self.inner.tzn()
     }
 
-    /// Detect the flight sections, as one JSON array, empty when none was detected.
+    /// The detected flight sections, as a JSON array, empty when none is found.
     #[pyo3(text_signature = "($self)")]
     fn flights(&self, py: Python<'_>) -> PyResult<String> {
         let flights = py.detach(|| self.inner.track.flights());
@@ -146,9 +136,8 @@ impl PyLog {
 
     /// Score the fixes in `[start, stop]` against every rule of `ruleset`, reporting the best.
     ///
-    /// `None` when no rule could score the window.
-    ///
-    /// Raises ValueError for an unknown ruleset, or a window this log's track does not hold.
+    /// `None` when no rule scores the window. Raises ValueError for an unknown ruleset, or a
+    /// window this log's track does not hold.
     #[pyo3(text_signature = "($self, ruleset, start, stop)")]
     fn score(
         &self,
@@ -168,9 +157,8 @@ impl PyLog {
             .map_err(|e| PyValueError::new_err(format!("Failed to serialize score: {e}")))
     }
 
-    /// Everything the log describes about itself under `ruleset`, as one GeoJSON string.
-    ///
-    /// Detects the longest flight and scores it. Raises ValueError for an unknown ruleset.
+    /// GeoJSON of the track, its longest detected flight and that flight's score under
+    /// `ruleset`. Raises ValueError for an unknown ruleset.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn describe(&self, py: Python<'_>, ruleset: &str) -> PyResult<String> {
         let ruleset = named(ruleset)?;
@@ -183,11 +171,11 @@ impl PyLog {
         .map_err(PyValueError::new_err)
     }
 
-    /// The log, its time reference, `flight` and `score`, as one GeoJSON string.
+    /// GeoJSON of the log, drawing `flight` and `score` when given and the track line when
+    /// `track`. `flight` and `score` are the JSON their Python wrappers hold.
     ///
-    /// Each layer is the JSON its Python wrapper carries, read back into the struct that draws it.
-    /// `track` draws the flown line. Fix indices are taken on trust: nothing checks that a layer
-    /// was detected or scored in the track this log holds.
+    /// Raises ValueError for JSON that is not a flight or a score, or a fix index past the end of
+    /// the track. Indices are not checked against the track they came from.
     #[pyo3(
         signature = (flight = None, score = None, track = true),
         text_signature = "($self, flight=None, score=None, track=True)"
@@ -250,8 +238,7 @@ impl PyScorer {
     #[new]
     #[pyo3(text_signature = "(points)")]
     fn new(points: PyReadonlyArray2<f64>) -> PyResult<Self> {
-        // An (N, 3) of [lat, lon, alt] holds an even number of floats, so the column count is
-        // what rules it out, not the size.
+        // Checked on the shape: an (N, 3) array could still split into pairs.
         let &[_, 2] = points.shape() else {
             return Err(PyValueError::new_err(format!(
                 "points must be an (N, 2) array of [latitude, longitude], got {:?}",
@@ -265,7 +252,7 @@ impl PyScorer {
             )
         })?;
 
-        // `as_chunks` is a view, so the only copy is the one `Scorer` then owns.
+        // One copy, into the `Scorer`.
         let (table, _) = flat.as_chunks::<2>();
 
         let inner = rustigc::Scorer::from_vec(table.to_vec())
@@ -276,10 +263,10 @@ impl PyScorer {
         })
     }
 
-    /// Score the table against every rule of `ruleset` and report the best.
+    /// Score the table against every rule of `ruleset`, reporting the best. Every fix of the
+    /// result is an index into the table.
     ///
-    /// `None` when no rule could score the table; raises ValueError for an unknown ruleset. Every
-    /// fix of the result is an index into the table.
+    /// `None` when no rule scores the table. Raises ValueError for an unknown ruleset.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn score(&self, py: Python<'_>, ruleset: &str) -> PyResult<Option<String>> {
         let ruleset = named(ruleset)?;
@@ -317,12 +304,10 @@ fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyScorer>()?;
     m.add_function(wrap_pyfunction!(ruleset_names, m)?)?;
 
-    // Export FIX_DTYPE as numpy dtype
     Python::attach(|py| {
         let numpy = py.import("numpy")?;
 
-        // Create dtype matching Fix layout:
-        // timestamp first, then padding, then coordinates/altitudes
+        // `rustigc::Fix`'s `repr(C)` layout, padding included.
         let dtype_spec = PyList::new(
             py,
             &[

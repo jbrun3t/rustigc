@@ -14,18 +14,18 @@ use super::{
     Task,
 };
 
-/// Open free-distance polyline of `POINTS` points, entry and exit included
+/// Open polyline of `POINTS` points, entry and exit included.
 #[derive(Debug)]
 pub struct OpenPolyline<const POINTS: usize> {}
 
 impl<const POINTS: usize> OpenPolyline<POINTS> {
-    /// Whether the ends are looked up as furthest points rather than searched as two more ranges.
+    /// Whether the ends are looked up as furthest points from the first and last turnpoint, instead
+    /// of searched as ranges.
     const TERMINALS: bool = POINTS > 3;
 }
 
 impl<const POINTS: usize> ShapeKind for OpenPolyline<POINTS> {
-    // Two points is the shortest thing with a length. Above the threshold two of them are spent
-    // on the terminal legs instead of being searched.
+    // At least 2 points. With `TERMINALS`, the two ends are not searched.
     const CARDINALITY: usize = {
         assert!(POINTS >= 2);
         if Self::TERMINALS { POINTS - 2 } else { POINTS }
@@ -84,7 +84,7 @@ impl<const POINTS: usize> ShapeCommon for OpenPolyline<POINTS> {
             return (c.ranges[0][0], c.ranges[last][0]);
         }
 
-        // NOTE: this is only valid as long as peek() pick these points
+        // Anchored on the fixes `peek` and `report` use as turnpoints: each range's first.
         (
             scorer.end(Leg::Entry, c.ranges[0][0]),
             scorer.end(Leg::Exit, c.ranges[last][0]),
@@ -96,8 +96,8 @@ impl<const POINTS: usize> ShapeCommon for OpenPolyline<POINTS> {
         let mut turnpoints = c.positions();
         let (entry, exit) = self.endpoints(scorer, c);
 
-        // The ends are reported as such, not as turnpoints. The fold still walks the whole chain:
-        // it starts at `entry` and closes on `exit`, which are the two being dropped here.
+        // The ends are reported as entry and exit, not as turnpoints; the fold below still starts
+        // at `entry` and closes on `exit`.
         if !Self::TERMINALS {
             turnpoints.remove(0);
             turnpoints.pop();
@@ -107,7 +107,7 @@ impl<const POINTS: usize> ShapeCommon for OpenPolyline<POINTS> {
             (total + Geodesic::distance(&track[prev], &track[i]), i)
         });
 
-        // Nothing but length to constrain, so the re-measure can never reject.
+        // No constraint to fail on the re-measure.
         Some(Task {
             distance: total + Geodesic::distance(&track[last], &track[exit]),
             gap: 0.0,
