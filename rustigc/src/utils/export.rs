@@ -8,7 +8,7 @@ use super::geometry::{
     AntimeridianCheck, BBox, Geodesic, PointCoords, PointDistance, SPoint,
 };
 use super::iter::pairs;
-use super::round_km;
+use crate::score::round_mm;
 use crate::{
     Fix, Flight, FlightDetection, FlightSelection, Log, Ruleset, ScoreError,
     ScoringResult, TrackError,
@@ -40,8 +40,7 @@ const LABELS: [&str; 1] = ["PLT"];
 ///
 /// An open task is drawn as `leg`s alone, `leg0` starting at its entry and the last one ending at
 /// its exit. A circuit's `leg`s close over its turnpoints, with `closing` legs — `entry`, `exit`
-/// and `gap` — beside them. A leg's `distance_m` is its geodesic length in kilometers, despite the
-/// name.
+/// and `gap` — beside them. A leg's `distance_m` is its geodesic length.
 ///
 /// `datetime` is ISO 8601; every `timestamp` and `coordTimes` entry is milliseconds after it.
 /// `tzn`, when the log declares one, is its offset to local time in hours. `headers` holds the
@@ -149,7 +148,7 @@ fn score(result: &ScoringResult) -> Feature {
     }
 }
 
-/// A straight line between two named fixes, with its geodesic length in kilometers.
+/// A straight line between two named fixes, with its geodesic length.
 fn leg(
     track: &[Fix],
     from: &(usize, &str),
@@ -168,7 +167,7 @@ fn leg(
     props.insert("to".into(), to.1.into());
     props.insert(
         "distance_m".into(),
-        round_km(Geodesic::distance(start, end)).into(),
+        round_mm(Geodesic::distance(start, end)).into(),
     );
 
     Ok(Feature {

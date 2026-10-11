@@ -14,7 +14,7 @@ pub use engine::Scorer;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-fn round_mm(meters: f64) -> f64 {
+pub(crate) fn round_mm(meters: f64) -> f64 {
     (meters * 1000.0).round() / 1000.0
 }
 
