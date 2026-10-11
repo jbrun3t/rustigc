@@ -180,9 +180,9 @@ impl Eq for Solution<'_> {}
 /// let log = Log::new(&std::fs::read("flight.igc")?)?;
 /// let scorer = Scorer::new(&log.track, 125, 25425)?;
 ///
-/// for name in rustigc::ruleset_names() {
-///     let ruleset = Ruleset::named(name)?;
-///     println!("{name}: {:?}", scorer.solve(ruleset).map(|r| r.score));
+/// for id in rustigc::preset_names() {
+///     let ruleset = Ruleset::preset(id)?;
+///     println!("{id}: {:?}", scorer.solve(&ruleset).map(|r| r.score));
 /// }
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```

@@ -38,8 +38,8 @@ def test_accepts_a_strided_table():
 
 
 def test_unknown_ruleset():
-    """Refuse unknown rulesets"""
-    with pytest.raises(ValueError, match="unknown ruleset"):
+    """Refuse unknown presets"""
+    with pytest.raises(ValueError, match="unknown preset"):
         Scorer(TRIANGLE).score("xkontest")
 
 

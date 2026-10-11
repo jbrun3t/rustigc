@@ -20,9 +20,10 @@ fn roles(features: &[Value]) -> Vec<&str> {
 #[test]
 fn describe_fai_01() {
     let log = Log::new(&fixture("fai-01")).unwrap();
-    let described =
-        serde_json::to_value(log.describe(Ruleset::named("xcontest").unwrap()).unwrap())
-            .unwrap();
+    let described = serde_json::to_value(
+        log.describe(&Ruleset::preset("xcontest").unwrap()).unwrap(),
+    )
+    .unwrap();
 
     let features = described["features"].as_array().unwrap();
     let roles = roles(features);
@@ -84,7 +85,7 @@ fn export_layer_out_of_range() {
     let window = log.track.flights().longest().copied().unwrap();
     let scored = log
         .score(
-            Ruleset::named("xcontest").unwrap(),
+            &Ruleset::preset("xcontest").unwrap(),
             window.start,
             window.stop,
         )

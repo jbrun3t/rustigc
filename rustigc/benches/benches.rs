@@ -75,7 +75,7 @@ fn bench_score(c: &mut Criterion) {
     let files = load_test_files(SCORING_FILES);
     let logs = parse_logs(&files);
 
-    let xcontest = Ruleset::named("xcontest").unwrap();
+    let xcontest = &Ruleset::preset("xcontest").unwrap();
     let mut group = c.benchmark_group("score");
     for (name, log) in &logs {
         // Resolved outside the loop: the bench measures scoring, not flight detection

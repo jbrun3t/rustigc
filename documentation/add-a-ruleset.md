@@ -1,7 +1,7 @@
 # Adding a ruleset or rule
 
-An embedded ruleset is a JSON file in `rustigc/src/score/rules/rulesets/`, listed in the `rulesets!`
-call in `rules/ruleset.rs` — with its rulebook's URL as a comment there, since JSON takes none. Adding
+A preset is a JSON file in `rustigc/src/score/rules/rulesets/`, listed with its id in the `PRESETS`
+table in `rules/ruleset.rs` — with its rulebook's URL as a comment there, since JSON takes none. Adding
 one is writing that file; no Rust changes unless it needs a geometry that does not exist yet. A
 caller can also score against its own file without rebuilding, through `Ruleset::from_json`.
 
@@ -32,8 +32,7 @@ variant states how its geometry closes and what it requires, alongside its name 
 ```
 
 Anything the file gets wrong — a misspelled key, an unknown shape, a variant disagreeing with its
-geometry — is a panic at load for an embedded file, and `rulesets_all_load` forces it so CI is what
-fails. `Ruleset::from_json` reports the same defects as an error.
+geometry — is a panic at load for a preset, and `presets_all_load` forces it so CI is what fails. `Ruleset::from_json` reports the same defects as an error.
 
 ## Closing
 

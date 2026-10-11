@@ -3,8 +3,7 @@
 //! Scoring rules, read from JSON.
 //!
 //! A [`Ruleset`] lists [`Rule`]s; a rule scores one shape with variants, each a multiplier with
-//! an optional closing and a list of constraints. The embedded rulesets are the files under
-//! `rulesets/`.
+//! an optional closing and a list of constraints. The presets are the files under `rulesets/`.
 
 mod closing;
 mod constraint;
@@ -13,4 +12,6 @@ mod ruleset;
 mod variant;
 
 pub use rule::Rule;
-pub use ruleset::{Ruleset, ruleset_names};
+pub use ruleset::Ruleset;
+#[cfg(feature = "presets")]
+pub use ruleset::preset_names;

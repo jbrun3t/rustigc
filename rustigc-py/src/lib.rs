@@ -136,7 +136,7 @@ impl PyLog {
 
     /// Score the fixes in `[start, stop]` against every rule of `ruleset`, reporting the best.
     ///
-    /// `None` when no rule scores the window. Raises ValueError for an unknown ruleset, or a
+    /// `None` when no rule scores the window. Raises ValueError for an unknown preset, or a
     /// window this log's track does not hold.
     #[pyo3(text_signature = "($self, ruleset, start, stop)")]
     fn score(
@@ -146,9 +146,9 @@ impl PyLog {
         start: usize,
         stop: usize,
     ) -> PyResult<Option<String>> {
-        let ruleset = named(ruleset)?;
+        let ruleset = preset(ruleset)?;
         let result = py
-            .detach(|| self.inner.score(ruleset, start, stop))
+            .detach(|| self.inner.score(&ruleset, start, stop))
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         result
@@ -158,12 +158,12 @@ impl PyLog {
     }
 
     /// GeoJSON of the track, its longest detected flight and that flight's score under
-    /// `ruleset`. Raises ValueError for an unknown ruleset.
+    /// `ruleset`. Raises ValueError for an unknown preset.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn describe(&self, py: Python<'_>, ruleset: &str) -> PyResult<String> {
-        let ruleset = named(ruleset)?;
+        let ruleset = preset(ruleset)?;
         py.detach(|| {
-            let collection = self.inner.describe(ruleset).map_err(|e| e.to_string())?;
+            let collection = self.inner.describe(&ruleset).map_err(|e| e.to_string())?;
 
             serde_json::to_string(&collection)
                 .map_err(|e| format!("Failed to serialize geojson: {e}"))
@@ -266,13 +266,13 @@ impl PyScorer {
     /// Score the table against every rule of `ruleset`, reporting the best. Every fix of the
     /// result is an index into the table.
     ///
-    /// `None` when no rule scores the table. Raises ValueError for an unknown ruleset.
+    /// `None` when no rule scores the table. Raises ValueError for an unknown preset.
     #[pyo3(text_signature = "($self, ruleset)")]
     fn score(&self, py: Python<'_>, ruleset: &str) -> PyResult<Option<String>> {
-        let ruleset = named(ruleset)?;
+        let ruleset = preset(ruleset)?;
         py.detach(|| {
             let scorer = self.inner.lock().unwrap();
-            scorer.solve(ruleset)
+            scorer.solve(&ruleset)
         })
         .map(|scored| serde_json::to_string(&scored))
         .transpose()
@@ -280,16 +280,16 @@ impl PyScorer {
     }
 }
 
-/// The embedded ruleset `name` refers to; ValueError when there is none.
-fn named(name: &str) -> PyResult<&'static Ruleset> {
-    Ruleset::named(name).map_err(|e| PyValueError::new_err(e.to_string()))
+/// The preset `id`; ValueError when there is none.
+fn preset(id: &str) -> PyResult<Ruleset> {
+    Ruleset::preset(id).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 /// Every ruleset name `score` and `describe` accept.
 #[pyfunction]
 #[pyo3(text_signature = "()")]
 fn ruleset_names() -> Vec<&'static str> {
-    rustigc::ruleset_names().collect()
+    rustigc::preset_names().collect()
 }
 
 /// Raw bindings to the rustigc library.

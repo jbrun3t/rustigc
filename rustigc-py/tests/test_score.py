@@ -35,7 +35,7 @@ def test_score_output(igc_content):
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_unknown_ruleset(igc_content):
     """A ruleset name is the caller's, so a wrong one is refused"""
-    with pytest.raises(ValueError, match="unknown ruleset"):
+    with pytest.raises(ValueError, match="unknown preset"):
         Log.from_bytes(igc_content).score("xkontest")
 
 
