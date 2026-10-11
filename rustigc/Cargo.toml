@@ -16,13 +16,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["serde", "presets"]
+default = ["serde"]
 # The rules are data, so serde itself is not optional. This gates only the derives on the public
 # types — parsed records, flights, `ScoringResult` — which a caller may not want.
 serde = []
-# The rulesets under `src/score/rules/rulesets/`, embedded. Without it, a ruleset comes from
-# `Ruleset::from_json`.
-presets = []
 geojson = ["dep:geojson"]
 
 [dependencies]
@@ -45,18 +42,17 @@ criterion = "0.8"
 rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.1" }
 
 
-# `scoring`, `export` and the benches read the library through its optional serializers and
-# presets. Those are on by default, so this only bites a `--no-default-features` run, which skips
-# them rather than failing to compile them.
+# `scoring` and `export` read the library through its optional serializers. Those are on by
+# default, so this only bites a `--no-default-features` run, which skips the two suites rather
+# than failing to compile them.
 [[test]]
 name = "scoring"
-required-features = ["serde", "presets"]
+required-features = ["serde"]
 
 [[test]]
 name = "export"
-required-features = ["serde", "geojson", "presets"]
+required-features = ["serde", "geojson"]
 
 [[bench]]
 name = "benches"
 harness = false
-required-features = ["presets"]

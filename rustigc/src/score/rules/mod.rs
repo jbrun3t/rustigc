@@ -12,6 +12,4 @@ mod ruleset;
 mod variant;
 
 pub use rule::Rule;
-pub use ruleset::Ruleset;
-#[cfg(feature = "presets")]
-pub use ruleset::preset_names;
+pub use ruleset::{Ruleset, preset_names};

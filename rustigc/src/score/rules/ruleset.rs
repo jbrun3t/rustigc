@@ -3,7 +3,6 @@
 use serde::Deserialize;
 
 use super::rule::Rule;
-#[cfg(feature = "presets")]
 use crate::ScoreError;
 
 /// A named set of rules; scoring reports the best result any of them finds.
@@ -52,7 +51,6 @@ impl Ruleset {
     /// # Errors
     ///
     /// [`ScoreError::UnknownPreset`] when `id` is not one of [`preset_names`].
-    #[cfg(feature = "presets")]
     pub fn preset(id: &str) -> Result<Self, ScoreError> {
         let (_, text) = PRESETS
             .iter()
@@ -75,7 +73,6 @@ impl Ruleset {
 
 /// The presets as `(id, JSON)`. The id is how a caller asks for one; the reported name is the
 /// file's `"name"`.
-#[cfg(feature = "presets")]
 const PRESETS: &[(&str, &str)] = &[
     // https://parapente.ffvl.fr/sites/parapente.ffvl.fr/files/Reglement_competitions_CFD-2024_25vdef.pdf
     ("cfd", include_str!("rulesets/cfd.json")),
@@ -92,7 +89,6 @@ const PRESETS: &[(&str, &str)] = &[
 ];
 
 /// Ids of the presets, in the order the CLI lists them.
-#[cfg(feature = "presets")]
 pub fn preset_names() -> impl Iterator<Item = &'static str> {
     PRESETS.iter().map(|(id, _)| *id)
 }
@@ -102,7 +98,6 @@ mod tests {
     use super::*;
 
     /// Parses every preset, so a bad one fails CI.
-    #[cfg(feature = "presets")]
     #[test]
     fn presets_all_load() {
         for id in preset_names() {
@@ -129,7 +124,6 @@ mod tests {
         assert!(err.to_string().contains("on closing"), "{err}");
     }
 
-    #[cfg(feature = "presets")]
     #[test]
     fn preset_refuses_unknown() {
         assert_eq!(
