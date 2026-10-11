@@ -32,6 +32,13 @@ prints back valid IGC. The API is documented on [docs.rs](https://docs.rs/rustig
 - `serde` — `Serialize`/`Deserialize` on the parsed records and the scoring report.
 - `geojson` — drawing a flight and its score, through `Log::describe` and `Log::export`.
 
+## Rulesets
+
+`rulesets/presets/` holds the rulesets built into the library, reached with `Ruleset::preset`.
+`rulesets/samples/` holds more that are not built in; they ship in the crate for packagers to
+install, under `/usr/share/rustigc/rulesets/` for instance, and are read with `Ruleset::from_json`
+or `rustigc-xc-score --ruleset-file`.
+
 ## Documentation
 
 Beyond the API reference, the [`documentation/`](../documentation) directory covers the internals:

@@ -36,7 +36,7 @@ where
 }
 
 impl Ruleset {
-    /// Reads a ruleset in the format of the files under `rulesets/`.
+    /// Reads a ruleset in the format of the files under `rulesets/` in this crate.
     ///
     /// # Errors
     ///
@@ -75,16 +75,11 @@ impl Ruleset {
 /// file's `"name"`.
 const PRESETS: &[(&str, &str)] = &[
     // https://parapente.ffvl.fr/sites/parapente.ffvl.fr/files/Reglement_competitions_CFD-2024_25vdef.pdf
-    ("cfd", include_str!("rulesets/cfd.json")),
+    ("cfd", include_str!("../../../rulesets/presets/cfd.json")),
     // https://www.xcontest.org/world/en/rules/
-    ("xcontest", include_str!("rulesets/xcontest.json")),
-    // Single-rule rulesets, one shape each.
-    ("1tp", include_str!("rulesets/1tp.json")),
-    ("2tp", include_str!("rulesets/2tp.json")),
-    ("line", include_str!("rulesets/line.json")),
     (
-        "out-and-return",
-        include_str!("rulesets/out-and-return.json"),
+        "xcontest",
+        include_str!("../../../rulesets/presets/xcontest.json"),
     ),
 ];
 
@@ -103,6 +98,23 @@ mod tests {
         for id in preset_names() {
             Ruleset::preset(id).unwrap();
         }
+    }
+
+    /// Parses every sample, which are not built in, so a bad one fails CI.
+    #[test]
+    fn samples_all_load() {
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/rulesets/samples");
+        let mut count = 0;
+
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            let text = std::fs::read_to_string(&path).unwrap();
+            Ruleset::from_json(&text)
+                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            count += 1;
+        }
+
+        assert!(count > 0, "no sample in {dir}");
     }
 
     /// A caller's ruleset goes through the same checks as an embedded one.
