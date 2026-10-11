@@ -368,7 +368,7 @@ impl Scorer {
 
     /// Re-measures the winning leaf on the geodesic, scores it under its rule, and builds the
     /// result in the caller's track indices. `None` when the shape rejects the re-measure, or the
-    /// scored distance rounds to 0.
+    /// rule scores it 0.
     fn report(&self, ruleset: &Ruleset, solution: &Solution) -> Option<ScoringResult> {
         let rule = solution.rule;
 
@@ -376,15 +376,14 @@ impl Scorer {
         let task = shape.report(self, &solution.candidate)?;
         let scored = rule.scored(task.distance, task.gap);
 
-        let distance = round_km(scored.distance);
-        if distance == 0.0 {
+        if scored.score <= 0.0 {
             return None;
         }
 
         Some(ScoringResult {
             ruleset: ruleset.name().to_string(),
             description: scored.description.to_string(),
-            distance_km: distance,
+            distance_km: round_km(scored.distance),
             distance_m: round_mm(scored.distance),
             gap_m: round_mm(task.gap),
             threshold_m: round_mm(scored.threshold),
