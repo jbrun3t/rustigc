@@ -67,7 +67,6 @@
 //! # Feature flags
 //!
 //! - `serde`: `Serialize`/`Deserialize` on the parsed records, [`Flight`] and [`ScoringResult`].
-//! - `presets`: the embedded rulesets, through [`Ruleset::preset`] and `preset_names`.
 //! - `geojson`: drawing, through `Log::describe` and `Log::export`. See `GeoJson`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -88,9 +87,7 @@ pub use decode::{
 pub use error::{DecodeError, ScoreError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
-#[cfg(feature = "presets")]
-pub use score::preset_names;
-pub use score::{Ruleset, Scorer, ScoringResult};
+pub use score::{Ruleset, Scorer, ScoringResult, preset_names};
 #[cfg(feature = "geojson")]
 #[cfg_attr(docsrs, doc(cfg(feature = "geojson")))]
 pub use utils::export::{GeoJson, TrackLine};
