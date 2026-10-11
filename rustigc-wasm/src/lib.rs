@@ -6,7 +6,7 @@
 //! follow them. No map crosses: `serde_wasm_bindgen` makes one a `Map`, which `JSON.stringify`
 //! prints as `{}`, so headers are read one key at a time with `header`.
 
-use rustigc::{FlightDetection, FlightSelection, Ruleset, TrackLine};
+use rustigc::{FlightDetection, FlightSelection, TrackLine};
 use wasm_bindgen::prelude::*;
 
 /// Types for the generated `.d.ts`. They mirror the core's serde derives field for field.
@@ -185,15 +185,13 @@ impl Log {
     /// Score `window` against every rule of `ruleset` and report the best.
     ///
     /// `window` defaults to the longest detected flight. `undefined` when no rule scores; throws
-    /// when `ruleset` is not one of `ruleset_names()`, when the window is not one this track
-    /// holds, or when no flight is detected to default to.
+    /// when the window is not one this track holds, or when no flight is detected to default to.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn score(
         &self,
-        ruleset: &str,
+        ruleset: &Ruleset,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
-        let ruleset = Ruleset::preset(ruleset)?;
         let given: Option<rustigc::Flight> = match window {
             Some(value) => serde_wasm_bindgen::from_value(value.into())?,
             None => None,
@@ -203,7 +201,9 @@ impl Log {
             .or_else(|| self.inner.track.flights().longest().copied())
             .ok_or_else(|| JsError::new("no flight detected, pass an explicit window"))?;
 
-        let scored = self.inner.score(&ruleset, window.start, window.stop)?;
+        let scored = self
+            .inner
+            .score(&ruleset.inner, window.start, window.stop)?;
 
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
@@ -241,9 +241,10 @@ impl Log {
 
     /// GeoJSON of the track, its longest detected flight and that flight's score under
     /// `ruleset`. Use `export` when the flight and score are already at hand.
-    pub fn describe(&self, ruleset: &str) -> Result<String, JsError> {
-        let ruleset = Ruleset::preset(ruleset)?;
-        Ok(serde_json::to_string(&self.inner.describe(&ruleset)?)?)
+    pub fn describe(&self, ruleset: &Ruleset) -> Result<String, JsError> {
+        Ok(serde_json::to_string(
+            &self.inner.describe(&ruleset.inner)?,
+        )?)
     }
 }
 
@@ -294,17 +295,47 @@ impl Scorer {
 
     /// Score the table against every rule of `ruleset` and report the best.
     ///
-    /// Every fix of the result is an index into the table. `undefined` when no rule scores;
-    /// throws when `ruleset` is not one of `ruleset_names()`.
+    /// Every fix of the result is an index into the table. `undefined` when no rule scores.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
-    pub fn solve(&self, ruleset: &str) -> Result<JsValue, JsError> {
-        let ruleset = Ruleset::preset(ruleset)?;
-        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(&ruleset))?)
+    pub fn solve(&self, ruleset: &Ruleset) -> Result<JsValue, JsError> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.inner.solve(&ruleset.inner),
+        )?)
     }
 }
 
-/// Every ruleset name `score` and `describe` accept.
+/// A set of rules to score against: a preset, or a caller's own in the presets' JSON format.
 #[wasm_bindgen]
-pub fn ruleset_names() -> Vec<String> {
+pub struct Ruleset {
+    inner: rustigc::Ruleset,
+}
+
+#[wasm_bindgen]
+impl Ruleset {
+    /// The preset `id`, one of `preset_names()`; throws when there is none.
+    pub fn preset(id: &str) -> Result<Ruleset, JsError> {
+        Ok(Ruleset {
+            inner: rustigc::Ruleset::preset(id)?,
+        })
+    }
+
+    /// A ruleset from JSON content in the presets' format; throws, with the line and column,
+    /// when it is not one.
+    pub fn from_json(text: &str) -> Result<Ruleset, JsError> {
+        Ok(Ruleset {
+            inner: rustigc::Ruleset::from_json(text)?,
+        })
+    }
+
+    /// The name reported in every result this ruleset scores.
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
+        self.inner.name().to_string()
+    }
+}
+
+/// Every preset id `Ruleset.preset` accepts.
+#[wasm_bindgen]
+pub fn preset_names() -> Vec<String> {
     rustigc::preset_names().map(String::from).collect()
 }

@@ -60,9 +60,9 @@ def test_invalid_content():
         rib.RustLog.from_bytes(b"INVALID")
 
 
-def test_ruleset_names():
-    """Registry is reachable and holds the real rulesets"""
-    names = rib.ruleset_names()
+def test_preset_names():
+    """The presets are listed"""
+    names = rib.preset_names()
     assert "cfd" in names
     assert "xcontest" in names
 
@@ -71,7 +71,7 @@ def test_ruleset_names():
 def test_score_shape(igc_content):
     """Result carries exactly the fields the wrapper expects"""
     log = rib.RustLog.from_bytes(igc_content)
-    scored = log.score("xcontest", *FAI01_WINDOW)
+    scored = log.score(rib.RustRuleset.preset("xcontest"), *FAI01_WINDOW)
 
     assert set(json.loads(scored)) == {
         "ruleset",

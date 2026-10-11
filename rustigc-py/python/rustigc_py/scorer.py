@@ -8,6 +8,7 @@ import numpy
 
 import rustigc_py._bindings as rib
 
+from .ruleset import Ruleset
 from .score import Score
 
 
@@ -31,22 +32,19 @@ class Scorer:
         self._scorer = rib.RustScorer(table)
         self._points = len(table)
 
-    def score(self, ruleset: str) -> Score | None:
+    def score(self, ruleset: Ruleset) -> Score | None:
         """Score the table against every rule of `ruleset`, reporting the best.
 
         There are no fixes behind the result, so `takeoff`, `entry`, `turnpoints`, `exit` and
         `landing` come back as plain indices into the table.
 
         Args:
-            ruleset: One of `ruleset_names()`.
+            ruleset: The rules to score against.
 
         Returns:
             The best `Score`, or None when no rule scores the table.
-
-        Raises:
-            ValueError: `ruleset` is not one of `ruleset_names()`.
         """
-        scored = self._scorer.score(ruleset)
+        scored = self._scorer.score(ruleset._ruleset)
         if scored is None:
             return None
 

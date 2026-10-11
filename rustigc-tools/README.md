@@ -55,6 +55,8 @@ Or as JSON, for a chosen ruleset:
 ### Options
 
 - `--ruleset <name>` — ruleset to score against, `xcontest` by default. `--help` lists them.
+- `--ruleset-file <path>` — ruleset read from a JSON file in the presets' format, instead of
+  `--ruleset`.
 - `--format <human|json|geojson>` — output format, `human` by default. `geojson` draws the track,
   the flight and the task.
 - `--window <start,stop>` — score this fix range instead of the detected flight; takeoff and

@@ -5,13 +5,21 @@
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import { initSync, ruleset_names, type Flight, type Score, type SyncInitInput } from "rustigc-wasm";
+import {
+	initSync,
+	preset_names,
+	Ruleset,
+	type Flight,
+	type Score,
+	type SyncInitInput,
+} from "rustigc-wasm";
 import { Log } from "rustigc-wasm-utils/log";
 
 const FORMATS = ["human", "geojson"];
 
 const OPTIONS = {
-	ruleset: { type: "string", default: "xcontest" },
+	ruleset: { type: "string" },
+	"ruleset-file": { type: "string" },
 	format: { type: "string", default: "human" },
 	window: { type: "string" },
 	help: { type: "boolean", short: "h" },
@@ -25,10 +33,11 @@ function usage(): void {
 			"Usage: rustigc-wasm-score [OPTIONS]",
 			"",
 			"Options:",
-			`      --ruleset <RULESET>  Scoring ruleset [default: xcontest] [possible values: ${ruleset_names().join(", ")}]`,
-			`      --format <FORMAT>    Output format [default: human] [possible values: ${FORMATS.join(", ")}]`,
-			"      --window <WINDOW>    Explicit `start,stop` fix range to score, bypassing flight detection",
-			"  -h, --help               Print help",
+			`      --ruleset <RULESET>    Scoring ruleset [default: xcontest] [possible values: ${preset_names().join(", ")}]`,
+			"      --ruleset-file <PATH>  Scoring ruleset read from a JSON file, instead of --ruleset",
+			`      --format <FORMAT>      Output format [default: human] [possible values: ${FORMATS.join(", ")}]`,
+			"      --window <WINDOW>      Explicit `start,stop` fix range to score, bypassing flight detection",
+			"  -h, --help                 Print help",
 		].join("\n"),
 	);
 }
@@ -90,14 +99,18 @@ export function main(wasm: SyncInitInput): void {
 	// First: `usage` lists the rulesets, which calls into the wasm.
 	initSync({ module: wasm });
 
-	let ruleset: string;
+	let preset: string | undefined;
+	let rulesetFile: string | undefined;
 	let format: string;
 	let requested: Flight | undefined;
 	let help: boolean | undefined;
 
 	try {
 		const { values } = parseArgs({ options: OPTIONS });
-		({ ruleset, format, help } = values);
+		({ ruleset: preset, "ruleset-file": rulesetFile, format, help } = values);
+		if (preset !== undefined && rulesetFile !== undefined) {
+			throw new Error("--ruleset cannot be used with --ruleset-file");
+		}
 		requested = values.window === undefined ? undefined : parseWindow(values.window);
 		if (!FORMATS.includes(format)) {
 			throw new Error(`invalid format: ${format}`);
@@ -125,6 +138,16 @@ export function main(wasm: SyncInitInput): void {
 		log = new Log(content);
 	} catch (error) {
 		console.error(error instanceof Error ? error.message : `Could not parse: ${error}`);
+		process.exit(1);
+	}
+
+	let ruleset: Ruleset;
+	try {
+		ruleset = rulesetFile === undefined
+			? Ruleset.preset(preset ?? "xcontest")
+			: Ruleset.from_json(readFileSync(rulesetFile, "utf8"));
+	} catch (error) {
+		console.error(`Could not read ruleset: ${error instanceof Error ? error.message : error}`);
 		process.exit(1);
 	}
 

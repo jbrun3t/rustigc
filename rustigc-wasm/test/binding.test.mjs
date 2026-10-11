@@ -7,12 +7,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { initSync, ruleset_names, Log, Scorer } from "rustigc-wasm";
+import { initSync, preset_names, Log, Ruleset, Scorer } from "rustigc-wasm";
 import { fixes, STRIDE } from "rustigc-wasm-utils";
 
 initSync({ module: readFileSync(new URL("rustigc_wasm_bg.wasm", import.meta.resolve("rustigc-wasm"))) });
 
 const CORPUS = new URL("../../rustigc-test-data/real/", import.meta.url);
+const PRESETS = new URL("../../rustigc/src/score/rules/rulesets/", import.meta.url);
 
 /** A blessed fixture, with the score `rustigc/tests/scoring.rs` pins for it. */
 const FIXTURES = {
@@ -38,8 +39,8 @@ function table(log, { start, stop }) {
 	return coords;
 }
 
-test("ruleset_names lists the real rulesets", () => {
-	const names = ruleset_names();
+test("preset_names lists the presets", () => {
+	const names = preset_names();
 
 	assert.ok(names.includes("xcontest"), `no xcontest in ${names}`);
 	assert.ok(names.includes("cfd"), `no cfd in ${names}`);
@@ -66,7 +67,7 @@ test("track_bytes decodes to what track builds", () => {
 
 test("Log.score matches the blessed corpus", () => {
 	for (const [name, want] of Object.entries(FIXTURES)) {
-		const scored = load(name).score("xcontest");
+		const scored = load(name).score(Ruleset.preset("xcontest"));
 
 		assert.equal(scored.description, want.description, name);
 		assert.equal(scored.score, want.score, name);
@@ -78,9 +79,10 @@ test("Scorer over a coordinate table matches Log.score", () => {
 	for (const name of Object.keys(FIXTURES)) {
 		const log = load(name);
 		const window = log.longest_flight();
-		const expected = log.score("xcontest", window);
+		const xcontest = Ruleset.preset("xcontest");
+		const expected = log.score(xcontest, window);
 
-		const scored = new Scorer(table(log, window)).solve("xcontest");
+		const scored = new Scorer(table(log, window)).solve(xcontest);
 
 		// A Scorer's window is the whole table, so its indices start at the window.
 		assert.deepEqual(scored, {
@@ -111,11 +113,16 @@ test("a layer the track does not hold throws", () => {
 });
 
 test("an unknown preset throws", () => {
+	assert.throws(() => Ruleset.preset("nope"), /unknown preset/);
+});
+
+test("a preset's JSON content scores as the preset does", () => {
 	const log = load("triangle-01");
+	const text = readFileSync(new URL("xcontest.json", PRESETS), "utf8");
 
-	assert.throws(() => log.score("nope"), /unknown preset/);
-	assert.throws(() => log.describe("nope"), /unknown preset/);
+	assert.deepEqual(log.score(Ruleset.from_json(text)), log.score(Ruleset.preset("xcontest")));
+});
 
-	const scorer = new Scorer(Float64Array.of(45.0, 6.0, 45.1, 6.1));
-	assert.throws(() => scorer.solve("nope"), /unknown preset/);
+test("unusable JSON content throws, with where it went wrong", () => {
+	assert.throws(() => Ruleset.from_json('{ "name": "custom", "rules": [] }'), /line 1 column/);
 });

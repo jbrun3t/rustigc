@@ -75,13 +75,13 @@ See [rustigc-py/README.md](rustigc-py/README.md)
 
 ```ts
 import { readFileSync } from "node:fs";
-import { Log } from "rustigc-wasm";
+import { Log, Ruleset } from "rustigc-wasm";
 
 const igc = readFileSync("flight.igc");
 const log = new Log(igc);
 
 console.log(log.header("PLT"), log.fix_count);
-console.log(log.score("xcontest"));
+console.log(log.score(Ruleset.preset("xcontest")));
 ```
 
 See [rustigc-wasm/README.md](rustigc-wasm/README.md), which covers instantiating the wasm first.

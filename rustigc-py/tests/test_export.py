@@ -5,7 +5,7 @@
 import json
 
 import pytest
-from rustigc_py import Log
+from rustigc_py import Log, Ruleset
 
 
 def roles(geojson: str) -> list[str]:
@@ -15,7 +15,7 @@ def roles(geojson: str) -> list[str]:
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_describe(igc_content):
     """Describe picks the flight and scores it"""
-    described = json.loads(Log.from_bytes(igc_content).describe("xcontest"))
+    described = json.loads(Log.from_bytes(igc_content).describe(Ruleset.preset("xcontest")))
     counts = {}
     for f in described["features"]:
         role = f["properties"]["role"]
@@ -41,9 +41,9 @@ def test_export_matches_describe(igc_content):
     """Handing export what describe would pick reaches the same collection"""
     log = Log.from_bytes(igc_content)
     flight = log.flights().longest
-    score = log.score("xcontest")
+    score = log.score(Ruleset.preset("xcontest"))
 
-    assert log.export(flight, score) == log.describe("xcontest")
+    assert log.export(flight, score) == log.describe(Ruleset.preset("xcontest"))
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
@@ -56,7 +56,7 @@ def test_export_bare(igc_content):
 def test_export_without_track(igc_content):
     """Skipping the line keeps the metadata the markers resolve against"""
     log = Log.from_bytes(igc_content)
-    without = roles(log.export(score=log.score("xcontest"), track=False))
+    without = roles(log.export(score=log.score(Ruleset.preset("xcontest")), track=False))
 
     assert "track" not in without
     assert "metadata" in without
@@ -71,7 +71,7 @@ def test_export_rejects_other(igc_content):
         log.export(score=log.flights().longest)
 
     with pytest.raises(ValueError, match="Not a flight: missing field `start`"):
-        log.export(flight=log.score("xcontest"))
+        log.export(flight=log.score(Ruleset.preset("xcontest")))
 
     # A fix carries no layer to serialize, so it never reaches Rust
     with pytest.raises(TypeError):

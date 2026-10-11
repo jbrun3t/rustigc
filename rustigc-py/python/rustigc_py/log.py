@@ -15,6 +15,7 @@ from rustigc_py._bindings import FIX_DTYPE
 
 from .fix import Fix
 from .flight import Flight, Flights
+from .ruleset import Ruleset
 from .score import Score
 from .track import Track
 
@@ -192,12 +193,12 @@ class Log:
         return Flights(Flight(self.track, data) for data in json.loads(self._log.flights()))
 
     def score(
-        self, ruleset: str, window: tuple[int, int] | tuple[Fix, Fix] | None = None
+        self, ruleset: Ruleset, window: tuple[int, int] | tuple[Fix, Fix] | None = None
     ) -> Score | None:
         """Score a window of the track against every rule of a ruleset, reporting the best.
 
         Args:
-            ruleset: One of `ruleset_names()`.
+            ruleset: The rules to score against.
             window: The fixes to score, as a `(start, stop)` pair of indices or of `Fix`
                 objects. Defaults to the longest detected flight.
 
@@ -206,9 +207,9 @@ class Log:
 
         Raises:
             TypeError: One bound of `window` is a `Fix` and the other is not.
-            ValueError: `ruleset` is not one of `ruleset_names()`, the window is not one this
-                track holds — including a default window with no flight to take it from — or a
-                `Fix` bound does not know its position in a track.
+            ValueError: The window is not one this track holds — including a default window
+                with no flight to take it from — or a `Fix` bound does not know its position in
+                a track.
         """
         if window is None:
             flight = self.flights().longest
@@ -218,22 +219,19 @@ class Log:
         else:
             start, stop = _window(window)
 
-        scored = self._log.score(ruleset, start, stop)
+        scored = self._log.score(ruleset._ruleset, start, stop)
         if scored is None:
             return None
         return Score(self.track, json.loads(scored))
 
-    def describe(self, ruleset: str) -> str:
+    def describe(self, ruleset: Ruleset) -> str:
         """GeoJSON of the track, its longest detected flight and that flight's score.
 
         A flight that scores nothing leaves the track and the flight.
 
         Use `export` when the flight and score are already at hand.
-
-        Raises:
-            ValueError: `ruleset` is not one of `ruleset_names()`.
         """
-        return self._log.describe(ruleset)
+        return self._log.describe(ruleset._ruleset)
 
     def export(
         self, flight: Flight | None = None, score: Score | None = None, track: bool = True
