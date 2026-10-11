@@ -199,6 +199,6 @@ mod tests {
 
     #[test]
     fn test_parse_bad_longitude() {
-        assert!(latitude.parse(b"5286343E").is_err());
+        assert!(longitude.parse(b"5286343N").is_err());
     }
 }
