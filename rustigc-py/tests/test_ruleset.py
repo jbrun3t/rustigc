@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rustigc_py import Log, Ruleset
 
-PRESETS = Path(__file__).parents[2] / "rustigc/src/score/rules/rulesets"
+PRESETS = Path(__file__).parents[2] / "rustigc/rulesets/presets"
 
 
 def test_unknown_preset():

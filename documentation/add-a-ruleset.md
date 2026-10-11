@@ -1,9 +1,14 @@
 # Adding a ruleset or rule
 
-A preset is a JSON file in `rustigc/src/score/rules/rulesets/`, listed with its id in the `PRESETS`
-table in `rules/ruleset.rs` — with its rulebook's URL as a comment there, since JSON takes none. Adding
-one is writing that file; no Rust changes unless it needs a geometry that does not exist yet. A
-caller can also score against its own file without rebuilding, through `Ruleset::from_json`.
+A preset is a JSON file in `rustigc/rulesets/presets/`, built in and listed with its id in the
+`PRESETS` table in `rules/ruleset.rs` — with its rulebook's URL as a comment there, since JSON takes
+none. Adding one is writing that file; no Rust changes unless it needs a geometry that does not exist
+yet. A caller can also score against its own file without rebuilding, through `Ruleset::from_json`.
+
+`rustigc/rulesets/samples/` holds rulesets that are not built in, single-rule ones scoring one shape
+each. They ship in the crate for packagers to install, under `/usr/share/rustigc/rulesets/` for
+instance, and are read like any caller's file; `samples_all_load` parses them so CI catches a bad
+one.
 
 A rule never touches the search. It says which geometry to fly and what a distance and a closing gap
 are worth.

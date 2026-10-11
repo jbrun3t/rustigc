@@ -3,7 +3,8 @@
 //! Scoring rules, read from JSON.
 //!
 //! A [`Ruleset`] lists [`Rule`]s; a rule scores one shape with variants, each a multiplier with
-//! an optional closing and a list of constraints. The presets are the files under `rulesets/`.
+//! an optional closing and a list of constraints. The presets are the files under
+//! `rulesets/presets/` in this crate.
 
 mod closing;
 mod constraint;
