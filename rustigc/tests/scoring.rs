@@ -20,8 +20,8 @@ fn window_of(expected: &Value, log: &Log) -> Option<(usize, usize)> {
     }
 }
 
-fn xcontest() -> &'static Ruleset {
-    Ruleset::named("xcontest").unwrap()
+fn xcontest() -> Ruleset {
+    Ruleset::preset("xcontest").unwrap()
 }
 
 fn check_fixture(name: &str) {
@@ -38,7 +38,8 @@ fn check_fixture(name: &str) {
         .unwrap_or_else(|e| panic!("parse {ref_path:?}: {e}"));
 
     let result = window_of(&expected, &log).and_then(|(start, stop)| {
-        log.score(xcontest(), start, stop).expect("scorable window")
+        log.score(&xcontest(), start, stop)
+            .expect("scorable window")
     });
     let actual = serde_json::to_value(&result).unwrap();
 
@@ -80,7 +81,7 @@ fn coord_table() -> (Vec<[f64; 2]>, ScoringResult) {
 
     let last = log.track.len() - 1;
     let expected = log
-        .score(xcontest(), 0, last)
+        .score(&xcontest(), 0, last)
         .expect("scorable window")
         .expect("triangle-01 scores");
     let table = log.track.iter().map(|fix| [fix.lat, fix.lon]).collect();
@@ -93,7 +94,7 @@ fn scorer_new_over_a_coord_table() {
     let (table, expected) = coord_table();
     let last = table.len() - 1;
 
-    let result = Scorer::new(&table, 0, last).unwrap().solve(xcontest());
+    let result = Scorer::new(&table, 0, last).unwrap().solve(&xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }
@@ -102,7 +103,7 @@ fn scorer_new_over_a_coord_table() {
 fn scorer_from_slice_over_a_coord_table() {
     let (table, expected) = coord_table();
 
-    let result = Scorer::from_slice(&table).unwrap().solve(xcontest());
+    let result = Scorer::from_slice(&table).unwrap().solve(&xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }
@@ -111,7 +112,7 @@ fn scorer_from_slice_over_a_coord_table() {
 fn scorer_from_vec_over_a_coord_table() {
     let (table, expected) = coord_table();
 
-    let result = Scorer::from_vec(table).unwrap().solve(xcontest());
+    let result = Scorer::from_vec(table).unwrap().solve(&xcontest());
 
     assert_eq!(result.as_ref(), Some(&expected));
 }

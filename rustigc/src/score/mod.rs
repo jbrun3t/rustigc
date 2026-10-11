@@ -7,7 +7,9 @@ mod engine;
 mod rules;
 mod shapes;
 
-pub use rules::{Ruleset, ruleset_names};
+pub use rules::Ruleset;
+#[cfg(feature = "presets")]
+pub use rules::preset_names;
 
 pub use engine::Scorer;
 

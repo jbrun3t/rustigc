@@ -31,8 +31,8 @@
 //!
 //! Scoring works on a fix window: [`FlightDetection::flights`] cuts a track into [`Flight`]
 //! sections and [`FlightSelection::longest`] picks one. [`Log::score`] scores that window against
-//! a [`Ruleset`] and reports the best rule as a [`ScoringResult`]. [`ruleset_names`] lists the
-//! embedded ones.
+//! a [`Ruleset`] and reports the best rule as a [`ScoringResult`]. [`Ruleset::preset`] reads an
+//! embedded one, [`Ruleset::from_json`] a caller's.
 //!
 //! ```no_run
 //! use rustigc::{FlightDetection, FlightSelection, Log, Ruleset};
@@ -41,8 +41,8 @@
 //! let flights = log.track.flights();
 //! let flight = flights.longest().expect("no flight detected");
 //!
-//! let xcontest = Ruleset::named("xcontest")?;
-//! if let Some(result) = log.score(xcontest, flight.start, flight.stop)? {
+//! let xcontest = Ruleset::preset("xcontest")?;
+//! if let Some(result) = log.score(&xcontest, flight.start, flight.stop)? {
 //!     println!("{}: {} points over {} km", result.description, result.score, result.distance_km);
 //! }
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -58,7 +58,7 @@
 //!                   [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]];
 //!
 //! let scorer = Scorer::from_vec(points)?;
-//! let result = scorer.solve(Ruleset::named("xcontest")?).expect("nothing scored");
+//! let result = scorer.solve(&Ruleset::preset("xcontest")?).expect("nothing scored");
 //!
 //! assert_eq!(result.description, "closed free triangle");
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -67,6 +67,7 @@
 //! # Feature flags
 //!
 //! - `serde`: `Serialize`/`Deserialize` on the parsed records, [`Flight`] and [`ScoringResult`].
+//! - `presets`: the embedded rulesets, through [`Ruleset::preset`] and `preset_names`.
 //! - `geojson`: drawing, through `Log::describe` and `Log::export`. See `GeoJson`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -87,7 +88,9 @@ pub use decode::{
 pub use error::{DecodeError, ScoreError, TrackError};
 pub use log::Log;
 pub use rawlog::RawLog;
-pub use score::{Ruleset, Scorer, ScoringResult, ruleset_names};
+#[cfg(feature = "presets")]
+pub use score::preset_names;
+pub use score::{Ruleset, Scorer, ScoringResult};
 #[cfg(feature = "geojson")]
 #[cfg_attr(docsrs, doc(cfg(feature = "geojson")))]
 pub use utils::export::{GeoJson, TrackLine};

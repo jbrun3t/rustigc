@@ -45,7 +45,7 @@ enum Format {
 struct Args {
     /// Scoring ruleset
     #[arg(long, default_value = "xcontest",
-          value_parser = clap::builder::PossibleValuesParser::new(rustigc::ruleset_names()),
+          value_parser = clap::builder::PossibleValuesParser::new(rustigc::preset_names()),
           long_help = "Ruleset to score against. Each one defines its own rules, \
                        multipliers and penalties, so the same track scores differently under \
                        each.")]
@@ -141,14 +141,14 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     });
 
-    // clap only accepts embedded names.
-    let ruleset = Ruleset::named(&args.ruleset).expect("ruleset accepted by clap");
+    // clap only accepts preset ids.
+    let ruleset = Ruleset::preset(&args.ruleset).expect("ruleset accepted by clap");
 
     let window = args
         .window
         .or_else(|| log.track.flights().longest().map(|f| (f.start, f.stop)));
     let scored = window.and_then(|(start, stop)| {
-        log.score(ruleset, start, stop).unwrap_or_else(|e| {
+        log.score(&ruleset, start, stop).unwrap_or_else(|e| {
             eprintln!("Could not score: {e}");
             std::process::exit(1);
         })

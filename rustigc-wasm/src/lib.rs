@@ -193,7 +193,7 @@ impl Log {
         ruleset: &str,
         window: Option<FlightArg>,
     ) -> Result<JsValue, JsError> {
-        let ruleset = Ruleset::named(ruleset)?;
+        let ruleset = Ruleset::preset(ruleset)?;
         let given: Option<rustigc::Flight> = match window {
             Some(value) => serde_wasm_bindgen::from_value(value.into())?,
             None => None,
@@ -203,7 +203,7 @@ impl Log {
             .or_else(|| self.inner.track.flights().longest().copied())
             .ok_or_else(|| JsError::new("no flight detected, pass an explicit window"))?;
 
-        let scored = self.inner.score(ruleset, window.start, window.stop)?;
+        let scored = self.inner.score(&ruleset, window.start, window.stop)?;
 
         Ok(serde_wasm_bindgen::to_value(&scored)?)
     }
@@ -242,8 +242,8 @@ impl Log {
     /// GeoJSON of the track, its longest detected flight and that flight's score under
     /// `ruleset`. Use `export` when the flight and score are already at hand.
     pub fn describe(&self, ruleset: &str) -> Result<String, JsError> {
-        let ruleset = Ruleset::named(ruleset)?;
-        Ok(serde_json::to_string(&self.inner.describe(ruleset)?)?)
+        let ruleset = Ruleset::preset(ruleset)?;
+        Ok(serde_json::to_string(&self.inner.describe(&ruleset)?)?)
     }
 }
 
@@ -298,13 +298,13 @@ impl Scorer {
     /// throws when `ruleset` is not one of `ruleset_names()`.
     #[wasm_bindgen(unchecked_return_type = "Score | undefined")]
     pub fn solve(&self, ruleset: &str) -> Result<JsValue, JsError> {
-        let ruleset = Ruleset::named(ruleset)?;
-        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(ruleset))?)
+        let ruleset = Ruleset::preset(ruleset)?;
+        Ok(serde_wasm_bindgen::to_value(&self.inner.solve(&ruleset))?)
     }
 }
 
 /// Every ruleset name `score` and `describe` accept.
 #[wasm_bindgen]
 pub fn ruleset_names() -> Vec<String> {
-    rustigc::ruleset_names().map(String::from).collect()
+    rustigc::preset_names().map(String::from).collect()
 }

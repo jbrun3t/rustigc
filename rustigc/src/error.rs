@@ -59,11 +59,9 @@ pub enum TrackError {
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ScoreError {
-    /// Not one of [`ruleset_names`].
-    ///
-    /// [`ruleset_names`]: crate::ruleset_names
-    #[error("unknown ruleset")]
-    UnknownRuleset,
+    /// Not one of the preset ids.
+    #[error("unknown preset")]
+    UnknownPreset,
 
     /// The track or window cannot be scored.
     #[error(transparent)]

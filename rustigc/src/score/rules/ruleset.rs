@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-use std::sync::OnceLock;
-
 use serde::Deserialize;
 
 use super::rule::Rule;
+#[cfg(feature = "presets")]
 use crate::ScoreError;
 
 /// A named set of rules; scoring reports the best result any of them finds.
 ///
-/// [`Ruleset::named`] returns an embedded one, [`Ruleset::from_json`] reads a caller's.
+/// [`Ruleset::preset`] reads an embedded one, [`Ruleset::from_json`] a caller's.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ruleset {
@@ -48,16 +47,19 @@ impl Ruleset {
         serde_json::from_str(text)
     }
 
-    /// The embedded ruleset called `name`.
+    /// The preset `id`, one of [`preset_names`], parsed on each call.
     ///
     /// # Errors
     ///
-    /// [`ScoreError::UnknownRuleset`] when `name` is not one of [`ruleset_names`].
-    pub fn named(name: &str) -> Result<&'static Self, ScoreError> {
-        registry()
+    /// [`ScoreError::UnknownPreset`] when `id` is not one of [`preset_names`].
+    #[cfg(feature = "presets")]
+    pub fn preset(id: &str) -> Result<Self, ScoreError> {
+        let (_, text) = PRESETS
             .iter()
-            .find(|r| r.name == name)
-            .ok_or(ScoreError::UnknownRuleset)
+            .find(|(name, _)| *name == id)
+            .ok_or(ScoreError::UnknownPreset)?;
+
+        Ok(Self::from_json(text).unwrap_or_else(|e| panic!("preset {id}: {e}")))
     }
 
     /// The ruleset's name, reported in every result it scores.
@@ -71,76 +73,40 @@ impl Ruleset {
     }
 }
 
-/// Embeds each file under `rulesets/`, with its name for `load`'s panic messages. Each entry's
-/// rulebook URL sits beside it, since JSON has no comments.
-macro_rules! rulesets {
-    ($( $file:literal ),* $(,)?) => {
-        static RULESET_FILES: &[(&str, &str)] = &[
-            $(
-                ($file, include_str!(concat!("rulesets/", $file))),
-            )*
-        ];
-    };
-}
-
-rulesets! {
+/// The presets as `(id, JSON)`. The id is how a caller asks for one; the reported name is the
+/// file's `"name"`.
+#[cfg(feature = "presets")]
+const PRESETS: &[(&str, &str)] = &[
     // https://parapente.ffvl.fr/sites/parapente.ffvl.fr/files/Reglement_competitions_CFD-2024_25vdef.pdf
-    "cfd.json",
+    ("cfd", include_str!("rulesets/cfd.json")),
     // https://www.xcontest.org/world/en/rules/
-    "xcontest.json",
+    ("xcontest", include_str!("rulesets/xcontest.json")),
     // Single-rule rulesets, one shape each.
-    "1tp.json",
-    "2tp.json",
-    "line.json",
-    "out-and-return.json",
-}
+    ("1tp", include_str!("rulesets/1tp.json")),
+    ("2tp", include_str!("rulesets/2tp.json")),
+    ("line", include_str!("rulesets/line.json")),
+    (
+        "out-and-return",
+        include_str!("rulesets/out-and-return.json"),
+    ),
+];
 
-static REGISTRY: OnceLock<Vec<Ruleset>> = OnceLock::new();
-
-/// Parses every embedded ruleset. Panics on a bad file or a duplicate name, which
-/// `rulesets_all_load` catches in CI.
-fn load() -> Vec<Ruleset> {
-    let mut registry: Vec<Ruleset> = Vec::with_capacity(RULESET_FILES.len());
-
-    for (file, text) in RULESET_FILES {
-        let ruleset = Ruleset::from_json(text).unwrap_or_else(|e| panic!("{file}: {e}"));
-
-        assert!(
-            !registry.iter().any(|r| r.name == ruleset.name),
-            "{file}: ruleset {:?} is already registered",
-            ruleset.name
-        );
-
-        registry.push(ruleset);
-    }
-
-    registry
-}
-
-/// The embedded rulesets, parsed on first use.
-fn registry() -> &'static [Ruleset] {
-    REGISTRY.get_or_init(load)
-}
-
-/// Names of the embedded rulesets, in the order the CLI lists them.
-pub fn ruleset_names() -> impl Iterator<Item = &'static str> {
-    registry().iter().map(|r| r.name.as_str())
+/// Ids of the presets, in the order the CLI lists them.
+#[cfg(feature = "presets")]
+pub fn preset_names() -> impl Iterator<Item = &'static str> {
+    PRESETS.iter().map(|(id, _)| *id)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Parses every embedded file, so a bad one fails CI.
+    /// Parses every preset, so a bad one fails CI.
+    #[cfg(feature = "presets")]
     #[test]
-    fn rulesets_all_load() {
-        let names: Vec<_> = ruleset_names().collect();
-        assert!(!names.is_empty(), "no ruleset is embedded");
-
-        for name in &names {
-            let ruleset =
-                Ruleset::named(name).expect("ruleset unreachable by its own name");
-            assert_eq!(ruleset.name(), *name);
+    fn presets_all_load() {
+        for id in preset_names() {
+            Ruleset::preset(id).unwrap();
         }
     }
 
@@ -163,11 +129,12 @@ mod tests {
         assert!(err.to_string().contains("on closing"), "{err}");
     }
 
+    #[cfg(feature = "presets")]
     #[test]
-    fn named_refuses_unknown() {
+    fn preset_refuses_unknown() {
         assert_eq!(
-            Ruleset::named("nope").unwrap_err(),
-            ScoreError::UnknownRuleset
+            Ruleset::preset("nope").unwrap_err(),
+            ScoreError::UnknownPreset
         );
     }
 

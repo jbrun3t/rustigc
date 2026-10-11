@@ -18,7 +18,8 @@ println!("{} — {} fixes", log.headers["PLT"].text, log.track.len());
 let flights = log.track.flights();
 let flight = flights.longest().expect("no flight detected");
 
-if let Some(result) = log.score(Ruleset::named("xcontest")?, flight.start, flight.stop)? {
+let xcontest = Ruleset::preset("xcontest")?;
+if let Some(result) = log.score(&xcontest, flight.start, flight.stop)? {
     println!("{}: {} points over {} km", result.description, result.score, result.distance_km);
 }
 ```
@@ -29,6 +30,7 @@ prints back valid IGC. The API is documented on [docs.rs](https://docs.rs/rustig
 ## Features
 
 - `serde` — `Serialize`/`Deserialize` on the parsed records and the scoring report.
+- `presets` — the embedded rulesets, through `Ruleset::preset`. On by default.
 - `geojson` — drawing a flight and its score, through `Log::describe` and `Log::export`.
 
 ## Documentation

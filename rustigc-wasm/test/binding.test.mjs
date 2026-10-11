@@ -110,12 +110,12 @@ test("a layer the track does not hold throws", () => {
 	assert.throws(() => log.export({ nope: 1 }), /missing field/);
 });
 
-test("an unknown ruleset throws", () => {
+test("an unknown preset throws", () => {
 	const log = load("triangle-01");
 
-	assert.throws(() => log.score("nope"), /unknown ruleset/);
-	assert.throws(() => log.describe("nope"), /unknown ruleset/);
+	assert.throws(() => log.score("nope"), /unknown preset/);
+	assert.throws(() => log.describe("nope"), /unknown preset/);
 
 	const scorer = new Scorer(Float64Array.of(45.0, 6.0, 45.1, 6.1));
-	assert.throws(() => scorer.solve("nope"), /unknown ruleset/);
+	assert.throws(() => scorer.solve("nope"), /unknown preset/);
 });
