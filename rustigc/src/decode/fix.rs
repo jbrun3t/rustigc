@@ -92,7 +92,7 @@ impl fmt::Display for RawFix<'_> {
                 "{} - {} - {}",
                 if self.valid { "OK" } else { "KO" },
                 self.fix,
-                if self.ext.len() == 2 { "none" } else { &ext }
+                if self.ext.is_empty() { "none" } else { &ext }
             )?;
         } else {
             write!(
@@ -218,6 +218,17 @@ mod tests {
         if let Record::B(rec) = b_record.parse(line).unwrap() {
             let formatted = format!("{}\n", rec);
             assert_eq!(formatted.as_bytes(), &line[1..]);
+        } else {
+            panic!()
+        };
+    }
+
+    /// The human-readable form says "none" for a fix without extension.
+    #[test]
+    fn test_alternate_no_extension() {
+        let line = b"B1200003000000N12000000EA0050000500\n";
+        if let Record::B(rec) = b_record.parse(line).unwrap() {
+            assert!(format!("{rec:#}").ends_with(" - none"));
         } else {
             panic!()
         };
