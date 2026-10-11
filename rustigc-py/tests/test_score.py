@@ -3,7 +3,7 @@
 """Test Python Score wrapper"""
 
 import pytest
-from rustigc_py import Fix, Log
+from rustigc_py import Fix, Log, Ruleset
 
 # Window of fai-01.xcontest.json, the blessed reference's own, not our detection
 FAI01_WINDOW = (125, 25457)
@@ -13,7 +13,7 @@ FAI01_WINDOW = (125, 25457)
 def test_score_output(igc_content):
     """Score returns properly"""
     log = Log.from_bytes(igc_content)
-    score = log.score("xcontest", FAI01_WINDOW)
+    score = log.score(Ruleset.preset("xcontest"), FAI01_WINDOW)
 
     assert score.description == "closed fai triangle"
     assert score.distance_km == 622.85
@@ -32,13 +32,6 @@ def test_score_output(igc_content):
     assert score.entry == log.track[125]
 
 
-@pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
-def test_unknown_ruleset(igc_content):
-    """A ruleset name is the caller's, so a wrong one is refused"""
-    with pytest.raises(ValueError, match="unknown preset"):
-        Log.from_bytes(igc_content).score("xkontest")
-
-
 def test_score_without_a_detected_flight():
     """No flight means no default window, which is refused like any other bad window"""
     tiny = (b"AFLA1BX\nHFDTE150120\n"
@@ -48,13 +41,13 @@ def test_score_without_a_detected_flight():
     assert len(log.flights()) == 0
 
     with pytest.raises(ValueError, match="no flight detected"):
-        log.score("xcontest")
+        log.score(Ruleset.preset("xcontest"))
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
 def test_repr(igc_content):
     """Test Score.__repr__"""
-    score = Log.from_bytes(igc_content).score("xcontest", FAI01_WINDOW)
+    score = Log.from_bytes(igc_content).score(Ruleset.preset("xcontest"), FAI01_WINDOW)
     repr_str = repr(score)
 
     assert "Score" in repr_str

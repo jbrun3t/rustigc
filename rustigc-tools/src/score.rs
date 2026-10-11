@@ -15,6 +15,9 @@ EXAMPLES:
     Machine-readable output for another ruleset:
         rustigc-xc-score --ruleset cfd --format json < flight.igc
 
+    Score against a ruleset of your own:
+        rustigc-xc-score --ruleset-file my-league.json < flight.igc
+
     Draw the result on a map:
         rustigc-xc-score --format geojson < flight.igc > flight.geojson
 
@@ -50,6 +53,16 @@ struct Args {
                        multipliers and penalties, so the same track scores differently under \
                        each.")]
     ruleset: String,
+
+    /// Scoring ruleset read from a JSON file
+    #[arg(
+        long,
+        value_name = "PATH",
+        conflicts_with = "ruleset",
+        long_help = "Ruleset to score against, read from a JSON file in the format of the \
+                       presets. Replaces --ruleset."
+    )]
+    ruleset_file: Option<std::path::PathBuf>,
 
     /// Output format
     #[arg(long, value_enum, default_value = "human")]
@@ -124,6 +137,17 @@ fn human_output(log: &Log, result: &ScoringResult) {
     println!();
 }
 
+/// The ruleset in the JSON file at `path`; exits on a file that cannot be read or used.
+fn read_ruleset(path: &std::path::Path) -> Ruleset {
+    std::fs::read_to_string(path)
+        .map_err(|e| e.to_string())
+        .and_then(|text| Ruleset::from_json(&text).map_err(|e| e.to_string()))
+        .unwrap_or_else(|e| {
+            eprintln!("Could not read ruleset {}: {e}", path.display());
+            std::process::exit(1);
+        })
+}
+
 fn main() -> io::Result<()> {
     env_logger::init();
     let args = Args::parse();
@@ -141,8 +165,11 @@ fn main() -> io::Result<()> {
         std::process::exit(1);
     });
 
-    // clap only accepts preset ids.
-    let ruleset = Ruleset::preset(&args.ruleset).expect("ruleset accepted by clap");
+    let ruleset = match &args.ruleset_file {
+        Some(path) => read_ruleset(path),
+        // clap only accepts preset ids.
+        None => Ruleset::preset(&args.ruleset).expect("ruleset accepted by clap"),
+    };
 
     let window = args
         .window

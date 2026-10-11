@@ -5,7 +5,7 @@
 from datetime import UTC, date, timedelta
 
 import pytest
-from rustigc_py import Log
+from rustigc_py import Log, Ruleset
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)
@@ -98,7 +98,7 @@ def test_with_track_leaves_the_original(igc_content):
     assert len(shorter.track) == 25459 - 1000
     assert len(log.track) == 25459
     assert shorter.pilot_name == log.pilot_name
-    assert shorter.score("xcontest") is not None
+    assert shorter.score(Ruleset.preset("xcontest")) is not None
 
 
 @pytest.mark.parametrize("igc_content", ["fai-01.igc"], indirect=True)

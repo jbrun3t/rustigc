@@ -36,7 +36,7 @@ The wasm has to be instantiated before the first call. In a browser, `init` fetc
 beside the module:
 
 ```ts
-import init, { Log, ruleset_names } from "rustigc-wasm";
+import init, { Log, Ruleset, preset_names } from "rustigc-wasm";
 
 await init();
 ```
@@ -49,10 +49,11 @@ const log = new Log(igc);                       // Uint8Array of IGC
 log.fix_count                                   // 25459
 log.header("PLT")                               // { text: "Mike Young", origin: "flightrecorder" }
 log.longest_flight()                            // { start: 125, stop: 25425 }
-log.score("xcontest")                           // over the longest detected flight
-log.describe("xcontest")                        // GeoJSON: detects, scores and draws
+const xcontest = Ruleset.preset("xcontest");    // or Ruleset.from_json(text), your own rules
+log.score(xcontest)                             // over the longest detected flight
+log.describe(xcontest)                          // GeoJSON: detects, scores and draws
 
-ruleset_names()                                 // what score and describe accept
+preset_names()                                  // what Ruleset.preset accepts
 ```
 
 Documentation is in `pkg/rustigc_wasm.d.ts`, generated from the doc comments in
@@ -107,7 +108,7 @@ converted.
 ```ts
 const scorer = new Scorer(Float64Array.of(45.00, 6.00, 45.05, 6.10, 45.20, 6.30));
 
-scorer.solve("xcontest")   // Score | undefined; every fix an index into the table
+scorer.solve(Ruleset.preset("xcontest"))   // Score | undefined; every fix an index into the table
 ```
 
 The whole table is the window, and at least two pairs of coordinates are required.
@@ -144,6 +145,7 @@ the wasm, from beside the bindings or from a single executable's assets.
 
 ```sh
 node rustigc-wasm/score/dist/rustigc-wasm-score.js --ruleset xcontest --format human < flight.igc
+node rustigc-wasm/score/dist/rustigc-wasm-score.js --ruleset-file my-league.json < flight.igc
 ```
 
 ## License

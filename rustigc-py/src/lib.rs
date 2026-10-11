@@ -9,7 +9,7 @@ use numpy::{PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyList, PyTuple};
-use rustigc::{FlightDetection, Ruleset};
+use rustigc::FlightDetection;
 
 /// A parsed IGC log, as Rust holds it.
 ///
@@ -136,19 +136,19 @@ impl PyLog {
 
     /// Score the fixes in `[start, stop]` against every rule of `ruleset`, reporting the best.
     ///
-    /// `None` when no rule scores the window. Raises ValueError for an unknown preset, or a
-    /// window this log's track does not hold.
+    /// `None` when no rule scores the window. Raises ValueError for a window this log's track
+    /// does not hold.
     #[pyo3(text_signature = "($self, ruleset, start, stop)")]
     fn score(
         &self,
         py: Python<'_>,
-        ruleset: &str,
+        ruleset: &PyRuleset,
         start: usize,
         stop: usize,
     ) -> PyResult<Option<String>> {
-        let ruleset = preset(ruleset)?;
+        let ruleset = &ruleset.inner;
         let result = py
-            .detach(|| self.inner.score(&ruleset, start, stop))
+            .detach(|| self.inner.score(ruleset, start, stop))
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
         result
@@ -158,12 +158,12 @@ impl PyLog {
     }
 
     /// GeoJSON of the track, its longest detected flight and that flight's score under
-    /// `ruleset`. Raises ValueError for an unknown preset.
+    /// `ruleset`.
     #[pyo3(text_signature = "($self, ruleset)")]
-    fn describe(&self, py: Python<'_>, ruleset: &str) -> PyResult<String> {
-        let ruleset = preset(ruleset)?;
+    fn describe(&self, py: Python<'_>, ruleset: &PyRuleset) -> PyResult<String> {
+        let ruleset = &ruleset.inner;
         py.detach(|| {
-            let collection = self.inner.describe(&ruleset).map_err(|e| e.to_string())?;
+            let collection = self.inner.describe(ruleset).map_err(|e| e.to_string())?;
 
             serde_json::to_string(&collection)
                 .map_err(|e| format!("Failed to serialize geojson: {e}"))
@@ -266,13 +266,13 @@ impl PyScorer {
     /// Score the table against every rule of `ruleset`, reporting the best. Every fix of the
     /// result is an index into the table.
     ///
-    /// `None` when no rule scores the table. Raises ValueError for an unknown preset.
+    /// `None` when no rule scores the table.
     #[pyo3(text_signature = "($self, ruleset)")]
-    fn score(&self, py: Python<'_>, ruleset: &str) -> PyResult<Option<String>> {
-        let ruleset = preset(ruleset)?;
+    fn score(&self, py: Python<'_>, ruleset: &PyRuleset) -> PyResult<Option<String>> {
+        let ruleset = &ruleset.inner;
         py.detach(|| {
             let scorer = self.inner.lock().unwrap();
-            scorer.solve(&ruleset)
+            scorer.solve(ruleset)
         })
         .map(|scored| serde_json::to_string(&scored))
         .transpose()
@@ -280,29 +280,65 @@ impl PyScorer {
     }
 }
 
-/// The preset `id`; ValueError when there is none.
-fn preset(id: &str) -> PyResult<Ruleset> {
-    Ruleset::preset(id).map_err(|e| PyValueError::new_err(e.to_string()))
+/// A set of rules to score against, from a preset or from JSON.
+///
+/// The raw binding behind `rustigc_py.Ruleset`, which is the interface to use.
+#[pyclass(name = "RustRuleset", frozen)]
+struct PyRuleset {
+    inner: rustigc::Ruleset,
 }
 
-/// Every ruleset name `score` and `describe` accept.
+#[pymethods]
+impl PyRuleset {
+    /// The preset `id`, one of `preset_names()`; ValueError when there is none.
+    #[staticmethod]
+    #[pyo3(text_signature = "(id)")]
+    fn preset(id: &str) -> PyResult<Self> {
+        let inner = rustigc::Ruleset::preset(id)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(Self { inner })
+    }
+
+    /// A ruleset in the JSON format of the presets; ValueError, with the line and column, when
+    /// it is not one.
+    #[staticmethod]
+    #[pyo3(text_signature = "(text)")]
+    fn from_json(text: &str) -> PyResult<Self> {
+        let inner = rustigc::Ruleset::from_json(text)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(Self { inner })
+    }
+
+    /// The name reported in every result this ruleset scores.
+    #[getter]
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Ruleset({:?})", self.inner.name())
+    }
+}
+
+/// Every preset id `RustRuleset.preset` accepts.
 #[pyfunction]
 #[pyo3(text_signature = "()")]
-fn ruleset_names() -> Vec<&'static str> {
+fn preset_names() -> Vec<&'static str> {
     rustigc::preset_names().collect()
 }
 
 /// Raw bindings to the rustigc library.
 ///
 /// Not the interface to use: `rustigc_py` wraps this with numpy tracks and Python objects. It holds
-/// `RustLog`, `RustScorer`, `ruleset_names` and `FIX_DTYPE`. Flights and scores cross as JSON.
+/// `RustLog`, `RustScorer`, `RustRuleset`, `preset_names` and `FIX_DTYPE`. Flights and scores cross as JSON.
 #[pymodule]
 #[pyo3(name = "_bindings")]
 fn rustigc_py_bindings(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_class::<PyLog>()?;
     m.add_class::<PyScorer>()?;
-    m.add_function(wrap_pyfunction!(ruleset_names, m)?)?;
+    m.add_class::<PyRuleset>()?;
+    m.add_function(wrap_pyfunction!(preset_names, m)?)?;
 
     Python::attach(|py| {
         let numpy = py.import("numpy")?;

@@ -7,7 +7,7 @@ Whether the scores themselves are right is `rustigc`'s own business, so nothing 
 
 import numpy
 import pytest
-from rustigc_py import Log, Scorer
+from rustigc_py import Log, Ruleset, Scorer
 
 TRIANGLE = numpy.array(
     [[45.00, 6.00], [45.05, 6.10], [45.20, 6.30], [45.35, 6.10], [45.20, 5.90], [45.01, 6.01]]
@@ -21,8 +21,8 @@ def test_matches_log_score(igc_content):
     table = numpy.stack([log.track._latitude, log.track._longitude], axis=1)
     last = len(log.track) - 1
 
-    expected = log.score("xcontest", (0, last))
-    score = Scorer(table).score("xcontest")
+    expected = log.score(Ruleset.preset("xcontest"), (0, last))
+    score = Scorer(table).score(Ruleset.preset("xcontest"))
 
     assert score._data == expected._data
     # Nothing but coordinates behind a table, so positions come back as the indices themselves
@@ -34,13 +34,8 @@ def test_accepts_a_strided_table():
     strided = numpy.repeat(TRIANGLE, 2, axis=0)[::2]
     assert not strided.flags["C_CONTIGUOUS"]
 
-    assert Scorer(strided).score("xcontest")._data == Scorer(TRIANGLE).score("xcontest")._data
-
-
-def test_unknown_ruleset():
-    """Refuse unknown presets"""
-    with pytest.raises(ValueError, match="unknown preset"):
-        Scorer(TRIANGLE).score("xkontest")
+    xcontest = Ruleset.preset("xcontest")
+    assert Scorer(strided).score(xcontest)._data == Scorer(TRIANGLE).score(xcontest)._data
 
 
 @pytest.mark.parametrize(
