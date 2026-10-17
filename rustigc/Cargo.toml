@@ -39,7 +39,7 @@ winnow = "1"
 [dev-dependencies]
 pretty_assertions = "1"
 criterion = "0.8"
-rustigc-test-data = { path = "../rustigc-test-data", version = "0.1.1" }
+rustigc-test-data = { path = "../rustigc-test-data", version = "0.2.0" }
 
 
 # `scoring` and `export` read the library through its optional serializers. Those are on by
