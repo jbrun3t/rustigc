@@ -48,15 +48,17 @@ impl<const TP: usize, const MINSIDE: u32> ShapeBound for BalancedCircuit<TP, MIN
 
         // shortest leg >= ratio * total, so total <= shortest / ratio. Each leg is at most the
         // longest transition between its two boxes, so the smallest of those caps the shortest.
-        let balanced_max = transitions
+        let short_max = transitions
             .iter()
             .map(|tr| tr.rows().flatten().fold(f64::NAN, |r, v| r.max(*v)))
-            .fold(f64::NAN, |r, v| r.min(v))
-            / self.ratio();
-
-        // Nothing in these boxes is short enough to balance.
+            .fold(f64::NAN, |r, v| r.min(v));
         let shape_min = circuit_dynamic_search(transitions.as_slice(), &f64::min);
-        if balanced_max < shape_min {
+
+        // Nothing in these boxes is short enough to balance. The ratio must not reject what the
+        // geodesic re-measure would accept: `peek`'s test reversed, the shortest leg stretched and
+        // the total shrunk by the margin.
+        let balanced_max = short_max * (1.0 + scorer.margin(short_max)) / self.ratio();
+        if balanced_max < shape_min * (1.0 - scorer.margin(shape_min)) {
             return 0f64;
         }
 
