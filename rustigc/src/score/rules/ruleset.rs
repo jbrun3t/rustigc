@@ -40,8 +40,9 @@ impl Ruleset {
     ///
     /// # Errors
     ///
-    /// Malformed JSON, an unknown shape, or rules a search cannot use: none at all, a variant
-    /// disagreeing with its shape on closing, or a rate that improves down a variant list.
+    /// Malformed JSON, an unknown shape, or rules a search cannot use: none at all, a rule with
+    /// no variant, a variant disagreeing with its shape on closing, a rate that improves down a
+    /// variant list, or a free closing after a charged one.
     pub fn from_json(text: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(text)
     }
@@ -134,6 +135,33 @@ mod tests {
 
         let err = Ruleset::from_json(text).unwrap_err();
         assert!(err.to_string().contains("on closing"), "{err}");
+    }
+
+    /// An earlier variant must never score less than a later one: a free closing cannot follow a
+    /// charged one.
+    #[test]
+    fn from_json_refuses_free_after_charged() {
+        let text = r#"{
+            "name": "custom",
+            "rules": [{
+                "shape": { "type": "closed_circuit", "turnpoints": 3 },
+                "variants": [
+                    {
+                        "name": "charged",
+                        "multiplier": 1.2,
+                        "closing": { "type": "ratio", "ratio": 0.05, "penalized": true }
+                    },
+                    {
+                        "name": "free",
+                        "multiplier": 1.2,
+                        "closing": { "type": "distance", "distance_m": 3000.0, "penalized": false }
+                    }
+                ]
+            }]
+        }"#;
+
+        let err = Ruleset::from_json(text).unwrap_err();
+        assert!(err.to_string().contains("for free"), "{err}");
     }
 
     #[test]

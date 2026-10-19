@@ -15,11 +15,11 @@
 //! flight reaches.
 //!
 //! **Steps.** Distances are measured on FCC, within a known margin of the geodesic the report
-//! measures. Inside the margin, a score is continuous unless a step lies there: a closing reach, a
-//! constraint, a balanced circuit's ratio. The geodesic decides those steps on a leaf, the bound
-//! takes the side that scores more, and the peek the side that scores less. Every candidate stays
-//! ranked on FCC distances, so a near-tie resolves in FCC order: the result is within the margin of
-//! the geodesic optimum, and on the right side of every step.
+//! measures. A score is FCC distance rated by a variant, and the variant is a step: a closing
+//! reach, a constraint. The geodesic picks it on a leaf, the bound stretched by the margin on a
+//! node, the peek shrunk by it for the floor; a balanced circuit decides its ratio the same way.
+//! Every candidate stays ranked on FCC distances, so a near-tie resolves in FCC order: the result
+//! is within the margin of the geodesic optimum, and on the right side of every step.
 //!
 //! **Floor.** The highest score found so far, all rules included.
 
@@ -234,9 +234,14 @@ impl Scorer {
         Band::of(lat)
     }
 
-    /// Relative FCC-vs-geodesic slack to allow on `distance`, for this window's latitudes.
-    pub(super) fn margin(&self, distance: f64) -> f64 {
-        self.band.margin(distance)
+    /// Longest geodesic FCC may measure as `distance`, for this window's latitudes.
+    pub(super) fn stretch(&self, distance: f64) -> f64 {
+        distance / (1.0 - self.band.margin(distance))
+    }
+
+    /// Shortest geodesic FCC may measure as `distance`, for this window's latitudes.
+    pub(super) fn shrink(&self, distance: f64) -> f64 {
+        distance / (1.0 + self.band.margin(distance))
     }
 
     /// `BBox` covering `range`.
@@ -281,24 +286,32 @@ impl Scorer {
     ) -> Option<(Solution<'r>, f64)> {
         let shape = rule.shape();
 
+        // The geodesic of a leaf below may reach the stretched bound: it picks the variant.
         let bound = shape.bound(self, &candidate);
-        let stretched = bound * (1.0 + self.margin(bound));
+        let stretched = self.stretch(bound);
 
         // A gap of 0 is the most a rule can be given, so this prunes on the real gap too.
-        if rule.score(stretched, 0.0) < floor {
+        if rule.score(stretched, bound, 0.0) < floor {
             return None;
         }
 
         let gap = shape.gap(self, &candidate);
+        let upper = rule.score(stretched, bound, gap);
 
         if candidate.is_leaf() {
-            if rule.score(stretched, gap) < floor {
+            if upper < floor {
                 return None;
             }
 
             // The geodesic task picks the variant, or drops the leaf when none applies. The score
             // stays on FCC, the scale the nodes rank on.
             let task = shape.report(self, &candidate)?;
+            debug_assert!(
+                self.shrink(bound) <= task.distance
+                    && task.distance <= self.stretch(bound),
+                "geodesic {} beyond the FCC margin of {bound}",
+                task.distance
+            );
             let variant = rule.variant(task.distance, task.gap)?;
             let score = rule.rate(variant, bound, gap);
 
@@ -309,15 +322,6 @@ impl Scorer {
             };
             return Some((solution, score));
         }
-
-        // A leaf below may score on the geodesic past a step within the margin.
-        let at_bound = rule.variant(bound, gap);
-        let at_stretched = rule.variant(stretched, gap);
-        let upper = if at_bound == at_stretched {
-            at_bound.map_or(0.0, |index| rule.rate(index, bound, gap))
-        } else {
-            at_stretched.map_or(0.0, |index| rule.rate(index, stretched, gap))
-        };
 
         let solution = Solution {
             candidate,
@@ -333,9 +337,9 @@ impl Scorer {
         // TODO: Return None early if bound is re-usable
         let dist = shape.peek(self, &solution.candidate);
 
-        // Shrink the distance by the margin, so the floor never rests on a step the geodesic would
-        // refuse. The gap is geodesic already.
-        let lower = rule.score(dist * (1.0 - self.margin(dist)), gap);
+        // The geodesic of the peeked circuit may be as short as the shrunk distance: it picks the
+        // variant, so the floor never rests on a step the geodesic would refuse.
+        let lower = rule.score(self.shrink(dist), dist, gap);
 
         // A floor above the bound would prune the optimum.
         debug_assert!(upper >= lower);

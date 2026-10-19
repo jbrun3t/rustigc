@@ -31,8 +31,8 @@ where
 }
 
 impl Rule {
-    /// Refuses a rule with no variant, a variant whose closing disagrees with the shape, or a
-    /// multiplier rising down the list.
+    /// Refuses a rule with no variant, a variant whose closing disagrees with the shape, a
+    /// multiplier rising down the list, or a free closing after a charged one.
     pub(super) fn check(&self) -> Result<(), String> {
         let shape = self.shape.spec;
 
@@ -41,6 +41,7 @@ impl Rule {
         }
 
         let mut previous = f64::INFINITY;
+        let mut charged = false;
         for variant in &self.variants {
             // An open shape reports no gap to charge, and a circuit without a closing would close
             // for free.
@@ -60,6 +61,17 @@ impl Rule {
                 ));
             }
             previous = variant.multiplier;
+
+            // A free closing after a charged one would pay more on a wide gap, and an earlier
+            // variant must never score less than a later one: the search bounds on it.
+            let charges = variant.closing.is_some_and(|c| c.penalized());
+            if charged && !charges {
+                return Err(format!(
+                    "{:?} closes for free after a variant charging the gap",
+                    variant.name
+                ));
+            }
+            charged = charges;
         }
 
         Ok(())
@@ -75,17 +87,18 @@ impl Rule {
         self.shape.shape
     }
 
-    /// Score of the first valid variant, else 0; in meters, unrounded.
+    /// Score of `distance` on the first variant valid at `picking`, else 0; in meters, unrounded.
+    /// `picking` is the distance the variant is picked on, `distance` the one it rates.
     ///
-    /// The search prunes on it, so it must be non-decreasing in `distance` and non-increasing in
-    /// `gap`. The multiplier order [`Rule::check`] enforces keeps it so.
-    pub(crate) fn score(&self, distance: f64, gap: f64) -> f64 {
-        self.variant(distance, gap)
+    /// The search prunes on it, so it must be non-decreasing in `picking` and `distance`, and
+    /// non-increasing in `gap`. The variant order [`Rule::check`] enforces keeps it so: an earlier
+    /// variant never scores less than a later one.
+    pub(crate) fn score(&self, picking: f64, distance: f64, gap: f64) -> f64 {
+        self.variant(picking, gap)
             .map_or(0.0, |index| self.rate(index, distance, gap))
     }
 
-    /// Index of the first valid variant, `None` when none is. Two scores on the
-    /// same variant lie on the same side of every step the rule has.
+    /// Index of the first valid variant, `None` when none is.
     pub(crate) fn variant(&self, distance: f64, gap: f64) -> Option<usize> {
         pick(&self.variants, distance, gap)
     }

@@ -171,8 +171,10 @@ The search itself runs on the cheap `Fcc` distance approximation, not the `Geode
 between the two grows monotonically with distance, so `Fcc` ranks candidates just as well and is fine
 for exploring the tracklog. It is judging a *limit* that it cannot be trusted with — a closing ratio
 or an FAI minimum side that `Fcc` passes, `Geodesic` may not. To keep the floor from resting on a
-distance the exact re-measure would not confirm, every distance the search scores has a margin
-subtracted, sized to the flight's latitude and to the distance itself.
+step the exact re-measure would not confirm, a node picks its variant on its bound stretched by a
+margin, the floor rises on the peek shrunk by it, and a leaf picks its variant on its geodesic
+task. The margin is sized to the flight's latitude and to the distance itself; every one of them
+rates the FCC distance.
 
 This does not eliminate disagreement, only bounds it: a leaf whose exact re-measure fails the shape's
 own constraints is not an error — `eval` drops it before it reaches the heap, since the floor was

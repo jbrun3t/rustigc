@@ -24,11 +24,15 @@ impl Closing {
         }
     }
 
-    /// Distance the gap takes off within reach: the gap itself when penalized, else 0.
-    pub(super) fn charge(&self, gap: f64) -> f64 {
+    /// Whether the gap is taken off the distance.
+    pub(super) fn penalized(&self) -> bool {
         let (Closing::Distance { penalized, .. } | Closing::Ratio { penalized, .. }) =
             self;
+        *penalized
+    }
 
-        if *penalized { gap } else { 0.0 }
+    /// Distance the gap takes off within reach: the gap itself when penalized, else 0.
+    pub(super) fn charge(&self, gap: f64) -> f64 {
+        if self.penalized() { gap } else { 0.0 }
     }
 }

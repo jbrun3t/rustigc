@@ -55,10 +55,10 @@ impl<const TP: usize, const MINSIDE: u32> ShapeBound for BalancedCircuit<TP, MIN
         let shape_min = circuit_dynamic_search(transitions.as_slice(), &f64::min);
 
         // Nothing in these boxes is short enough to balance. The ratio must not reject what the
-        // geodesic re-measure would accept: `peek`'s test reversed, the shortest leg stretched and
-        // the total shrunk by the margin.
-        let balanced_max = short_max * (1.0 + scorer.margin(short_max)) / self.ratio();
-        if balanced_max < shape_min * (1.0 - scorer.margin(shape_min)) {
+        // geodesic would accept: `peek`'s test reversed, the shortest leg stretched and the total
+        // shrunk. The cap stays on that stretched scale, as on the leaves it bounds.
+        let balanced_max = scorer.stretch(short_max) / self.ratio();
+        if balanced_max < scorer.shrink(shape_min) {
             return 0f64;
         }
 
@@ -88,11 +88,8 @@ impl<const TP: usize, const MINSIDE: u32> ShapePeek for BalancedCircuit<TP, MINS
             from = to;
         }
 
-        // The ratio must still hold on the geodesic re-measure: test it with the total stretched
-        // and the shortest leg shrunk by the margin.
-        if total * (1.0 + scorer.margin(total)) * self.ratio()
-            > short * (1.0 - scorer.margin(short))
-        {
+        // The ratio must still hold on the geodesic: the total stretched, the shortest leg shrunk.
+        if scorer.stretch(total) * self.ratio() > scorer.shrink(short) {
             return 0.;
         }
 

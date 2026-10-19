@@ -45,7 +45,7 @@ Two callers want two different halves of the same answer:
 
 | Caller | Wants | Used for |
 |---|---|---|
-| `gap` | the **distance** | pruning: `rule.score(bound, gap)` gives the candidate's upper bound |
+| `gap` | the **distance** | pruning: `rule.score(stretched, bound, gap)` gives the candidate's upper bound |
 | `endpoints` | the **two fix indices** | the report: which fixes are shown as the closing pair |
 
 That split matters for a subtlety in §4: the search picks the pair in a local projection, but
