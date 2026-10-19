@@ -48,9 +48,9 @@ Two callers want two different halves of the same answer:
 | `gap` | the **distance** | pruning: `rule.score(bound, gap)` gives the candidate's upper bound |
 | `endpoints` | the **two fix indices** | the report: which fixes are shown as the closing pair |
 
-That split matters for a subtlety in §4: the distance the search computes is a *fast approximation*,
-and it is only ever used to prune. `report` takes the **indices** and re-measures them with the exact
-geodesic. So the search's own distance never reaches a published score.
+That split matters for a subtlety in §4: the search picks the pair in a local projection, but
+measures the gap of that pair with `Geodesic::distance`, so the gap feeds the bound and the score
+alike.
 
 ### Overlapping circuits
 
@@ -85,7 +85,7 @@ Given `entry_stop` and `exit_start`, find the closest pair as fast as possible:
    A plain nearest-neighbour query — one that always starts from an infinite radius — computes an
    exact answer for every single fix and then throws almost all of them away. On a test with
    `fai-02` only 3 of 19 862 queries improve on the best.
-1. Compute the Fcc distance on the winning pair
+1. Compute the geodesic distance on the winning pair
 
 ## 5. Caching
 

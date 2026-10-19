@@ -95,7 +95,7 @@ both cache the answer the same way (above). Everything inside that differs.
 | index | packed Hilbert R-tree (`Flatbush`) | `rstar::RTree` |
 | indexed side | Entry side, `[launch..p1]` | the **shorter** of the two |
 | query | `rtree.neighbors(x, y, 1)` — a plain nearest neighbour, restarting from scratch for every exit fix | `locate_within_distance` with **radius = the best pair found so far**, so a fix that cannot improve is refuted at the root |
-| distance per iterated fix | full `distanceEarth` (FCC) **plus the rule's rounding**, once per fix | none — ranked on squared distance in the projected plane; one `Fcc::distance` for the winner only |
+| distance per iterated fix | full `distanceEarth` (FCC) **plus the rule's rounding**, once per fix | none — ranked on squared distance in the projected plane; one `Geodesic::distance` for the winner only |
 | projection | longitude only, scaled by `cos(lat at p1)` | `CheapProjection` about the merged bounding box: separate `kx`/`ky`, both scaled |
 
 The query line is important. Asking for a plain nearest neighbour means the traversal must

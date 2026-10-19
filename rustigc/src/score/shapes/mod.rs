@@ -47,7 +47,7 @@ pub trait ShapeCommon: Debug {
     /// Entry and exit fixes: a circuit's closing pair, an open polyline's furthest points, or
     /// the first fix of its first and last ranges when it searches its ends. On the hot path.
     fn endpoints(&self, scorer: &Scorer, c: &Candidate) -> (usize, usize);
-    /// Closing leg of a circuit, as a distance. 0 for an open shape, and while a circuit's
+    /// Closing leg of a circuit, as a geodesic distance. 0 for an open shape, and while a circuit's
     /// first and last ranges overlap. On the hot path.
     fn gap(&self, scorer: &Scorer, c: &Candidate) -> f64;
     /// The task `c` flies, re-measured on the geodesic; `None` when it then breaks the shape's

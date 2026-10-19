@@ -299,12 +299,9 @@ impl Scorer {
         // TODO: Return None early if bound is re-usable
         let dist = shape.peek(self, &solution.candidate);
 
-        // Shrink the distance and grow the gap by the margin, so the floor never rests on a score
-        // the geodesic re-measure would refuse.
-        let lower = rule.score(
-            dist * (1.0 - self.margin(dist)),
-            gap * (1.0 + self.margin(gap)),
-        );
+        // Shrink the distance by the margin, so the floor never rests on a score the geodesic
+        // re-measure would refuse. The gap is geodesic already.
+        let lower = rule.score(dist * (1.0 - self.margin(dist)), gap);
 
         // A floor above the bound would prune the optimum.
         debug_assert!(upper >= lower);

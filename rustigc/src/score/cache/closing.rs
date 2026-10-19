@@ -11,7 +11,7 @@ use rstar::{
     AABB, PointDistance as _, RStarInsertionStrategy, RTree, RTreeObject, RTreeParams,
 };
 
-use crate::utils::geometry::{BBox, Fcc, PointDistance, SPoint};
+use crate::utils::geometry::{BBox, Geodesic, PointDistance, SPoint};
 use crate::utils::projector::CheapProjection;
 
 #[derive(Debug)]
@@ -109,7 +109,8 @@ fn nearest_under(tree: &Tree, point: &SPoint, radius: f64) -> Option<(usize, f64
 }
 
 /// Closest pair between `[0, entry_stop]` and `[exit_start, last]`: one range goes in an R-tree in
-/// a local projection, the other queries it. Only the winning pair gets its FCC distance.
+/// a local projection, the other queries it. Only the winning pair is measured, on the geodesic:
+/// rules step on the gap, so it carries no FCC error.
 ///
 /// Each query searches within the best distance so far. That still finds the optimum: when the loop
 /// reaches the optimum's own fix, its partner is within the radius unless the best already equals
@@ -164,7 +165,7 @@ fn closest_closing(
     }
 
     let tree_best = tree_start + tree_best_offset;
-    let dist = Fcc::distance(&p[iter_best], &p[tree_best]);
+    let dist = Geodesic::distance(&p[iter_best], &p[tree_best]);
 
     // Either range may have been iterated: return the pair in track order.
     if iter_best <= tree_best {
@@ -197,7 +198,7 @@ mod tests {
         let (entry, exit, dist) = cache.closing(&p, 2, 4);
 
         assert_eq!((entry, exit), (2, 4));
-        assert_eq!(dist, Fcc::distance(&p[2], &p[4]));
+        assert_eq!(dist, Geodesic::distance(&p[2], &p[4]));
     }
 
     #[test]
@@ -235,7 +236,7 @@ mod tests {
         let first = cache.closing(&p, 4, 6);
         let second = cache.closing(&p, 3, 6);
 
-        assert_eq!(first, (2, 6, Fcc::distance(&p[2], &p[6])));
+        assert_eq!(first, (2, 6, Geodesic::distance(&p[2], &p[6])));
         assert_eq!(second, first);
         assert_eq!(cache.0.size(), 1);
     }
@@ -262,8 +263,8 @@ mod tests {
         let first = cache.closing(&p, 1, 4);
         let second = cache.closing(&p, 1, 3);
 
-        assert_eq!(first, (1, 4, Fcc::distance(&p[1], &p[4])));
-        assert_eq!(second, (0, 3, Fcc::distance(&p[0], &p[3])));
+        assert_eq!(first, (1, 4, Geodesic::distance(&p[1], &p[4])));
+        assert_eq!(second, (0, 3, Geodesic::distance(&p[0], &p[3])));
         assert_ne!(first, second);
         assert_eq!(cache.0.size(), 2);
     }
@@ -278,8 +279,8 @@ mod tests {
         // search the wider range rather than reuse the narrower cached result.
         let wider = cache.closing(&p, 2, 4);
 
-        assert_eq!(narrow, (1, 4, Fcc::distance(&p[1], &p[4])));
-        assert_eq!(wider, (1, 4, Fcc::distance(&p[1], &p[4])));
+        assert_eq!(narrow, (1, 4, Geodesic::distance(&p[1], &p[4])));
+        assert_eq!(wider, (1, 4, Geodesic::distance(&p[1], &p[4])));
         assert_eq!(cache.0.size(), 2);
     }
 
