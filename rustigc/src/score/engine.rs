@@ -14,6 +14,13 @@
 //! **Peek.** `Shape::peek` measures the distance through one real fix of each range: a score some
 //! flight reaches.
 //!
+//! **Steps.** Distances are measured on FCC, within a known margin of the geodesic the report
+//! measures. Inside the margin, a score is continuous unless a step lies there: a closing reach, a
+//! constraint, a balanced circuit's ratio. The geodesic decides those steps on a leaf, the bound
+//! takes the side that scores more, and the peek the side that scores less. Every candidate stays
+//! ranked on FCC distances, so a near-tie resolves in FCC order: the result is within the margin of
+//! the geodesic optimum, and on the right side of every step.
+//!
 //! **Floor.** The highest score found so far, all rules included.
 
 use crate::TrackError;
@@ -274,16 +281,42 @@ impl Scorer {
     ) -> Option<(Solution<'r>, f64)> {
         let shape = rule.shape();
 
-        let leaf = candidate.is_leaf();
         let bound = shape.bound(self, &candidate);
+        let stretched = bound * (1.0 + self.margin(bound));
 
         // A gap of 0 is the most a rule can be given, so this prunes on the real gap too.
-        if !leaf && rule.score(bound, 0.0) < floor {
+        if rule.score(stretched, 0.0) < floor {
             return None;
         }
 
         let gap = shape.gap(self, &candidate);
-        let upper = rule.score(bound, gap);
+
+        if candidate.is_leaf() {
+            if rule.score(stretched, gap) < floor {
+                return None;
+            }
+
+            // The geodesic task picks the variant, or drops the leaf when none applies. The score
+            // stays on FCC, the scale the nodes rank on.
+            let task = shape.report(self, &candidate)?;
+            let variant = rule.variant(task.distance, task.gap)?;
+            let score = rule.rate(variant, bound, gap);
+
+            let solution = Solution {
+                candidate,
+                bound: score,
+                rule,
+            };
+            return Some((solution, score));
+        }
+
+        // A leaf below may score on the geodesic past a step within the margin.
+        let upper = if rule.variant(bound, gap) == rule.variant(stretched, gap) {
+            rule.score(bound, gap)
+        } else {
+            rule.score(stretched, gap)
+        };
+
         let solution = Solution {
             candidate,
             bound: upper,
@@ -295,12 +328,11 @@ impl Scorer {
             return Some((solution, upper));
         }
 
-        // `peek` on a leaf too: only `peek` checks a balanced circuit's ratio with the margin.
         // TODO: Return None early if bound is re-usable
         let dist = shape.peek(self, &solution.candidate);
 
-        // Shrink the distance by the margin, so the floor never rests on a score the geodesic
-        // re-measure would refuse. The gap is geodesic already.
+        // Shrink the distance by the margin, so the floor never rests on a step the geodesic would
+        // refuse. The gap is geodesic already.
         let lower = rule.score(dist * (1.0 - self.margin(dist)), gap);
 
         // A floor above the bound would prune the optimum.
@@ -363,9 +395,8 @@ impl Scorer {
         (children, highest)
     }
 
-    /// Re-measures the winning leaf on the geodesic, scores it under its rule, and builds the
-    /// result in the caller's track indices. `None` when the shape rejects the re-measure, or the
-    /// rule scores it 0.
+    /// Builds the result of a leaf in the caller's track indices. `None` when the shape rejects its
+    /// task or the rule scores it 0, which `eval` keeps off the heap.
     fn report(&self, ruleset: &Ruleset, solution: &Solution) -> Option<ScoringResult> {
         let rule = solution.rule;
 
@@ -490,19 +521,10 @@ impl Scorer {
                 break None;
             };
 
+            // Nothing left on the heap ranks above this leaf.
             if solution.is_leaf() {
-                // The geodesic re-measure may reject this leaf. The next best is still on the
-                // heap: the floor never rose above a score the re-measure could withdraw.
-                match self.report(ruleset, &solution) {
-                    Some(result) => {
-                        info!("Best {:?}", solution);
-                        break Some(result);
-                    }
-                    None => {
-                        info!("Rejected on the geodesic re-measure: {:?}", solution);
-                        continue;
-                    }
-                }
+                info!("Best {:?}", solution);
+                break self.report(ruleset, &solution);
             }
 
             let (children, score) = self.split(solution, floor);

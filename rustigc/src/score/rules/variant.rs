@@ -20,6 +20,13 @@ pub struct Variant {
 }
 
 impl Variant {
+    /// Scores a raw `distance` and its closing `gap` at this variant's rate, leaving its closing reach
+    /// and constraints unchecked.
+    pub(super) fn rate(&self, distance: f64, gap: f64) -> f64 {
+        let charge = self.closing.map_or(0.0, |c| c.charge(gap));
+        (distance - charge).max(0.0) * self.multiplier
+    }
+
     /// Scores a raw `distance` and its closing `gap`. The score is 0 when a constraint fails or
     /// the gap does not close.
     pub(super) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {

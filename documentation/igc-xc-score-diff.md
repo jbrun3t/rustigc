@@ -31,7 +31,7 @@ Its solver is a generator: `maxcycle`/`maxloop` yield a best-so-far result carry
 an `optimal` flag, so a caller can time-box the search and resume it.
 
 `rustigc` breaks on the first leaf popped, valid because the heap is ordered on bounds and a leaf's bound
-is its score. It has no incremental mode yet.
+is its FCC score, the scale every candidate ranks on. It has no incremental mode yet.
 
 ## FAI cylinders
 
@@ -117,12 +117,12 @@ each query cheap instead.
 ## Reported metric
 
 igc-xc-score computes FCC everywhere by default, including the reported result; a `hp` option swaps
-`Point.prototype.distanceEarth` for Vincenty. `rustigc` uses FCC inside the search and always reports
-geodesic.
+`Point.prototype.distanceEarth` for Vincenty. `rustigc` ranks candidates on FCC, measures the closing gap and
+picks each leaf's variant on the geodesic, and always reports geodesic.
 
 When a solution is on the limit with FCC distance (closing distance or FAI ratio), it may be invalidated
-when recomputed with geodesic distance. `rustigc` accounts for this and continues the search for a valid
-solution.
+when recomputed with geodesic distance. `rustigc` accounts for this: a leaf invalid on the geodesic is dropped
+and the search goes on.
 
 This is one reason why `igc-xc-score` sometimes finds a better optimum than `rustigc`: it may report
 solutions that, once recomputed over WGS84, turn out to be invalid, by an extremely small margin.

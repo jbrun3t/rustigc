@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later WITH Classpath-exception-2.0
 
-//! FCC-vs-geodesic slack the search leaves on every distance it scores, so the floor never rises
-//! above what the geodesic re-measure confirms. The error grows with distance and latitude.
+//! FCC-vs-geodesic slack on the distances the search measures on FCC, so a bound or a floor never
+//! lands on the wrong side of a step the geodesic decides. The error grows with distance and
+//! latitude.
 
 /// Latitude band of a flight: row of [`TABLE`] covering every leg it can contain.
 #[derive(Debug, Clone, Copy)]

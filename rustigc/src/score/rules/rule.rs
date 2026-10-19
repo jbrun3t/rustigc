@@ -87,6 +87,20 @@ impl Rule {
             .unwrap_or(0.0)
     }
 
+    /// Index of the first variant that earns anything, `None` when none does. Two scores on the
+    /// same variant lie on the same side of every step the rule has.
+    pub(crate) fn variant(&self, distance: f64, gap: f64) -> Option<usize> {
+        self.variants
+            .iter()
+            .position(|v| v.scored(distance, gap).score > 0.0)
+    }
+
+    /// Score of variant `index` at its rate, its steps unchecked: for a variant another measure of
+    /// the same task picked.
+    pub(crate) fn rate(&self, index: usize, distance: f64, gap: f64) -> f64 {
+        self.variants[index].rate(distance, gap)
+    }
+
     /// The full result of the winning variant, for the report.
     pub(crate) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
         pick(&self.variants, distance, gap).scored(distance, gap)

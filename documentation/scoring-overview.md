@@ -21,8 +21,8 @@ puts the general case's worst-case complexity at `O(n⁵)`.
 Each individual distance is expensive too. The Earth's surface is a curved, slightly flattened
 ellipsoid, not a plane: even the cheap approximation used during the search (`Fcc::distance`) needs
 a cosine of latitude and a square root per leg, and the exact ellipsoid distance has no closed-form
-solution — it is solved iteratively, which is why it is only ever run once, on the winning leaf, and
-never inside the search.
+solution — it is solved iteratively, which is why the search runs it only for a closing gap and on
+each leaf it scores, never on the legs of a node.
 
 Brute force is therefore not viable. Most combinations of turnpoints are obviously bad long before
 their distance is measured precisely — the search below is built to act on that, instead of measuring
@@ -56,7 +56,8 @@ with the following steps:
 
 1. Pop the candidate with the highest bound.
 2. If it's a leaf, it's a fully-specified flight — and since the heap is ordered by bound and a leaf's
-   bound equals its real score, this is the global optimum. Stop.
+   bound is its FCC distance at the variant the geodesic picked, within the FCC margin of its
+   reported score, and every candidate ranks on that scale, this is the optimum. Stop.
 3. Otherwise, split its widest range in two, producing two children with narrower ranges.
 4. Score both children (bound and peek) and push them back onto the heap.
 5. Keep a running **floor**: the best real score (`peek`) seen so far. Any candidate whose `bound`
@@ -173,13 +174,13 @@ or an FAI minimum side that `Fcc` passes, `Geodesic` may not. To keep the floor 
 distance the exact re-measure would not confirm, every distance the search scores has a margin
 subtracted, sized to the flight's latitude and to the distance itself.
 
-This does not eliminate disagreement, only bounds it: if the exact re-measure on the winning leaf still
-fails the shape's own constraints, that is not an error — the search takes the next-best leaf off the
-heap instead, since the floor was never raised above what a re-measure can withdraw.
+This does not eliminate disagreement, only bounds it: a leaf whose exact re-measure fails the shape's
+own constraints is not an error — `eval` drops it before it reaches the heap, since the floor was
+never raised above what a re-measure can withdraw.
 
 ## Final Score
 
-Once a leaf wins, the solution is recomputed once against the WGS84 reference: the exact geodesic distance
+Once a leaf wins, the report re-measures it against the WGS84 reference: the exact geodesic distance
 of every leg, which fixes are turnpoints vs. entry/exit, the closing gap. The rule then turns that
 raw `(distance, gap)` into what gets reported — applies the closing penalty, the variant's
 multiplier, and checks its thresholds — and `Scorer::report` rounds the result.

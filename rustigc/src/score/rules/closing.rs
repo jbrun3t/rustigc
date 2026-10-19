@@ -24,18 +24,20 @@ impl Closing {
         }
     }
 
-    /// Distance the gap takes off: the gap itself when penalized, else 0. INFINITY past
-    /// [`Closing::reach`].
-    pub(super) fn penalty(&self, distance: f64, gap: f64) -> f64 {
+    /// Distance the gap takes off within reach: the gap itself when penalized, else 0.
+    pub(super) fn charge(&self, gap: f64) -> f64 {
         let (Closing::Distance { penalized, .. } | Closing::Ratio { penalized, .. }) =
             self;
 
+        if *penalized { gap } else { 0.0 }
+    }
+
+    /// [`Closing::charge`], INFINITY past [`Closing::reach`].
+    pub(super) fn penalty(&self, distance: f64, gap: f64) -> f64 {
         if gap > self.reach(distance) {
             f64::INFINITY
-        } else if *penalized {
-            gap
         } else {
-            0.0
+            self.charge(gap)
         }
     }
 }

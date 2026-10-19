@@ -46,7 +46,7 @@ pub trait Circuit {
         Self::TURNPOINTS
     };
 
-    /// Whether the final geodesic legs still satisfy the circuit's own constraints.
+    /// Whether the geodesic legs of a task satisfy the circuit's own constraints.
     fn admissible(&self, _legs: &[f64]) -> bool {
         true
     }

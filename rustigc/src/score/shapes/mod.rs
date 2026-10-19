@@ -50,8 +50,8 @@ pub trait ShapeCommon: Debug {
     /// Closing leg of a circuit, as a geodesic distance. 0 for an open shape, and while a circuit's
     /// first and last ranges overlap. On the hot path.
     fn gap(&self, scorer: &Scorer, c: &Candidate) -> f64;
-    /// The task `c` flies, re-measured on the geodesic; `None` when it then breaks the shape's
-    /// constraints. Called once, on the winning leaf.
+    /// The task leaf `c` flies, measured on the geodesic; `None` when it breaks the shape's
+    /// constraints. Called on every leaf the search scores.
     fn report(&self, scorer: &Scorer, c: &Candidate) -> Option<Task>;
 }
 
