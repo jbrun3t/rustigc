@@ -311,10 +311,12 @@ impl Scorer {
         }
 
         // A leaf below may score on the geodesic past a step within the margin.
-        let upper = if rule.variant(bound, gap) == rule.variant(stretched, gap) {
-            rule.score(bound, gap)
+        let at_bound = rule.variant(bound, gap);
+        let at_stretched = rule.variant(stretched, gap);
+        let upper = if at_bound == at_stretched {
+            at_bound.map_or(0.0, |index| rule.rate(index, bound, gap))
         } else {
-            rule.score(stretched, gap)
+            at_stretched.map_or(0.0, |index| rule.rate(index, stretched, gap))
         };
 
         let solution = Solution {
@@ -396,17 +398,13 @@ impl Scorer {
     }
 
     /// Builds the result of a leaf in the caller's track indices. `None` when the shape rejects its
-    /// task or the rule scores it 0, which `eval` keeps off the heap.
+    /// task or no variant is valid for it, which `eval` keeps off the heap.
     fn report(&self, ruleset: &Ruleset, solution: &Solution) -> Option<ScoringResult> {
         let rule = solution.rule;
 
         let shape = rule.shape();
         let task = shape.report(self, &solution.candidate)?;
-        let scored = rule.scored(task.distance, task.gap);
-
-        if scored.score <= 0.0 {
-            return None;
-        }
+        let scored = rule.scored(task.distance, task.gap)?;
 
         Some(ScoringResult {
             ruleset: ruleset.name().to_string(),

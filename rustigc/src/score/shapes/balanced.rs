@@ -35,7 +35,7 @@ impl<const TP: usize, const MINSIDE: u32> ShapeKind for BalancedCircuit<TP, MINS
 impl<const TP: usize, const MINSIDE: u32> Circuit for BalancedCircuit<TP, MINSIDE> {
     const TURNPOINTS: usize = TP;
 
-    fn admissible(&self, legs: &[f64]) -> bool {
+    fn valid(&self, legs: &[f64]) -> bool {
         let total: f64 = legs.iter().sum();
         legs.iter().all(|leg| *leg >= self.ratio() * total)
     }

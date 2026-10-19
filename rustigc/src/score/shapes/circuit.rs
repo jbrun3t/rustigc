@@ -47,7 +47,7 @@ pub trait Circuit {
     };
 
     /// Whether the geodesic legs of a task satisfy the circuit's own constraints.
-    fn admissible(&self, _legs: &[f64]) -> bool {
+    fn valid(&self, _legs: &[f64]) -> bool {
         true
     }
 
@@ -86,7 +86,7 @@ impl<T: Circuit + Debug> ShapeCommon for T {
             .map(|(a, b)| Geodesic::distance(&track[*a], &track[*b]))
             .collect();
 
-        if !self.admissible(&legs) {
+        if !self.valid(&legs) {
             return None;
         }
 

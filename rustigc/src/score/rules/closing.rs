@@ -31,13 +31,4 @@ impl Closing {
 
         if *penalized { gap } else { 0.0 }
     }
-
-    /// [`Closing::charge`], INFINITY past [`Closing::reach`].
-    pub(super) fn penalty(&self, distance: f64, gap: f64) -> f64 {
-        if gap > self.reach(distance) {
-            f64::INFINITY
-        } else {
-            self.charge(gap)
-        }
-    }
 }

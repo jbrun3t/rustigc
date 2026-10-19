@@ -20,46 +20,53 @@ pub struct Variant {
 }
 
 impl Variant {
-    /// Scores a raw `distance` and its closing `gap` at this variant's rate, leaving its closing reach
-    /// and constraints unchecked.
-    pub(super) fn rate(&self, distance: f64, gap: f64) -> f64 {
-        let charge = self.closing.map_or(0.0, |c| c.charge(gap));
-        (distance - charge).max(0.0) * self.multiplier
+    /// Distance the closing takes off a raw `distance` for its `gap`.
+    fn penalty(&self, gap: f64) -> f64 {
+        self.closing.map_or(0.0, |c| c.charge(gap))
     }
 
-    /// Scores a raw `distance` and its closing `gap`. The score is 0 when a constraint fails or
-    /// the gap does not close.
-    pub(super) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
-        let penalty = self.closing.map_or(0.0, |c| c.penalty(distance, gap));
-        let net = (distance - penalty).max(0.0);
+    /// Raw `distance` net of the closing penalty.
+    fn net(&self, distance: f64, gap: f64) -> f64 {
+        (distance - self.penalty(gap)).max(0.0)
+    }
 
-        let mut scored = Scored {
-            distance: net,
-            penalty,
-            score: net * self.multiplier,
+    /// Scores a raw `distance` and its closing `gap` at this variant's rate, leaving its closing reach
+    /// and constraints unchecked: the score once [`Variant::valid`] holds.
+    pub(super) fn rate(&self, distance: f64, gap: f64) -> f64 {
+        self.net(distance, gap) * self.multiplier
+    }
+
+    /// Whether this variant scores a raw `distance` and its closing `gap`: the gap closes, every
+    /// constraint is met, and the rate is above 0.
+    pub(super) fn valid(&self, distance: f64, gap: f64) -> bool {
+        let net = self.net(distance, gap);
+        let score = net * self.multiplier;
+
+        self.closing.is_none_or(|c| gap <= c.reach(distance))
+            && score > 0.0
+            && self.constraints.iter().all(|c| match c {
+                Constraint::MinScore { points } => score >= *points,
+                Constraint::MinDistance { meters } => net >= *meters,
+            })
+    }
+
+    /// The full result for a raw `distance` and its closing `gap`, for the report. Only meaningful
+    /// when [`Variant::valid`] holds.
+    pub(super) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
+        Scored {
+            distance: self.net(distance, gap),
+            penalty: self.penalty(gap),
+            score: self.rate(distance, gap),
             multiplier: self.multiplier,
             threshold: self.closing.map_or(0.0, |c| c.reach(distance)),
             description: &self.name,
-        };
-
-        if !self.constraints.iter().all(|c| c.met(&scored)) {
-            scored.score = 0.0;
         }
-
-        scored
     }
 }
 
-/// The first variant that earns anything, or the last one when none does.
-pub(super) fn pick(variants: &[Variant], distance: f64, gap: f64) -> &Variant {
-    variants
-        .iter()
-        .find(|v| v.scored(distance, gap).score > 0.0)
-        .unwrap_or_else(|| {
-            variants
-                .last()
-                .expect("a rule always has at least one variant")
-        })
+/// Index of the first valid variant, `None` when none is.
+pub(super) fn pick(variants: &[Variant], distance: f64, gap: f64) -> Option<usize> {
+    variants.iter().position(|v| v.valid(distance, gap))
 }
 
 /// A distance and gap scored by one variant, in meters, unrounded.
@@ -69,7 +76,7 @@ pub struct Scored<'a> {
     pub distance: f64,
     /// Distance the gap took off.
     pub penalty: f64,
-    /// `distance` × `multiplier`, or 0 when a constraint fails.
+    /// `distance` × `multiplier`.
     pub score: f64,
     pub multiplier: f64,
     /// Largest gap the variant closes for the raw distance; 0 without a closing.
@@ -81,6 +88,16 @@ pub struct Scored<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Name of the variant that scores, `None` when none is valid.
+    fn name(variants: &[Variant], distance: f64, gap: f64) -> Option<&str> {
+        pick(variants, distance, gap).map(|i| variants[i].name.as_str())
+    }
+
+    /// Score of the variant that scores, 0 when none is valid.
+    fn score(variants: &[Variant], distance: f64, gap: f64) -> f64 {
+        pick(variants, distance, gap).map_or(0.0, |i| variants[i].rate(distance, gap))
+    }
 
     /// A gap charged in full out to 800 m, the way XC League states its circuits.
     const CLOSING: Closing = Closing::Distance {
@@ -127,24 +144,16 @@ mod tests {
             constraints: vec![Constraint::MinScore { points: 57_500.0 }],
         }];
 
-        assert_eq!(
-            pick(&by_distance, 25_000.0, 0.0)
-                .scored(25_000.0, 0.0)
-                .score,
-            25_000.0 * RATE
-        );
-        assert_eq!(
-            pick(&by_score, 25_000.0, 0.0).scored(25_000.0, 0.0).score,
-            0.0
-        );
+        assert_eq!(score(&by_distance, 25_000.0, 0.0), 25_000.0 * RATE);
+        assert_eq!(score(&by_score, 25_000.0, 0.0), 0.0);
     }
 
     #[test]
     fn variants_band_by_distance() {
         let banded = banded();
 
-        assert_eq!(pick(&banded, 40_000.0, 0.0).name, "high");
-        assert_eq!(pick(&banded, 10_000.0, 0.0).name, "low");
+        assert_eq!(name(&banded, 40_000.0, 0.0), Some("high"));
+        assert_eq!(name(&banded, 10_000.0, 0.0), Some("low"));
     }
 
     /// A threshold is tested on the net distance: 35.5 km less an 800 m gap misses the 35 km band.
@@ -152,26 +161,23 @@ mod tests {
     fn variants_band_on_scoring_distance() {
         let banded = banded();
 
-        assert_eq!(pick(&banded, 35_500.0, 800.0).name, "low");
-        assert_eq!(pick(&banded, 35_500.0, 0.0).name, "high");
+        assert_eq!(name(&banded, 35_500.0, 800.0), Some("low"));
+        assert_eq!(name(&banded, 35_500.0, 0.0), Some("high"));
     }
 
-    /// Below every band, nothing is earned.
+    /// Below every band, no variant is valid.
     #[test]
     fn variants_band_below_floor_scores_zero() {
         let banded = banded();
 
-        assert_eq!(pick(&banded, 4_000.0, 0.0).scored(4_000.0, 0.0).score, 0.0);
+        assert_eq!(name(&banded, 4_000.0, 0.0), None);
     }
 
     #[test]
     fn variants_band_ignores_unclosable_gap() {
         let banded = banded();
 
-        assert_eq!(
-            pick(&banded, 40_000.0, 900.0).scored(40_000.0, 900.0).score,
-            0.0
-        );
+        assert_eq!(name(&banded, 40_000.0, 900.0), None);
     }
 
     /// The score never falls as distance grows; the search's bound relies on it.
@@ -182,7 +188,7 @@ mod tests {
 
         for km in 1..60 {
             let distance = f64::from(km) * 1000.0;
-            let score = pick(&banded, distance, 0.0).scored(distance, 0.0).score;
+            let score = score(&banded, distance, 0.0);
 
             assert!(
                 score >= previous,
@@ -192,7 +198,7 @@ mod tests {
         }
     }
 
-    /// Without constraints, a variant earns from the first metre.
+    /// Without constraints, a variant is valid from the first metre.
     #[test]
     fn variants_unthresholded_earn_from_zero() {
         let free = [Variant {
@@ -202,6 +208,6 @@ mod tests {
             constraints: Vec::new(),
         }];
 
-        assert_eq!(pick(&free, 1.0, 0.0).scored(1.0, 0.0).score, 1.0);
+        assert_eq!(score(&free, 1.0, 0.0), 1.0);
     }
 }

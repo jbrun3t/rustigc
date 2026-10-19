@@ -2,9 +2,7 @@
 
 use serde::Deserialize;
 
-use super::variant::Scored;
-
-/// A threshold a variant must meet to earn anything. A variant requires all of its constraints.
+/// A threshold a variant must meet to be valid. A variant requires all of its constraints.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Constraint {
@@ -15,14 +13,4 @@ pub enum Constraint {
     /// For a rulebook stating a distance: the same band in points is distance × rate, and
     /// `25_000.0 * 2.3` is `57499.99999999999`, which refuses a 25.000 km triangle.
     MinDistance { meters: f64 },
-}
-
-impl Constraint {
-    /// Whether `scored` meets this threshold.
-    pub(super) fn met(&self, scored: &Scored) -> bool {
-        match self {
-            Constraint::MinScore { points } => scored.score >= *points,
-            Constraint::MinDistance { meters } => scored.distance >= *meters,
-        }
-    }
 }

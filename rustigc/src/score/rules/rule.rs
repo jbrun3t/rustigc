@@ -51,7 +51,7 @@ impl Rule {
                 ));
             }
 
-            // The first variant that earns wins, so a better rate further down would never be
+            // The first valid variant wins, so a better rate further down would never be
             // reached, and `score` could fall as distance grows.
             if variant.multiplier > previous {
                 return Err(format!(
@@ -75,24 +75,19 @@ impl Rule {
         self.shape.shape
     }
 
-    /// Score of the first variant that earns anything, else 0; in meters, unrounded.
+    /// Score of the first valid variant, else 0; in meters, unrounded.
     ///
     /// The search prunes on it, so it must be non-decreasing in `distance` and non-increasing in
     /// `gap`. The multiplier order [`Rule::check`] enforces keeps it so.
     pub(crate) fn score(&self, distance: f64, gap: f64) -> f64 {
-        self.variants
-            .iter()
-            .map(|v| v.scored(distance, gap).score)
-            .find(|&score| score > 0.0)
-            .unwrap_or(0.0)
+        self.variant(distance, gap)
+            .map_or(0.0, |index| self.rate(index, distance, gap))
     }
 
-    /// Index of the first variant that earns anything, `None` when none does. Two scores on the
+    /// Index of the first valid variant, `None` when none is. Two scores on the
     /// same variant lie on the same side of every step the rule has.
     pub(crate) fn variant(&self, distance: f64, gap: f64) -> Option<usize> {
-        self.variants
-            .iter()
-            .position(|v| v.scored(distance, gap).score > 0.0)
+        pick(&self.variants, distance, gap)
     }
 
     /// Score of variant `index` at its rate, its steps unchecked: for a variant another measure of
@@ -101,8 +96,9 @@ impl Rule {
         self.variants[index].rate(distance, gap)
     }
 
-    /// The full result of the winning variant, for the report.
-    pub(crate) fn scored(&self, distance: f64, gap: f64) -> Scored<'_> {
-        pick(&self.variants, distance, gap).scored(distance, gap)
+    /// The full result of the winning variant, for the report; `None` when none is valid.
+    pub(crate) fn scored(&self, distance: f64, gap: f64) -> Option<Scored<'_>> {
+        self.variant(distance, gap)
+            .map(|index| self.variants[index].scored(distance, gap))
     }
 }

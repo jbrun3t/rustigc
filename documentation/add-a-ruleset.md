@@ -66,7 +66,7 @@ Optional. A variant requires **everything** it lists.
 
 ## Variants
 
-Listed **best rate first**. `pick` takes the first that earns anything, so a better rate further down
+Listed **best rate first**. `pick` takes the first valid one, so a better rate further down
 would never be reached; the loader refuses a list whose multiplier rises. Two variants may share a
 name and a rate and differ only in how they close, which is how CFD's two closings are
 written.

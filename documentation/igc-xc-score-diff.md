@@ -142,7 +142,7 @@ slightly inflates igc-xc-score's total on long flights.
 
 `scoreTriangle` and `scoreOpenTriangle` compare `minSide` against the `round2`-ed legs and the rounded
 total (`src/scoring.js:156-159`, `240-243`). `rustigc` tests the ratio on unrounded metres, in the search
-(`BalancedCircuit::peek`) and again geodesically before reporting (`Circuit::admissible`).
+(`BalancedCircuit::peek`) and again geodesically before reporting (`Circuit::valid`).
 
 The two therefore admit different sets of triangles. On `fai-03` FFVL over the same window, each side's
 own turnpoints re-measured with WGS84:
