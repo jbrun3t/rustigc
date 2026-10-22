@@ -12,17 +12,26 @@ import type { Log } from "rustigc-wasm";
 /** Milliseconds in an hour, the unit `TZN` is declared in. */
 const HOUR_MS = 3_600_000;
 
-/** Formats a shifted instant as a UTC wall clock. */
-const WALL_CLOCK = new Intl.DateTimeFormat("en-GB", {
-	timeZone: "UTC",
-	year: "numeric",
-	month: "2-digit",
-	day: "2-digit",
-	hour: "2-digit",
-	minute: "2-digit",
-	second: "2-digit",
-	hourCycle: "h23",
-});
+/**
+ * Formats a shifted instant as a UTC wall clock. Built on first use: the first `Intl` formatter
+ * loads ICU's data, ~10 ms of node 24 start-up that a caller reading no local time should not pay.
+ */
+let wallClock: Intl.DateTimeFormat | undefined;
+
+function wallClockFormat(): Intl.DateTimeFormat {
+	wallClock ??= new Intl.DateTimeFormat("en-GB", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hourCycle: "h23",
+	});
+
+	return wallClock;
+}
 
 /** A calendar day and a wall clock, `2022-08-05` and `10:09:32`. */
 export interface WallClock {
@@ -52,7 +61,7 @@ export class LocalTime {
 		const shifted = new Date(this.#origin + timestamp + (this.#tzn ?? 0) * HOUR_MS);
 		const part: Record<string, string> = {};
 
-		for (const { type, value } of WALL_CLOCK.formatToParts(shifted)) {
+		for (const { type, value } of wallClockFormat().formatToParts(shifted)) {
 			part[type] = value;
 		}
 
