@@ -15,7 +15,7 @@ import {
 } from "rustigc-wasm";
 import { Log } from "rustigc-wasm-utils/log";
 
-const FORMATS = ["human", "geojson"];
+const FORMATS = ["human", "json", "geojson"];
 
 const OPTIONS = {
 	ruleset: { type: "string" },
@@ -158,7 +158,10 @@ export function main(wasm: SyncInitInput): void {
 		console.error("Could not score");
 	}
 
-	if (format === "geojson") {
+	if (format === "json") {
+		// The scoring report alone, `null` when nothing scored, as `rustigc-xc-score` prints it.
+		console.log(JSON.stringify(scored ?? null, null, 2));
+	} else if (format === "geojson") {
 		console.log(log.export(window, scored));
 	} else if (scored) {
 		humanOutput(log, scored);

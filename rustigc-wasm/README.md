@@ -138,7 +138,7 @@ the results agree with the blessed corpus, including a `Scorer` table against th
 
 ## Example CLI
 
-`score/` mirrors `rustigc-xc-score`, minus its `json` format, reading IGC on stdin. It is the
+`score/` mirrors `rustigc-xc-score`, reading IGC on stdin. It is the
 example and smoke test for these bindings, not a supported tool, and will not be published.
 `cli.ts` holds the work; `rustigc-wasm-score.ts` and `sea.ts` differ only in where they get
 the wasm, from beside the bindings or from a single executable's assets.
