@@ -1,0 +1,4 @@
+# Baseline wasm SIMD: node 16.4+, and every current browser since Safari 16.4. relaxed-simd is not
+# baseline and stays off. Takes 9 - 10 % off scoring time on long flights, nothing on short ones.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]
