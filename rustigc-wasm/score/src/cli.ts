@@ -152,7 +152,8 @@ export function main(wasm: SyncInitInput): void {
 	}
 
 	const window = requested ?? log.longest_flight();
-	const scored = log.score(ruleset, window);
+	// Without a flight there is nothing to score, but geojson still draws the track.
+	const scored = window ? log.score(ruleset, window) : undefined;
 
 	if (!scored) {
 		console.error("Could not score");
