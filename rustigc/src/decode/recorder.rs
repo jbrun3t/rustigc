@@ -14,12 +14,10 @@ use winnow::prelude::*;
 use super::Record;
 use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// The flight recorder that wrote the file (A-record).
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Recorder {
     /// Three-letter manufacturer code, `"FLA"`, `"XCT"`, ... `"BAD"` when the file had no
     /// A-record at all.

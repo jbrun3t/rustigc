@@ -11,7 +11,6 @@ pub use rules::{Ruleset, preset_names};
 
 pub use engine::Scorer;
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub(crate) fn round_mm(meters: f64) -> f64 {
@@ -22,8 +21,7 @@ pub(crate) fn round_mm(meters: f64) -> f64 {
 ///
 /// Every fix is an index into the track that was scored, not into the window. Kilometre values
 /// and `score` are rounded to two decimals, metre values to the millimetre.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ScoringResult {
     /// Name of the scoring ruleset, e.g. `"xcontest"`.
     pub ruleset: String,

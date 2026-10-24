@@ -66,7 +66,6 @@
 //!
 //! # Feature flags
 //!
-//! - `serde`: `Serialize`/`Deserialize` on the parsed records, [`Flight`] and [`ScoringResult`].
 //! - `geojson`: drawing, through `Log::describe` and `Log::export`. See `GeoJson`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]

@@ -29,12 +29,10 @@ use super::Record;
 use super::utils::{latitude, longitude, robust_ending_eof, till_robust_ending};
 use super::utils::{latitude_to_igc, longitude_to_igc};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// One turnpoint of a declared task.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct TurnPoint {
     /// Latitude in decimal degrees, north positive.
     pub lat: f64,
@@ -61,8 +59,7 @@ impl fmt::Display for TurnPoint {
 }
 
 /// When a task was declared and what for.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Declaration {
     /// When the declaration was made, as written: `DDMMYYHHMMSS`.
     pub date: String,
@@ -77,8 +74,7 @@ pub struct Declaration {
 /// Scoring does not use it: [`Log::score`] searches the track as flown.
 ///
 /// [`Log::score`]: crate::Log::score
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Task {
     /// The declaration header, absent when the file jumps straight to turnpoints.
     pub declaration: Option<Declaration>,

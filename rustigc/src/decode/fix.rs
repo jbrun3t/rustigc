@@ -21,7 +21,6 @@ use super::utils::till_robust_ending;
 use super::utils::{latitude, longitude, n_digits, ts_to_ms};
 use super::utils::{latitude_to_igc, longitude_to_igc, ts_to_igc};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// One position fix.
@@ -33,8 +32,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// [`Log::datetime`]: crate::Log::datetime
 #[repr(C)]
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Fix {
     /// Milliseconds since UTC midnight of the flight's first day. A flight crossing midnight
     /// keeps counting past 86,400,000, so this can exceed one day.
@@ -71,8 +69,7 @@ impl crate::utils::geometry::PointCoords<f64> for Fix {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 /// A fix as its B-record holds it.
 pub struct RawFix<'a> {
     /// The position itself.

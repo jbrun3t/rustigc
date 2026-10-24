@@ -29,7 +29,6 @@ prints back valid IGC. The API is documented on [docs.rs](https://docs.rs/rustig
 
 ## Features
 
-- `serde` — `Serialize`/`Deserialize` on the parsed records and the scoring report.
 - `geojson` — drawing a flight and its score, through `Log::describe` and `Log::export`.
 
 ## Rulesets

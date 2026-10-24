@@ -23,12 +23,10 @@ pub use header::*;
 pub use recorder::*;
 pub use task::*;
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 /// One line of an IGC file, named after the letter it starts with.
 ///
 /// `Display` prints it back as IGC; `{:#}` prints it for a human instead.

@@ -3,7 +3,6 @@
 //! Flight sections of a track, detected from ground speed.
 
 use log::{debug, warn};
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::Fix;
@@ -26,8 +25,7 @@ const MAX_GAP: f64 = 300_000.0;
 /// can draw.
 ///
 /// [`Log::score`]: crate::Log::score
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Flight {
     /// Takeoff, as an index into the track.
     pub start: usize,

@@ -19,15 +19,10 @@ use winnow::token::take;
 use super::Record;
 use super::utils::{n_alphanum, robust_ending_eof, till_robust_ending};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Deserialize, Serialize),
-    serde(rename_all = "lowercase")
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 /// Who entered a header.
 pub enum HeaderOrigin {
     /// Written by the recorder itself.
@@ -72,8 +67,7 @@ impl fmt::Display for HeaderOrigin {
 }
 
 /// The value of one header.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct HeaderData {
     /// The value as written, trimmed of the key and its separator.
     pub text: String,
@@ -86,8 +80,7 @@ pub struct HeaderData {
 /// [`Log`] keeps these as a map instead; this is the record-level form.
 ///
 /// [`Log`]: crate::Log
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Header {
     /// Three-letter code: `"PLT"` for the pilot, `"GTY"` for the glider, `"DTE"` for the date, ...
     pub key: String,

@@ -20,11 +20,9 @@ use super::Record;
 use super::utils::{robust_ending_eof, till_robust_ending};
 use super::utils::{ts_to_igc, ts_to_ms};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 /// A record that carries nothing but text: a comment, a signature, a GPS datum.
 pub struct TextEvent<'a> {
     /// The line past its record letter, as written.
@@ -37,8 +35,7 @@ impl fmt::Display for TextEvent<'_> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 /// A record that carries text and a time: an event, a satellite list, sensor data.
 pub struct TimedEvent<'a> {
     /// Milliseconds from UTC midnight of the flight's first day, carried past 86,400,000.

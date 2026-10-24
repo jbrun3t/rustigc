@@ -8,7 +8,6 @@ use crate::{DecodeError, RawLog};
 use crate::{Ruleset, ScoreError, Scorer, ScoringResult, decode::*};
 
 use log::warn;
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// Share of invalid records at or above which a file is rejected, in tenths.
@@ -21,8 +20,7 @@ const BAD_RECORD_LIMIT: usize = 8;
 ///
 /// Invalid fixes and fixes whose timestamp does not advance are dropped, so `track` is strictly
 /// increasing in time.
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Log {
     /// Flight recorder that produced the file (A-record); manufacturer `BAD` when it is missing.
     pub recorder: Recorder,

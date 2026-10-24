@@ -9,16 +9,14 @@ use winnow::prelude::*;
 use crate::decode::*;
 use crate::{DecodeError, Log};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// An IGC file as records, borrowing from the bytes it was parsed from.
 ///
 /// Keeps every record, including the ones [`Log`] drops, and checks nothing beyond each record's
 /// syntax. `Display` prints it back as IGC.
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 pub struct RawLog<'a> {
     /// Every line of the file, in order, unreadable ones included as [`Record::Bad`].
     pub records: Vec<Record<'a>>,

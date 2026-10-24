@@ -16,12 +16,10 @@ use winnow::prelude::*;
 use super::Record;
 use super::utils::{n_alphanum, n_digits, robust_ending_eof};
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 /// One extension field, as an I or J record defines it.
 pub struct RecordExtension<'a> {
     /// First byte, 0-based within the extension area.
@@ -52,9 +50,8 @@ impl fmt::Display for RecordExtension<'_> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(bound(deserialize = "'de: 'a")))]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 /// The extension fields an I or J record defines, in the order they appear.
 pub struct Extensions<'a> {
     /// The fields, each slicing its own span out of the record it extends.

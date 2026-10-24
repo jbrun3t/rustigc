@@ -16,10 +16,6 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["serde"]
-# The rules are data, so serde itself is not optional. This gates only the derives on the public
-# types — parsed records, flights, `ScoringResult` — which a caller may not want.
-serde = []
 geojson = ["dep:geojson"]
 
 [dependencies]
@@ -42,16 +38,10 @@ criterion = "0.8"
 rustigc-test-data = { path = "../rustigc-test-data", version = "0.2.0" }
 
 
-# `scoring` and `export` read the library through its optional features. `serde` is on by default,
-# `geojson` is not, so `cargo test -p rustigc` skips `export` where a workspace-wide run gets it from
-# the bindings, and `--no-default-features` skips both suites rather than failing to compile them.
-[[test]]
-name = "scoring"
-required-features = ["serde"]
-
+# `cargo test -p rustigc` skips `export`, where a workspace-wide run gets `geojson` from the bindings.
 [[test]]
 name = "export"
-required-features = ["serde", "geojson"]
+required-features = ["geojson"]
 
 [[bench]]
 name = "benches"
