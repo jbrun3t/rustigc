@@ -40,7 +40,7 @@ def test_date_parsing(igc_content):
     origin = log.datetime
 
     assert origin.date() == date(2022, 6, 20)
-    # UTC midnight read in BST, so an hour past it and an hour east, and named after the zone
+    # UTC midnight read three hours west (41°W), so 21:00 the evening before, named after the zone
     assert origin.hour == 21
     assert origin.utcoffset() == timedelta(hours=-3)
     assert origin.tzname() == "-03"
