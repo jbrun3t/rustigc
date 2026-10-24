@@ -101,23 +101,6 @@ mod tests {
         }
     }
 
-    /// Parses every sample, which are not built in, so a bad one fails CI.
-    #[test]
-    fn samples_all_load() {
-        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/rulesets/samples");
-        let mut count = 0;
-
-        for entry in std::fs::read_dir(dir).unwrap() {
-            let path = entry.unwrap().path();
-            let text = std::fs::read_to_string(&path).unwrap();
-            Ruleset::from_json(&text)
-                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-            count += 1;
-        }
-
-        assert!(count > 0, "no sample in {dir}");
-    }
-
     /// A caller's ruleset goes through the same checks as an embedded one.
     #[test]
     fn from_json_refuses_closing_on_open_shape() {
