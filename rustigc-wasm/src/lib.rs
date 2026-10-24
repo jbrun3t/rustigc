@@ -157,7 +157,7 @@ impl Log {
     }
 
     /// Offset from UTC to local time in hours, as the recorder declared it in `TZN`, or
-    /// `undefined` when it declared none.
+    /// `undefined` when the header is absent or states no plausible offset.
     pub fn tzn(&self) -> Option<f64> {
         self.inner.tzn()
     }

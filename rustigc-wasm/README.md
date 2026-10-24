@@ -120,8 +120,8 @@ The whole table is the window, and at least two pairs of coordinates are require
 `TZN` is the pilot's instrument setting and can simply be stale — a caller holding a real tz
 dataset should shift `Log.datetime` itself instead.
 
-`rustigc-wasm-utils/datetime` does that shift: `LocalTime.of(log)`, then `.at(timestamp)` for a
-`{ date, time }` and `.zone` for how it reads.
+`rustigc-wasm-utils/datetime` shifts by `TZN` alone, with no zone lookup: `LocalTime.of(log)`, then
+`.at(timestamp)` for a `{ date, time }` and `.zone` for how it reads.
 
 ## A friendlier `Log`
 
