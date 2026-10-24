@@ -41,10 +41,10 @@ or `rustigc-xc-score --ruleset-file`.
 ## Documentation
 
 Beyond the API reference, the [`documentation/`](../documentation) directory covers the internals:
-[how scoring works](../documentation/scoring-overview.md), [adding a
+[how scoring works](../documentation/scoring.md), [adding a
 ruleset](../documentation/add-a-ruleset.md), [where we differ from
-igc-xc-score](../documentation/igc-xc-score-diff.md), and [the IGC spec violations found in the
-wild](../documentation/igc-spec-errors.md).
+igc-xc-score](../documentation/scoring.md#8-technical-differences-from-igc-xc-score), and [the IGC
+spec violations found in the wild](../documentation/igc-spec-errors.md).
 
 ## Build & Test
 

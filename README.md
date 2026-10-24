@@ -10,21 +10,21 @@ An IGC toolbox for aviation sports written in Rust.
 rustigc/
 ├── rustigc/             - Core Rust library
 ├── rustigc-py/          - Python bindings
-├── rustigc-wasm/        - WASM bindings
+├── rustigc-wasm/        - WebAssembly bindings
 ├── rustigc-tools/       - CLI tools
 └── rustigc-test-data/   - Shared IGC test files and their scoring references
 ```
 
 ## Features
 
-- ✅ Parse IGC files to structured records (RawLog)
+- ✅ Parse [IGC files](https://www.fai.org/page/igc-approved-flight-recorders) to structured records (RawLog)
   - ✅ Extract position fixes (lat/lon/altitude/time) into tracklog (Log)
   - ✅ Access flight metadata (pilot, glider, date, recorder info)
   - ✅ Roundtrip parse/write valid IGC
   - ⏳ Extension support:
     - `LOD`/`LAD`: Coordinate higher precision
     - `TDS`: Sub-second time division
-- ✅ Flight scoring: see [dedicated documentation](documentation/scoring-overview.md)
+- ✅ [Flight scoring](documentation/scoring.md):
   - Generic scoring over a configurable number of turnpoints
   - Optimized for fast searches
   - Supports XContest, FFVL's CFD, and more
@@ -41,13 +41,16 @@ rustigc/
 ### Rust Library
 
 ```rust
-use rustigc::Log;
+use rustigc::{FlightDetection, FlightSelection, Log, Ruleset};
 
-let content = std::fs::read("flight.igc")?;
-let log = Log::new(&content)?;
-
+let log = Log::new(&std::fs::read("flight.igc")?)?;
 println!("Pilot: {}", log.headers["PLT"].text);
-println!("Fixes: {}", log.track.len());
+
+let flights = log.track.flights();
+let flight = flights.longest().expect("no flight detected");
+if let Some(score) = log.score(&Ruleset::preset("xcontest")?, flight.start, flight.stop)? {
+    println!("{}: {} points", score.description, score.score);
+}
 ```
 
 See [rustigc/README.md](rustigc/README.md)
@@ -55,18 +58,15 @@ See [rustigc/README.md](rustigc/README.md)
 ### Python
 
 ```python
-from rustigc_py import Log
+from rustigc_py import Log, Ruleset
 
-log = Log.from_file("flight.igc")
-
+with open("flight.igc", "rb") as f:
+    log = Log.from_bytes(f.read())
 print(f"Pilot: {log.pilot_name}")
-print(f"Glider: {log.glider_type}")
-print(f"Fixes: {len(log.track)}")
 
-# Flight sections
-flight = log.flights().longest
-print(f"Takeoff: {flight.takeoff}")
-print(f"Landing: {flight.landing}")
+score = log.score(Ruleset.preset("xcontest"))
+if score:
+    print(f"{score.description}: {score.score} points")
 ```
 
 See [rustigc-py/README.md](rustigc-py/README.md)
@@ -77,11 +77,11 @@ See [rustigc-py/README.md](rustigc-py/README.md)
 import { readFileSync } from "node:fs";
 import { Log, Ruleset } from "rustigc-wasm";
 
-const igc = readFileSync("flight.igc");
-const log = new Log(igc);
+const log = new Log(readFileSync("flight.igc"));
+console.log(`Pilot: ${log.header("PLT")?.text}`);
 
-console.log(log.header("PLT"), log.fix_count);
-console.log(log.score(Ruleset.preset("xcontest")));
+const score = log.score(Ruleset.preset("xcontest"));
+if (score) console.log(`${score.description}: ${score.score} points`);
 ```
 
 See [rustigc-wasm/README.md](rustigc-wasm/README.md), which covers instantiating the wasm first.
@@ -115,19 +115,20 @@ maturin develop
 I'm still exploring everything Rust has to offer, so there is a good chance some things in there are
 not done correctly or could be improved. Public APIs are likely to change.
 
-However, `rustigc` is tested on thousands of tracklogs, [accounting for many oddities found in the
-real world](documentation/igc-spec-errors.md).
+However, `rustigc` is tested on [more than 130 000 tracklogs](documentation/scoring.md),
+[accounting for many oddities found in the real world](documentation/igc-spec-errors.md).
 
-If you have a tracklog that does not parse or score correctly, please open an issue and share the
-tracklog.
+Its decoder and scoring modules are robust enough for production. If you have a tracklog that does
+not parse or score correctly, please open an issue and share the tracklog.
+
+The analysis module, especially takeoff and landing detection, is not on par yet.
 
 ## Credit
 
-The following sources have been extremely helpful in building `rustigc` so far:
+The following sources have been extremely helpful in building `rustigc`:
 
-* [FAI IGC Specification](https://www.fai.org/page/igc-approved-flight-recorders)
-* [Ondřej Palkovský's Paper on Paragliding Competition Tracklog Optimization](https://web.archive.org/web/20230320111732/http://www.penguin.cz/~ondrap/algorithm.pdf)
-* [igc-xc-score](https://github.com/mmomtchev/igc-xc-score) (differences between `igc-xc-score` and `rustigc` scoring are documented [here](documentation/igc-xc-score-diff.md))
+* [Ondřej Palkovský's paper on Paragliding Competition Tracklog Optimization](https://web.archive.org/web/20230320111732/http://www.penguin.cz/~ondrap/algorithm.pdf)
+* [igc-xc-score](https://github.com/mmomtchev/igc-xc-score)
 * [Python libigc](https://github.com/surajmandalcell/libigc)
 * [Rust igc_parser](https://github.com/LWEdslev/igc_parser)
 * [Rust igc-rs](https://github.com/Joey9801/igc-rs)
