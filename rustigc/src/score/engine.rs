@@ -5,8 +5,8 @@
 //! A run evaluates every rule of the ruleset at once: candidates of all rules share one heap, the
 //! caches and the pruning floor.
 //!
-//! **Branch.** A [`Candidate`] holds one `[start, end]` fix-index range per turnpoint. A split cuts
-//! one of them, giving two children.
+//! **Branch.** A [`Candidate`] holds one `[start, end]` fix-index range per searched point. A split
+//! cuts one of them, giving two children.
 //!
 //! **Bound.** `Shape::bound` maximises the distance over the vertices of the candidate bounding
 //! boxes, under whatever its own geometry also constrains.
@@ -42,7 +42,7 @@ use super::{ScoringResult, round_mm};
 // Tuned on runtime only.
 const AREA_OVERRIDE: f64 = 2.5;
 
-/// A node of the search: one fix-index range per turnpoint.
+/// A node of the search: one fix-index range per searched point.
 #[derive(Debug, Clone)]
 pub struct Candidate {
     pub ranges: Vec<[usize; 2]>,

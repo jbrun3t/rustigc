@@ -78,11 +78,12 @@ The dynamic programming (DP) search then walks the boxes left to right, keeping 
 vertex of the *current* box only — at most 4 numbers, not the whole track. Reaching a vertex of the
 next box costs whatever it took to reach some vertex of this one, plus the leg between them; each
 vertex of the next box keeps the best of those, over every vertex it could have come from. The first
-box starts from the real entry leg into each of its vertices, and the last one folds in the real exit
-leg the same way — the largest total across its vertices is the `bound`.
+box starts from the entry leg into each of its vertices, and the last one folds in the exit leg the
+same way — the largest total across its vertices is the `bound`.
 
-`entry` and `exit` are the real entry and exit leg lengths for an open shape, from the furthest-point
-caches described in *Runtime costs*, below.
+`entry` and `exit` are the entry and exit leg lengths of an open polyline with `TERMINALS`, from
+the furthest-point caches described in *Runtime costs*, below, each floored at the box diagonal.
+Without `TERMINALS` they are 0 and the ends are searched as ranges.
 
 Circuits close on themselves, so the closing leg's length depends on *which* vertex of TP1 the loop
 actually started from — what a single left-to-right pass throws away. The circuit DP therefore runs
