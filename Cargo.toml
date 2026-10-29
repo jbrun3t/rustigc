@@ -16,6 +16,11 @@ repository = "https://github.com/jbrun3t/rustigc"
 keywords = ["igc", "soaring", "aviation", "gps"]
 categories = ["parser-implementations", "aerospace"]
 
+[workspace.metadata.release]
+shared-version = true
+tag-name = "v{{version}}"
+sign-tag = true
+
 # Important so LLVM properly re-partition inlining
 [profile.release]
 codegen-units = 1

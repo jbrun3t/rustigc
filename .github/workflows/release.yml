@@ -8,7 +8,7 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'      # a release
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # a rehearsal, e.g. v0.0.4-rc1
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'    # a release candidate, e.g. v0.3.0-rc.1
 
 permissions:
   contents: read
@@ -25,11 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The four copies kept by hand.
+      # `cargo release` writes these; the tag must name exactly what gets published.
       - name: Version and Tag Check
         run: |
-          version=${GITHUB_REF_NAME#v}   # the trigger admits only vX.Y.Z and vX.Y.Z-<suffix>
-          version=${version%%-*}
+          version=${GITHUB_REF_NAME#v}
           status=0
 
           check() {
@@ -80,7 +79,6 @@ jobs:
   crates-io:
     name: crates.io
     needs: [preflight, build, github-release]
-    if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -103,6 +101,19 @@ jobs:
       - uses: rust-lang/crates-io-auth-action@v1
         id: auth
 
+      # rustigc's published manifest names its version, so it has to be there first.
+      - name: Publish rustigc-test-data
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' rustigc-test-data/Cargo.toml)
+          if curl -fsSL https://index.crates.io/ru/st/rustigc-test-data \
+              | jq -e --arg v "$version" 'select(.vers == $v)' > /dev/null; then
+            echo "rustigc-test-data $version is already published"
+          else
+            cargo publish -p rustigc-test-data
+          fi
+
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
@@ -114,7 +125,6 @@ jobs:
   pypi:
     name: PyPI
     needs: [preflight, build, github-release]
-    if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -136,7 +146,6 @@ jobs:
   npm:
     name: npm
     needs: [preflight, build, github-release]
-    if: needs.preflight.outputs.prerelease == 'false'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -152,8 +161,10 @@ jobs:
           node-version: '24'
           registry-url: https://registry.npmjs.org
 
+      # npm would make a release candidate `latest` otherwise.
       - name: Publish
         run: |
           for tarball in ./npm/*.tgz; do
-            npm publish "$tarball"
+            npm publish "$tarball" \
+              ${{ needs.preflight.outputs.prerelease == 'true' && '--tag next' || '' }}
           done
