@@ -1,6 +1,6 @@
 {
   "name": "rustigc-wasm-utils",
-  "version": "0.2.0",
+  "version": "0.2.0-rc.3",
   "type": "module",
   "description": "Optional helpers for rustigc-wasm: track_bytes decoder, local times, text input",
   "license": "GPL-2.0-or-later WITH Classpath-exception-2.0",
@@ -29,7 +29,7 @@
     "dist/"
   ],
   "peerDependencies": {
-    "rustigc-wasm": "^0.2.0"
+    "rustigc-wasm": "^0.2.0-rc.3"
   },
   "scripts": {
     "build": "tsc"
