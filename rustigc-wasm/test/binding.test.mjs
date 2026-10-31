@@ -126,3 +126,74 @@ test("a preset's JSON content scores as the preset does", () => {
 test("unusable JSON content throws, with where it went wrong", () => {
 	assert.throws(() => Ruleset.from_json('{ "name": "custom", "rules": [] }'), /line 1 column/);
 });
+
+test("a preset's parsed object scores as the preset does", () => {
+	const log = load("triangle-01");
+	const def = JSON.parse(readFileSync(new URL("xcontest.json", PRESETS), "utf8"));
+
+	assert.deepEqual(log.score(new Ruleset(def)), log.score(Ruleset.preset("xcontest")));
+});
+
+test("an unusable ruleset object throws, naming what is wrong", () => {
+	assert.throws(() => new Ruleset({ name: "custom", rules: [] }), /scores nothing/);
+	assert.throws(
+		() =>
+			new Ruleset({
+				rules: [
+					{
+						shape: { type: "open_polyline", points: 3 },
+						variants: [{ name: "free", multiplier: 1.0 }],
+					},
+				],
+			}),
+		/missing field/,
+	);
+	assert.throws(
+		() =>
+			new Ruleset({
+				name: "custom",
+				rules: [
+					{
+						shape: { type: "open_polyline", points: 3 },
+						variants: [
+							{
+								name: "free",
+								multiplier: 1.0,
+								closing: { type: "ratio", ratio: 0.2, penalized: true },
+							},
+						],
+					},
+				],
+			}),
+		/on closing/,
+	);
+	assert.throws(
+		() =>
+			new Ruleset({
+				name: "custom",
+				rules: [
+					{
+						shape: { type: "open_polyline", points: 3 },
+						variants: [
+							{ name: "v1", multiplier: 1.0 },
+							{ name: "v2", multiplier: 1.2 },
+						],
+					},
+				],
+			}),
+		/pays more/,
+	);
+	assert.throws(
+		() =>
+			new Ruleset({
+				name: "custom",
+				rules: [
+					{
+						shape: { type: "open_polyline", points: 8 },
+						variants: [{ name: "v1", multiplier: 1.0 }],
+					},
+				],
+			}),
+		/no such shape/,
+	);
+});
