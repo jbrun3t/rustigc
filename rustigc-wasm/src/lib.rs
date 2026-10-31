@@ -19,6 +19,10 @@ extern "C" {
     /// A `Score` argument, likewise.
     #[wasm_bindgen(typescript_type = "Score")]
     pub type ScoreArg;
+
+    /// A `RulesetDef` argument for constructing a `Ruleset`.
+    #[wasm_bindgen(typescript_type = "RulesetDef")]
+    pub type RulesetDefArg;
 }
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -86,6 +90,53 @@ export interface Score {
     landing: number;
     /** Whether the task closes on itself. */
     circuit: boolean;
+}
+
+/** A geometry as a ruleset names it: the parameters that pick one monomorphisation. */
+export type ShapeSpec =
+    | { type: "open_polyline"; points: 2 | 3 | 4 | 5 }
+    | { type: "closed_circuit"; turnpoints: 2 | 3 }
+    | { type: "balanced_circuit"; turnpoints: 3; min_side: number };
+
+/**
+ * How far a circuit may stay open.
+ * When `penalized` is true, the gap distance is deducted from the scored distance.
+ */
+export type ClosingDef =
+    | { type: "distance"; distance_m: number; penalized: boolean }
+    | { type: "ratio"; ratio: number; penalized: boolean };
+
+/** A threshold a variant must meet to be valid. */
+export type ConstraintDef =
+    | { type: "min_score"; points: number }
+    | { type: "min_distance"; meters: number };
+
+/** One way a rule scores its shape. */
+export interface VariantDef {
+    /** Reported as the result's description. */
+    name: string;
+    /** Score multiplier (e.g. 1.0, 1.2, 1.4, 1.6). */
+    multiplier: number;
+    /** How far a circuit may stay open. Omit for open shapes. */
+    closing?: ClosingDef;
+    /** Thresholds this variant must meet to be valid. */
+    constraints?: ConstraintDef[];
+}
+
+/** A shape and the variants it is scored with, listed best rate first. */
+export interface RuleDef {
+    /** The geometry to score. */
+    shape: ShapeSpec;
+    /** One or more ways to score this shape, in descending multiplier order. */
+    variants: VariantDef[];
+}
+
+/** A caller-defined ruleset definition. */
+export interface RulesetDef {
+    /** Name reported in every result this ruleset scores. */
+    name: string;
+    /** Rules that make up this ruleset; scoring reports the best result any of them finds. */
+    rules: RuleDef[];
 }
 "#;
 
@@ -304,7 +355,7 @@ impl Scorer {
     }
 }
 
-/// A set of rules to score against: a preset, or a caller's own in the presets' JSON format.
+/// A set of rules to score against: a preset, a JavaScript object definition, or JSON content.
 #[wasm_bindgen]
 pub struct Ruleset {
     inner: rustigc::Ruleset,
@@ -312,6 +363,13 @@ pub struct Ruleset {
 
 #[wasm_bindgen]
 impl Ruleset {
+    /// A ruleset from a JavaScript object definition; throws when it cannot be used.
+    #[wasm_bindgen(constructor)]
+    pub fn new(def: RulesetDefArg) -> Result<Ruleset, JsError> {
+        let inner: rustigc::Ruleset = serde_wasm_bindgen::from_value(def.into())?;
+        Ok(Ruleset { inner })
+    }
+
     /// The preset `id`, one of `preset_names()`; throws when there is none.
     pub fn preset(id: &str) -> Result<Ruleset, JsError> {
         Ok(Ruleset {
