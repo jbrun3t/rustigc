@@ -49,7 +49,7 @@ const log = new Log(igc);                       // Uint8Array of IGC
 log.fix_count                                   // 25459
 log.header("PLT")                               // { text: "Mike Young", origin: "flightrecorder" }
 log.longest_flight()                            // { start: 125, stop: 25425 }
-const xcontest = Ruleset.preset("xcontest");    // or Ruleset.from_json(text), your own rules
+const xcontest = Ruleset.preset("xcontest");    // or new Ruleset(def), Ruleset.from_json(text)
 log.score(xcontest)                             // over the longest detected flight
 log.describe(xcontest)                          // GeoJSON: detects, scores and draws
 
@@ -57,7 +57,7 @@ preset_names()                                  // what Ruleset.preset accepts
 ```
 
 Documentation is in `pkg/rustigc_wasm.d.ts`, generated from the doc comments in
-`src/lib.rs` along with interfaces for `Fix`, `Flight`, `Header` and `Score`.
+`src/lib.rs` along with interfaces for `Fix`, `Flight`, `Header`, `Score` and `RulesetDef`.
 
 GeoJSON crosses as a string rather than an object: a track would otherwise become as many arrays,
 and a caller either prints it or hands it to a map. `JSON.parse` it for objects.
